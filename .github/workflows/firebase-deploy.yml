@@ -1,0 +1,51 @@
+# This file tells GitHub: "Every time code is pushed to the main branch,
+# automatically build the app and deploy it to Firebase Hosting."
+# You do NOT need to edit this file manually.
+
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    branches:
+      - main   # fires when you push to the main branch
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Download the code from GitHub
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Install Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # Step 3: Install all packages
+      - name: Install dependencies
+        run: npm ci
+
+      # Step 4: Build the app (creates the "dist" folder)
+      # The Firebase config values are stored as GitHub Secrets (Settings → Secrets)
+      - name: Build
+        run: npm run build
+        env:
+          VITE_FIREBASE_API_KEY:            ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN:        ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID:         ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET:     ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID:             ${{ secrets.VITE_FIREBASE_APP_ID }}
+
+      # Step 5: Deploy to Firebase Hosting
+      - name: Deploy to Firebase
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken:             ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId:             live
+          projectId:             ${{ secrets.VITE_FIREBASE_PROJECT_ID }}

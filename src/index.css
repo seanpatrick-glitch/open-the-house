@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Smooth scroll for jump-nav links */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Larger checkbox tap targets on mobile */
+input[type="checkbox"] {
+  cursor: pointer;
+}
