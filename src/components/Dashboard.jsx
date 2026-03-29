@@ -34,7 +34,16 @@ function newShowData() {
 
     phase2Checklist: {},
     phase2Fields: { materialsAvailable: '', materialsNeeded: '', signageIdeas: '' },
-    signageStatus: { lobby: 'Concept', drink: 'Concept', showgram: 'Concept', directional: 'Concept', other: 'Concept', otherText: '' },
+    signage: [
+      { id: 'concessions',         label: 'Concessions',       status: '', fileUrl: '', filePath: '', fileName: '', fileType: '' },
+      { id: 'specialty-cocktails', label: 'Specialty Cocktails', status: '', fileUrl: '', filePath: '', fileName: '', fileType: '' },
+      { id: 'merchandise',         label: 'Merchandise',        status: '', fileUrl: '', filePath: '', fileName: '', fileType: '' },
+      { id: 'keychain-design',     label: 'Key Chain Design',   status: '', fileUrl: '', filePath: '', fileName: '', fileType: '' },
+      { id: 'button-design',       label: 'Button Design',      status: '', fileUrl: '', filePath: '', fileName: '', fileType: '' },
+      { id: 'showgram-tags',       label: 'Showgram Tags',      status: '', fileUrl: '', filePath: '', fileName: '', fileType: '' },
+    ],
+    logoUrl:  '',
+    logoPath: '',
     drinks: [
       { name: '', ingredients: '', menuFinalized: false },
       { name: '', ingredients: '', menuFinalized: false },
@@ -146,9 +155,19 @@ export default function Dashboard() {
                 onClick={() => navigate(`/show/${show.id}`)}
                 className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 cursor-pointer hover:shadow-md hover:border-amber-300 transition-all group"
               >
-                <h3 className="font-bold text-gray-900 text-lg group-hover:text-amber-700 transition-colors truncate">
-                  {show.title || 'Untitled Show'}
-                </h3>
+                {/* Logo + Title row */}
+                <div className="flex items-center gap-3 mb-1">
+                  {show.logoUrl && (
+                    <img
+                      src={show.logoUrl}
+                      alt={show.title}
+                      className="w-12 h-12 object-contain rounded-lg border border-gray-100 bg-gray-50 flex-shrink-0"
+                    />
+                  )}
+                  <h3 className="font-bold text-gray-900 text-lg group-hover:text-amber-700 transition-colors truncate">
+                    {show.title || 'Untitled Show'}
+                  </h3>
+                </div>
 
                 {show.openingDate && (
                   <p className="text-gray-500 text-sm mt-1">

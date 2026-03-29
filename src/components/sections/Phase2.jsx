@@ -1,8 +1,12 @@
 // Phase2.jsx — 3 Weeks Out (the most detailed section)
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
-import { db } from '../../firebase'
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
+import { db, storage } from '../../firebase'
+import toast from 'react-hot-toast'
+import JSZip from 'jszip'
+import { saveAs } from 'file-saver'
 
 const CHECKLIST = [
   'Check available materials for builds',
@@ -12,20 +16,24 @@ const CHECKLIST = [
   'Choose showgram or specialty item options',
 ]
 
-const SIGNAGE_ITEMS = [
-  { key: 'lobby',       label: 'Lobby Welcome Sign' },
-  { key: 'drink',       label: 'Drink Menu Sign' },
-  { key: 'showgram',    label: 'Showgram Sign' },
-  { key: 'directional', label: 'Directional Signs' },
+const DEFAULT_SIGNAGE = [
+  { id: 'concessions',         label: 'Concessions' },
+  { id: 'specialty-cocktails', label: 'Specialty Cocktails' },
+  { id: 'merchandise',         label: 'Merchandise' },
+  { id: 'keychain-design',     label: 'Key Chain Design' },
+  { id: 'button-design',       label: 'Button Design' },
+  { id: 'showgram-tags',       label: 'Showgram Tags' },
 ]
 
-const SIGNAGE_BADGES = ['Concept', 'Design', 'Printed', 'Installed']
+const DEFAULT_SIGNAGE_IDS = new Set(DEFAULT_SIGNAGE.map(d => d.id))
 
-const BADGE_COLORS = {
-  Concept:   'bg-gray-100  text-gray-600  border-gray-300',
-  Design:    'bg-blue-100  text-blue-700  border-blue-300',
-  Printed:   'bg-purple-100 text-purple-700 border-purple-300',
-  Installed: 'bg-green-100 text-green-700 border-green-300',
+const STATUS_STAGES = ['Conceptualized', 'Design in Progress', 'Design Complete']
+
+const STATUS_COLORS = {
+  'Conceptualized':     'bg-gray-100 text-gray-600 border-gray-300',
+  'Design in Progress': 'bg-blue-100 text-blue-700 border-blue-300',
+  'Design Complete':    'bg-purple-100 text-purple-700 border-purple-300',
+  'Uploaded':           'bg-green-100 text-green-700 border-green-300',
 }
 
 // ── Reusable helpers ──────────────────────────────────────────────────────────
@@ -76,19 +84,282 @@ function Toggle({ label, value, onChange }) {
   )
 }
 
+// ── Signage Tracker ───────────────────────────────────────────────────────────
+
+function SignageSection({ showId, signage, onSignageChange }) {
+  const [uploadingId,      setUploadingId]      = useState(null)
+  const [uploadProgress,   setUploadProgress]   = useState(0)
+  const [zipping,          setZipping]          = useState(false)
+  const [previewUrl,       setPreviewUrl]        = useState(null) // lightbox
+  const fileInputRef    = useRef(null)
+  const uploadingRowRef = useRef(null)
+
+  function updateRow(id, updates) {
+    onSignageChange(signage.map(row => row.id === id ? { ...row, ...updates } : row))
+  }
+
+  function addRow() {
+    onSignageChange([
+      ...signage,
+      { id: `custom-${Date.now()}`, label: '', status: '', fileUrl: '', filePath: '', fileName: '', fileType: '' },
+    ])
+  }
+
+  function triggerUpload(rowId) {
+    uploadingRowRef.current = rowId
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+      fileInputRef.current.click()
+    }
+  }
+
+  async function handleFileSelect(e) {
+    const file = e.target.files[0]
+    if (!file || !uploadingRowRef.current) return
+    const rowId = uploadingRowRef.current
+
+    setUploadingId(rowId)
+    setUploadProgress(0)
+
+    const storagePath = `shows/${showId}/signage/${rowId}_${Date.now()}_${file.name}`
+    const storageRef  = ref(storage, storagePath)
+    const uploadTask  = uploadBytesResumable(storageRef, file)
+
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        setUploadProgress(Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100))
+      },
+      (err) => {
+        console.error(err)
+        toast.error('Upload failed.')
+        setUploadingId(null)
+      },
+      async () => {
+        const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref)
+        updateRow(rowId, {
+          status:   'Uploaded',
+          fileUrl:  downloadUrl,
+          filePath: storagePath,
+          fileName: file.name,
+          fileType: file.type,
+        })
+        toast.success(`"${file.name}" uploaded!`)
+        setUploadingId(null)
+        setUploadProgress(0)
+      }
+    )
+  }
+
+  async function handleDownloadAll() {
+    const withFiles = signage.filter(row => row.fileUrl)
+    if (withFiles.length === 0) {
+      toast.error('No signage files uploaded yet.')
+      return
+    }
+    setZipping(true)
+    toast('Preparing ZIP…')
+    try {
+      const zip = new JSZip()
+      await Promise.all(
+        withFiles.map(async (row) => {
+          const response = await fetch(row.fileUrl)
+          const blob     = await response.blob()
+          zip.file(row.fileName || `${row.id}.file`, blob)
+        })
+      )
+      const content = await zip.generateAsync({ type: 'blob' })
+      saveAs(content, 'signage-files.zip')
+      toast.success('ZIP downloaded!')
+    } catch (err) {
+      console.error(err)
+      toast.error('Could not create ZIP.')
+    }
+    setZipping(false)
+  }
+
+  const uploadedCount = signage.filter(r => r.fileUrl).length
+
+  return (
+    <div>
+      {/* Lightbox */}
+      {previewUrl && (
+        <div
+          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
+          onClick={() => setPreviewUrl(null)}
+        >
+          <div className="relative max-w-3xl w-full" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setPreviewUrl(null)}
+              className="absolute -top-8 right-0 text-white text-2xl font-bold hover:text-amber-400"
+            >
+              ✕
+            </button>
+            <img src={previewUrl} alt="Signage preview"
+              className="w-full max-h-[80vh] object-contain rounded-xl shadow-2xl" />
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Signage Tracker</h3>
+        {uploadedCount > 0 && (
+          <button
+            onClick={handleDownloadAll}
+            disabled={zipping}
+            className="text-xs bg-gray-900 hover:bg-gray-700 text-white font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {zipping ? 'Preparing ZIP…' : `↓ Download All Signage (${uploadedCount})`}
+          </button>
+        )}
+      </div>
+
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        className="hidden"
+        accept="image/*,application/pdf"
+      />
+
+      <div className="space-y-2">
+        {signage.map((row) => {
+          const isDefault    = DEFAULT_SIGNAGE_IDS.has(row.id)
+          const isUploading  = uploadingId === row.id
+          const isUploaded   = !!row.fileUrl
+          const isImage      = row.fileType && row.fileType.startsWith('image/')
+
+          return (
+            <div key={row.id} className="border border-gray-200 rounded-xl p-3 bg-white">
+              {/* Row controls */}
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Label */}
+                <div className="w-44 flex-shrink-0">
+                  {isDefault ? (
+                    <span className="text-sm font-medium text-gray-700">{row.label}</span>
+                  ) : (
+                    <input
+                      value={row.label}
+                      placeholder="Sign name…"
+                      onChange={(e) => updateRow(row.id, { label: e.target.value })}
+                      className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400"
+                    />
+                  )}
+                </div>
+
+                {/* Status stage buttons */}
+                <div className="flex gap-1.5 flex-wrap">
+                  {STATUS_STAGES.map((stage) => (
+                    <button
+                      key={stage}
+                      onClick={() => !isUploaded && updateRow(row.id, { status: stage })}
+                      className={`text-xs px-3 py-1 rounded-full font-medium border transition-all ${
+                        row.status === stage
+                          ? STATUS_COLORS[stage]
+                          : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300'
+                      } ${isUploaded ? 'opacity-40 cursor-default' : 'cursor-pointer'}`}
+                    >
+                      {stage}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Upload / Uploaded badge */}
+                {isUploaded ? (
+                  <span className={`text-xs px-3 py-1 rounded-full font-medium border ${STATUS_COLORS['Uploaded']}`}>
+                    ✓ Uploaded
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => triggerUpload(row.id)}
+                    disabled={isUploading}
+                    className="text-xs border border-dashed border-gray-300 text-gray-500 hover:border-amber-400 hover:text-amber-700 px-3 py-1 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {isUploading ? `Uploading ${uploadProgress}%` : '↑ Upload File'}
+                  </button>
+                )}
+
+                {/* Re-upload button if already uploaded */}
+                {isUploaded && (
+                  <button
+                    onClick={() => triggerUpload(row.id)}
+                    disabled={isUploading}
+                    className="text-xs text-gray-400 hover:text-amber-600 transition-colors"
+                  >
+                    Replace
+                  </button>
+                )}
+              </div>
+
+              {/* File preview */}
+              {isUploaded && (
+                <div className="mt-3 pl-3 border-l-2 border-green-200">
+                  {isImage ? (
+                    <div className="flex items-start gap-3">
+                      <img
+                        src={row.fileUrl}
+                        alt={row.fileName}
+                        onClick={() => setPreviewUrl(row.fileUrl)}
+                        className="max-h-28 max-w-xs rounded-lg border border-gray-200 object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                      />
+                      <div className="text-xs text-gray-500 mt-1">
+                        <p className="font-medium text-gray-700">{row.fileName}</p>
+                        <p className="mt-0.5 text-gray-400">Click image to enlarge</p>
+                        <a href={row.fileUrl} target="_blank" rel="noopener noreferrer"
+                          className="text-amber-600 hover:underline mt-1 inline-block">
+                          Open full size ↗
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    <a
+                      href={row.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-amber-600 hover:underline flex items-center gap-1.5"
+                    >
+                      📄 {row.fileName}
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+
+        {/* Add row */}
+        <button
+          onClick={addRow}
+          className="w-full text-xs text-gray-500 hover:text-amber-700 border border-dashed border-gray-300 hover:border-amber-400 rounded-xl py-2.5 transition-colors"
+        >
+          + Add Signage Item
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function Phase2({ show, save }) {
-  const checklist    = show.phase2Checklist || {}
-  const fields       = show.phase2Fields    || {}
-  const signage      = show.signageStatus   || {}
-  const drinks       = show.drinks          || []
-  const showgrams    = show.showgrams       || {}
-  const concessions  = show.concessions     || {}
+  const checklist   = show.phase2Checklist || {}
+  const fields      = show.phase2Fields    || {}
+  const drinks      = show.drinks          || []
+  const showgrams   = show.showgrams       || {}
+  const concessions = show.concessions     || {}
 
-  // Arrays and objects that need atomic writes go direct to Firestore
+  // Build signage array — use saved data or fall back to defaults
+  const signage = (show.signage && show.signage.length > 0)
+    ? show.signage
+    : DEFAULT_SIGNAGE.map(d => ({ ...d, status: '', fileUrl: '', filePath: '', fileName: '', fileType: '' }))
+
   async function saveDirect(field, value) {
     await updateDoc(doc(db, 'shows', show.id), { [field]: value, updatedAt: serverTimestamp() })
+  }
+
+  function handleSignageChange(updated) {
+    saveDirect('signage', updated)
   }
 
   function updateDrink(i, key, val) {
@@ -102,10 +373,6 @@ export default function Phase2({ show, save }) {
 
   function updateConcessions(key, val) {
     saveDirect('concessions', { ...concessions, [key]: val })
-  }
-
-  function updateSignage(key, val) {
-    saveDirect('signageStatus', { ...signage, [key]: val })
   }
 
   return (
@@ -133,45 +400,8 @@ export default function Phase2({ show, save }) {
         <SavedTextArea label="Signage Ideas"       fieldPath="phase2Fields.signageIdeas"       initialValue={fields.signageIdeas}       save={save} />
       </div>
 
-      {/* Signage Status */}
-      <div>
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Signage Status</h3>
-        <div className="space-y-3">
-          {SIGNAGE_ITEMS.map(({ key, label }) => (
-            <div key={key} className="flex flex-wrap items-center gap-3">
-              <span className="text-sm text-gray-700 w-40 flex-shrink-0">{label}</span>
-              <div className="flex gap-2 flex-wrap">
-                {SIGNAGE_BADGES.map((badge) => (
-                  <button key={badge} onClick={() => updateSignage(key, badge)}
-                    className={`text-xs px-3 py-1 rounded-full font-medium border transition-all ${
-                      signage[key] === badge ? BADGE_COLORS[badge] : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300'
-                    }`}>
-                    {badge}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-          {/* Other row with custom label */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="w-40 flex-shrink-0">
-              <input value={signage.otherText || ''} placeholder="Other (describe)"
-                onChange={(e) => updateSignage('otherText', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400" />
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {SIGNAGE_BADGES.map((badge) => (
-                <button key={badge} onClick={() => updateSignage('other', badge)}
-                  className={`text-xs px-3 py-1 rounded-full font-medium border transition-all ${
-                    signage.other === badge ? BADGE_COLORS[badge] : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300'
-                  }`}>
-                  {badge}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Signage Tracker */}
+      <SignageSection showId={show.id} signage={signage} onSignageChange={handleSignageChange} />
 
       {/* Specialty Drinks */}
       <div>
