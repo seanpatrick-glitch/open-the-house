@@ -13,7 +13,7 @@ import toast from 'react-hot-toast'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 
-export default function FileUploads({ showId }) {
+export default function FileUploads({ showId, readOnly }) {
   const [files,          setFiles]          = useState([])
   const [uploading,      setUploading]      = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -148,28 +148,30 @@ export default function FileUploads({ showId }) {
         )}
       </div>
 
-      {/* Upload drop zone */}
-      <label htmlFor="file-upload"
-        className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-amber-400 hover:bg-amber-50 transition-all mb-6 group">
-        {uploading ? (
-          <div className="text-center px-4">
-            <div className="text-sm text-gray-600 mb-2 font-medium">Uploading… {uploadProgress}%</div>
-            <div className="w-48 bg-gray-200 rounded-full h-2 mx-auto">
-              <div className="bg-amber-500 h-2 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+      {/* Upload drop zone — admin only */}
+      {!readOnly && (
+        <label htmlFor="file-upload"
+          className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-amber-400 hover:bg-amber-50 transition-all mb-6 group">
+          {uploading ? (
+            <div className="text-center px-4">
+              <div className="text-sm text-gray-600 mb-2 font-medium">Uploading… {uploadProgress}%</div>
+              <div className="w-48 bg-gray-200 rounded-full h-2 mx-auto">
+                <div className="bg-amber-500 h-2 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="text-center">
-            <div className="text-3xl mb-1">📎</div>
-            <div className="text-sm font-medium text-gray-600 group-hover:text-amber-700 transition-colors">
-              Click to upload a file
+          ) : (
+            <div className="text-center">
+              <div className="text-3xl mb-1">📎</div>
+              <div className="text-sm font-medium text-gray-600 group-hover:text-amber-700 transition-colors">
+                Click to upload a file
+              </div>
+              <div className="text-xs text-gray-400 mt-1">PDF, JPG, PNG, and more</div>
             </div>
-            <div className="text-xs text-gray-400 mt-1">PDF, JPG, PNG, and more</div>
-          </div>
-        )}
-        <input id="file-upload" type="file" ref={fileInputRef}
-          onChange={handleUpload} disabled={uploading} className="hidden" />
-      </label>
+          )}
+          <input id="file-upload" type="file" ref={fileInputRef}
+            onChange={handleUpload} disabled={uploading} className="hidden" />
+        </label>
+      )}
 
       {/* File grid */}
       {files.length === 0 ? (
@@ -207,10 +209,12 @@ export default function FileUploads({ showId }) {
                     className="text-xs font-medium text-amber-600 hover:text-amber-700 transition-colors">
                     Open
                   </a>
-                  <button onClick={() => handleDelete(file.id, file.storagePath, file.name)}
-                    className="text-xs text-gray-400 hover:text-red-500 transition-colors">
-                    Delete
-                  </button>
+                  {!readOnly && (
+                    <button onClick={() => handleDelete(file.id, file.storagePath, file.name)}
+                      className="text-xs text-gray-400 hover:text-red-500 transition-colors">
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

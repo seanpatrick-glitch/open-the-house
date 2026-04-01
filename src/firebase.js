@@ -21,4 +21,5 @@ export const db      = getFirestore(app)   // Firestore database
 export const storage = getStorage(app)     // File storage
 export const auth    = getAuth(app)        // Authentication
 
+export { firebaseConfig }
 export default app

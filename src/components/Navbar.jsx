@@ -5,9 +5,16 @@ import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 
+const ROLE_LABELS = {
+  admin:        'Admin',
+  exec:         'Exec',
+  biz_manager:  'Biz Manager',
+  prod_manager: 'Prod Manager',
+}
+
 export default function Navbar({ title, backTo }) {
-  const { logout } = useAuth()
-  const navigate   = useNavigate()
+  const { logout, userProfile, isAdmin } = useAuth()
+  const navigate = useNavigate()
 
   async function handleLogout() {
     try {
@@ -35,13 +42,35 @@ export default function Navbar({ title, backTo }) {
           <span className="font-bold text-lg truncate max-w-xs">{title || 'Show Prep'}</span>
         </div>
 
-        {/* Right side: logout */}
-        <button
-          onClick={handleLogout}
-          className="text-sm text-gray-400 hover:text-white transition-colors ml-4 flex-shrink-0"
-        >
-          Log Out
-        </button>
+        {/* Right side: user info + admin link + logout */}
+        <div className="flex items-center gap-4 flex-shrink-0">
+          {userProfile && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-300 hidden sm:block">{userProfile.name}</span>
+              {userProfile.role && (
+                <span className="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full">
+                  {ROLE_LABELS[userProfile.role] || userProfile.role}
+                </span>
+              )}
+            </div>
+          )}
+
+          {isAdmin() && (
+            <button
+              onClick={() => navigate('/users')}
+              className="text-sm text-gray-400 hover:text-white transition-colors"
+            >
+              Users
+            </button>
+          )}
+
+          <button
+            onClick={handleLogout}
+            className="text-sm text-gray-400 hover:text-white transition-colors"
+          >
+            Log Out
+          </button>
+        </div>
       </div>
     </nav>
   )

@@ -14,25 +14,28 @@ import {
 } from '../../utils/googleCalendar'
 
 // Reusable text input that saves on its own
-function Field({ label, fieldPath, initialValue, save, type = 'text', multiline = false, colSpan = '' }) {
+function Field({ label, fieldPath, initialValue, save, type = 'text', multiline = false, colSpan = '', readOnly = false }) {
   const [value, setValue] = useState(initialValue || '')
 
   useEffect(() => { setValue(initialValue || '') }, [initialValue])
 
   function handleChange(e) {
+    if (readOnly) return
     setValue(e.target.value)
     save(fieldPath, e.target.value)
   }
 
-  const inputClass = "w-full border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 transition-shadow"
+  const inputClass = `w-full border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none transition-shadow ${
+    readOnly ? 'bg-gray-50 text-gray-600 cursor-default' : 'focus:ring-2 focus:ring-amber-400'
+  }`
 
   return (
     <div className={colSpan}>
       <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
       {multiline ? (
-        <textarea value={value} onChange={handleChange} rows={3} className={inputClass + ' resize-y'} />
+        <textarea value={value} onChange={handleChange} rows={3} readOnly={readOnly} className={inputClass + ' resize-y'} />
       ) : (
-        <input type={type} value={value} onChange={handleChange} className={inputClass} />
+        <input type={type} value={value} onChange={handleChange} readOnly={readOnly} className={inputClass} />
       )}
     </div>
   )
@@ -290,28 +293,35 @@ function CalendarSync({ show }) {
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export default function ShowInfo({ show, save }) {
+export default function ShowInfo({ show, save, readOnly }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <h2 className="text-xl font-bold text-gray-900 mb-5 pb-3 border-b border-gray-100">
         Show Information
       </h2>
 
-      {/* Logo upload at the top */}
-      <LogoUpload show={show} />
+      {/* Logo upload at the top (admin only) */}
+      {!readOnly && <LogoUpload show={show} />}
+      {readOnly && show.logoUrl && (
+        <div className="mb-6 pb-5 border-b border-gray-100 flex items-center gap-4">
+          <img src={show.logoUrl} alt="Show logo"
+            className="h-20 w-20 object-contain rounded-xl border border-gray-200 bg-gray-50 shadow-sm" />
+          <span className="text-sm text-gray-500">Show Logo</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field label="Show Title"               fieldPath="title"           initialValue={show.title}          save={save} />
-        <Field label="Opening Date"             fieldPath="openingDate"     initialValue={show.openingDate}    save={save} type="date" />
-        <Field label="Run Dates"                fieldPath="runDates"        initialValue={show.runDates}       save={save} />
-        <Field label="Director / Creative Lead" fieldPath="director"        initialValue={show.director}       save={save} />
+        <Field label="Show Title"               fieldPath="title"           initialValue={show.title}          save={save} readOnly={readOnly} />
+        <Field label="Opening Date"             fieldPath="openingDate"     initialValue={show.openingDate}    save={save} type="date" readOnly={readOnly} />
+        <Field label="Run Dates"                fieldPath="runDates"        initialValue={show.runDates}       save={save} readOnly={readOnly} />
+        <Field label="Director / Creative Lead" fieldPath="director"        initialValue={show.director}       save={save} readOnly={readOnly} />
         <Field label="Creative Vibe / Set Design Notes"
-               fieldPath="creativeVibe" initialValue={show.creativeVibe} save={save} multiline colSpan="md:col-span-2" />
+               fieldPath="creativeVibe" initialValue={show.creativeVibe} save={save} multiline colSpan="md:col-span-2" readOnly={readOnly} />
         <Field label="Special Projects (guest spellers, interactive lobby, showgrams)"
-               fieldPath="specialProjects" initialValue={show.specialProjects} save={save} multiline colSpan="md:col-span-2" />
+               fieldPath="specialProjects" initialValue={show.specialProjects} save={save} multiline colSpan="md:col-span-2" readOnly={readOnly} />
       </div>
 
-      <CalendarSync show={show} />
+      {!readOnly && <CalendarSync show={show} />}
     </div>
   )
 }

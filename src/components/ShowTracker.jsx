@@ -6,6 +6,8 @@ import { db } from '../firebase'
 import { useParams } from 'react-router-dom'
 import Navbar from './Navbar'
 import { useAutoSave } from '../hooks/useAutoSave'
+import { useAuth } from '../contexts/AuthContext'
+import SectionNotes from './SectionNotes'
 
 import ShowInfo        from './sections/ShowInfo'
 import PhaseTracker    from './sections/PhaseTracker'
@@ -39,6 +41,9 @@ export default function ShowTracker() {
   const [show,    setShow]    = useState(null)
   const [loading, setLoading] = useState(true)
   const { save, saveStatus }  = useAutoSave(showId)
+  const { isAdmin } = useAuth()
+
+  const readOnly = !isAdmin()
 
   // onSnapshot = real-time listener. Fires whenever Firestore data changes.
   useEffect(() => {
@@ -78,12 +83,23 @@ export default function ShowTracker() {
       {/* Top navbar */}
       <Navbar title={show.title || 'Show Tracker'} backTo="/dashboard" />
 
-      {/* Auto-save status bar */}
-      <div className="bg-gray-800 text-center py-1.5">
-        <span className={`text-xs font-medium ${statusBar.color}`}>
-          {statusBar.text}
-        </span>
-      </div>
+      {/* Auto-save status bar (only meaningful for admin) */}
+      {!readOnly && (
+        <div className="bg-gray-800 text-center py-1.5">
+          <span className={`text-xs font-medium ${statusBar.color}`}>
+            {statusBar.text}
+          </span>
+        </div>
+      )}
+
+      {/* Read-only banner for collaborators */}
+      {readOnly && (
+        <div className="bg-blue-700 text-center py-1.5">
+          <span className="text-xs font-medium text-blue-100">
+            View-only — use the Notes section below each area to leave comments
+          </span>
+        </div>
+      )}
 
       {/* Sticky jump navigation */}
       <div className="bg-white border-b border-gray-200 sticky top-[52px] z-10 overflow-x-auto">
@@ -102,49 +118,62 @@ export default function ShowTracker() {
 
       {/* Page content — all sections in one scroll */}
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6 pb-16">
+
         <section id="show-info">
-          <ShowInfo show={show} save={save} />
+          <ShowInfo show={show} save={save} readOnly={readOnly} />
+          <SectionNotes showId={showId} section="show-info" />
         </section>
 
         <section id="timeline">
-          <PhaseTracker show={show} save={save} />
+          <PhaseTracker show={show} save={save} readOnly={readOnly} />
+          <SectionNotes showId={showId} section="timeline" />
         </section>
 
         <section id="phase1">
-          <Phase1 show={show} save={save} />
+          <Phase1 show={show} save={save} readOnly={readOnly} />
+          <SectionNotes showId={showId} section="phase1" />
         </section>
 
         <section id="phase2">
-          <Phase2 show={show} save={save} />
+          <Phase2 show={show} save={save} readOnly={readOnly} />
+          <SectionNotes showId={showId} section="phase2" />
         </section>
 
         <section id="phase3">
-          <Phase3 show={show} save={save} />
+          <Phase3 show={show} save={save} readOnly={readOnly} />
+          <SectionNotes showId={showId} section="phase3" />
         </section>
 
         <section id="phase4">
-          <Phase4 show={show} save={save} />
+          <Phase4 show={show} save={save} readOnly={readOnly} />
+          <SectionNotes showId={showId} section="phase4" />
         </section>
 
         <section id="volunteers">
-          <Volunteers show={show} save={save} />
+          <Volunteers show={show} save={save} readOnly={readOnly} />
+          <SectionNotes showId={showId} section="volunteers" />
         </section>
 
         <section id="approvals">
-          <ApprovalsTracker show={show} save={save} />
+          <ApprovalsTracker show={show} save={save} readOnly={readOnly} />
+          <SectionNotes showId={showId} section="approvals" />
         </section>
 
         <section id="orders">
-          <OrdersTracker show={show} save={save} />
+          <OrdersTracker show={show} save={save} readOnly={readOnly} />
+          <SectionNotes showId={showId} section="orders" />
         </section>
 
         <section id="files">
-          <FileUploads showId={showId} />
+          <FileUploads showId={showId} readOnly={readOnly} />
+          <SectionNotes showId={showId} section="files" />
         </section>
 
         <section id="post-show">
-          <PostShowNotes show={show} save={save} />
+          <PostShowNotes show={show} save={save} readOnly={readOnly} />
+          <SectionNotes showId={showId} section="post-show" />
         </section>
+
       </main>
     </div>
   )

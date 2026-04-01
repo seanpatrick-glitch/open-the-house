@@ -38,46 +38,54 @@ const STATUS_COLORS = {
 
 // ── Reusable helpers ──────────────────────────────────────────────────────────
 
-function Checkbox({ label, checked, onChange }) {
+function Checkbox({ label, checked, onChange, readOnly }) {
   return (
-    <label className="flex items-start gap-3 py-2.5 cursor-pointer group select-none">
-      <input type="checkbox" checked={checked || false} onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5 w-5 h-5 accent-amber-500 cursor-pointer flex-shrink-0" />
+    <label className={`flex items-start gap-3 py-2.5 select-none ${readOnly ? 'cursor-default' : 'cursor-pointer group'}`}>
+      <input type="checkbox" checked={checked || false}
+        onChange={(e) => !readOnly && onChange(e.target.checked)}
+        disabled={readOnly}
+        className="mt-0.5 w-5 h-5 accent-amber-500 cursor-pointer flex-shrink-0 disabled:opacity-60" />
       <span className={`text-sm leading-relaxed ${checked ? 'line-through text-gray-400' : 'text-gray-700'}`}>{label}</span>
     </label>
   )
 }
 
-function SavedTextArea({ label, fieldPath, initialValue, save, rows = 3 }) {
+function SavedTextArea({ label, fieldPath, initialValue, save, rows = 3, readOnly }) {
   const [val, setVal] = useState(initialValue || '')
   useEffect(() => { setVal(initialValue || '') }, [initialValue])
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <textarea value={val} rows={rows} onChange={(e) => { setVal(e.target.value); save(fieldPath, e.target.value) }}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-y" />
+      <textarea value={val} rows={rows} readOnly={readOnly}
+        onChange={(e) => { if (!readOnly) { setVal(e.target.value); save(fieldPath, e.target.value) } }}
+        className={`w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none resize-y ${
+          readOnly ? 'bg-gray-50 text-gray-600 cursor-default' : 'focus:ring-2 focus:ring-amber-400'
+        }`} />
     </div>
   )
 }
 
-function SavedInput({ label, fieldPath, initialValue, save, placeholder = '' }) {
+function SavedInput({ label, fieldPath, initialValue, save, placeholder = '', readOnly }) {
   const [val, setVal] = useState(initialValue || '')
   useEffect(() => { setVal(initialValue || '') }, [initialValue])
   return (
     <div>
       {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
-      <input value={val} placeholder={placeholder} onChange={(e) => { setVal(e.target.value); save(fieldPath, e.target.value) }}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+      <input value={val} placeholder={placeholder} readOnly={readOnly}
+        onChange={(e) => { if (!readOnly) { setVal(e.target.value); save(fieldPath, e.target.value) } }}
+        className={`w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none ${
+          readOnly ? 'bg-gray-50 text-gray-600 cursor-default' : 'focus:ring-2 focus:ring-amber-400'
+        }`} />
     </div>
   )
 }
 
-function Toggle({ label, value, onChange }) {
+function Toggle({ label, value, onChange, readOnly }) {
   return (
     <div className="flex items-center justify-between py-2">
       <span className="text-sm text-gray-700">{label}</span>
-      <button onClick={() => onChange(!value)}
-        className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${value ? 'bg-amber-500' : 'bg-gray-300'}`}>
+      <button onClick={() => !readOnly && onChange(!value)} disabled={readOnly}
+        className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${value ? 'bg-amber-500' : 'bg-gray-300'} ${readOnly ? 'opacity-60 cursor-default' : ''}`}>
         <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${value ? 'left-7' : 'left-1'}`} />
       </button>
     </div>
@@ -86,7 +94,7 @@ function Toggle({ label, value, onChange }) {
 
 // ── Signage Tracker ───────────────────────────────────────────────────────────
 
-function SignageSection({ showId, signage, onSignageChange }) {
+function SignageSection({ showId, signage, onSignageChange, readOnly }) {
   const [uploadingId,      setUploadingId]      = useState(null)
   const [uploadProgress,   setUploadProgress]   = useState(0)
   const [zipping,          setZipping]          = useState(false)
@@ -95,10 +103,12 @@ function SignageSection({ showId, signage, onSignageChange }) {
   const uploadingRowRef = useRef(null)
 
   function updateRow(id, updates) {
+    if (readOnly) return
     onSignageChange(signage.map(row => row.id === id ? { ...row, ...updates } : row))
   }
 
   function addRow() {
+    if (readOnly) return
     onSignageChange([
       ...signage,
       { id: `custom-${Date.now()}`, label: '', status: '', fileUrl: '', filePath: '', fileName: '', fileType: '' },
@@ -106,6 +116,7 @@ function SignageSection({ showId, signage, onSignageChange }) {
   }
 
   function triggerUpload(rowId) {
+    if (readOnly) return
     uploadingRowRef.current = rowId
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -236,7 +247,7 @@ function SignageSection({ showId, signage, onSignageChange }) {
               <div className="flex flex-wrap items-center gap-2">
                 {/* Label */}
                 <div className="w-44 flex-shrink-0">
-                  {isDefault ? (
+                  {isDefault || readOnly ? (
                     <span className="text-sm font-medium text-gray-700">{row.label}</span>
                   ) : (
                     <input
@@ -253,12 +264,13 @@ function SignageSection({ showId, signage, onSignageChange }) {
                   {STATUS_STAGES.map((stage) => (
                     <button
                       key={stage}
-                      onClick={() => !isUploaded && updateRow(row.id, { status: stage })}
+                      onClick={() => !isUploaded && !readOnly && updateRow(row.id, { status: stage })}
+                      disabled={readOnly}
                       className={`text-xs px-3 py-1 rounded-full font-medium border transition-all ${
                         row.status === stage
                           ? STATUS_COLORS[stage]
-                          : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300'
-                      } ${isUploaded ? 'opacity-40 cursor-default' : 'cursor-pointer'}`}
+                          : 'bg-white text-gray-400 border-gray-200'
+                      } ${isUploaded || readOnly ? 'opacity-40 cursor-default' : 'cursor-pointer hover:border-gray-300'}`}
                     >
                       {stage}
                     </button>
@@ -270,7 +282,7 @@ function SignageSection({ showId, signage, onSignageChange }) {
                   <span className={`text-xs px-3 py-1 rounded-full font-medium border ${STATUS_COLORS['Uploaded']}`}>
                     ✓ Uploaded
                   </span>
-                ) : (
+                ) : !readOnly ? (
                   <button
                     onClick={() => triggerUpload(row.id)}
                     disabled={isUploading}
@@ -278,10 +290,10 @@ function SignageSection({ showId, signage, onSignageChange }) {
                   >
                     {isUploading ? `Uploading ${uploadProgress}%` : '↑ Upload File'}
                   </button>
-                )}
+                ) : null}
 
-                {/* Re-upload button if already uploaded */}
-                {isUploaded && (
+                {/* Re-upload button if already uploaded (admin only) */}
+                {isUploaded && !readOnly && (
                   <button
                     onClick={() => triggerUpload(row.id)}
                     disabled={isUploading}
@@ -328,13 +340,15 @@ function SignageSection({ showId, signage, onSignageChange }) {
           )
         })}
 
-        {/* Add row */}
-        <button
-          onClick={addRow}
-          className="w-full text-xs text-gray-500 hover:text-amber-700 border border-dashed border-gray-300 hover:border-amber-400 rounded-xl py-2.5 transition-colors"
-        >
-          + Add Signage Item
-        </button>
+        {/* Add row — admin only */}
+        {!readOnly && (
+          <button
+            onClick={addRow}
+            className="w-full text-xs text-gray-500 hover:text-amber-700 border border-dashed border-gray-300 hover:border-amber-400 rounded-xl py-2.5 transition-colors"
+          >
+            + Add Signage Item
+          </button>
+        )}
       </div>
     </div>
   )
@@ -342,7 +356,7 @@ function SignageSection({ showId, signage, onSignageChange }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function Phase2({ show, save }) {
+export default function Phase2({ show, save, readOnly }) {
   const checklist   = show.phase2Checklist || {}
   const fields      = show.phase2Fields    || {}
   const drinks      = show.drinks          || []
@@ -388,20 +402,20 @@ export default function Phase2({ show, save }) {
         <div className="divide-y divide-gray-50">
           {CHECKLIST.map((item, i) => (
             <Checkbox key={i} label={item} checked={checklist[`item${i}`]}
-              onChange={(v) => save(`phase2Checklist.item${i}`, v)} />
+              onChange={(v) => save(`phase2Checklist.item${i}`, v)} readOnly={readOnly} />
           ))}
         </div>
       </div>
 
       {/* Text fields */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <SavedTextArea label="Materials Available" fieldPath="phase2Fields.materialsAvailable" initialValue={fields.materialsAvailable} save={save} />
-        <SavedTextArea label="Materials Needed"    fieldPath="phase2Fields.materialsNeeded"    initialValue={fields.materialsNeeded}    save={save} />
-        <SavedTextArea label="Signage Ideas"       fieldPath="phase2Fields.signageIdeas"       initialValue={fields.signageIdeas}       save={save} />
+        <SavedTextArea label="Materials Available" fieldPath="phase2Fields.materialsAvailable" initialValue={fields.materialsAvailable} save={save} readOnly={readOnly} />
+        <SavedTextArea label="Materials Needed"    fieldPath="phase2Fields.materialsNeeded"    initialValue={fields.materialsNeeded}    save={save} readOnly={readOnly} />
+        <SavedTextArea label="Signage Ideas"       fieldPath="phase2Fields.signageIdeas"       initialValue={fields.signageIdeas}       save={save} readOnly={readOnly} />
       </div>
 
       {/* Signage Tracker */}
-      <SignageSection showId={show.id} signage={signage} onSignageChange={handleSignageChange} />
+      <SignageSection showId={show.id} signage={signage} onSignageChange={handleSignageChange} readOnly={readOnly} />
 
       {/* Specialty Drinks */}
       <div>
@@ -412,15 +426,17 @@ export default function Phase2({ show, save }) {
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Drink {i + 1}</p>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Drink Name</label>
-                <input value={drink.name || ''} onChange={(e) => updateDrink(i, 'name', e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400" />
+                <input value={drink.name || ''} readOnly={readOnly}
+                  onChange={(e) => !readOnly && updateDrink(i, 'name', e.target.value)}
+                  className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none ${readOnly ? 'bg-gray-50 text-gray-600 cursor-default' : 'focus:ring-1 focus:ring-amber-400'}`} />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Ingredients</label>
-                <textarea value={drink.ingredients || ''} rows={2} onChange={(e) => updateDrink(i, 'ingredients', e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400 resize-y" />
+                <textarea value={drink.ingredients || ''} rows={2} readOnly={readOnly}
+                  onChange={(e) => !readOnly && updateDrink(i, 'ingredients', e.target.value)}
+                  className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none resize-y ${readOnly ? 'bg-gray-50 text-gray-600 cursor-default' : 'focus:ring-1 focus:ring-amber-400'}`} />
               </div>
-              <Toggle label="Drink Menu Finalized" value={drink.menuFinalized} onChange={(v) => updateDrink(i, 'menuFinalized', v)} />
+              <Toggle label="Drink Menu Finalized" value={drink.menuFinalized} onChange={(v) => updateDrink(i, 'menuFinalized', v)} readOnly={readOnly} />
             </div>
           ))}
         </div>
@@ -430,12 +446,12 @@ export default function Phase2({ show, save }) {
       <div>
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Showgrams / Specialty Items</h3>
         <div className="border border-gray-200 rounded-xl p-4 space-y-4">
-          <SavedTextArea label="Showgram Ideas" fieldPath="showgrams.ideas" initialValue={showgrams.ideas} save={save} />
-          <SavedInput    label="Final Choice"   fieldPath="showgrams.finalChoice" initialValue={showgrams.finalChoice} save={save} />
+          <SavedTextArea label="Showgram Ideas" fieldPath="showgrams.ideas" initialValue={showgrams.ideas} save={save} readOnly={readOnly} />
+          <SavedInput    label="Final Choice"   fieldPath="showgrams.finalChoice" initialValue={showgrams.finalChoice} save={save} readOnly={readOnly} />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
-            <Toggle label="Approval Needed" value={showgrams.approvalNeeded} onChange={(v) => updateShowgrams('approvalNeeded', v)} />
-            <div className="sm:pl-4"><Toggle label="Ordered" value={showgrams.ordered} onChange={(v) => updateShowgrams('ordered', v)} /></div>
-            <div className="sm:pl-4"><Toggle label="Arrived" value={showgrams.arrived} onChange={(v) => updateShowgrams('arrived', v)} /></div>
+            <Toggle label="Approval Needed" value={showgrams.approvalNeeded} onChange={(v) => updateShowgrams('approvalNeeded', v)} readOnly={readOnly} />
+            <div className="sm:pl-4"><Toggle label="Ordered" value={showgrams.ordered} onChange={(v) => updateShowgrams('ordered', v)} readOnly={readOnly} /></div>
+            <div className="sm:pl-4"><Toggle label="Arrived" value={showgrams.arrived} onChange={(v) => updateShowgrams('arrived', v)} readOnly={readOnly} /></div>
           </div>
         </div>
       </div>
@@ -444,11 +460,11 @@ export default function Phase2({ show, save }) {
       <div>
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Concessions</h3>
         <div className="border border-gray-200 rounded-xl p-4 space-y-3">
-          <Toggle label="Inventory Check Complete" value={concessions.inventoryCheck} onChange={(v) => updateConcessions('inventoryCheck', v)} />
-          <SavedTextArea label="Items to Order" fieldPath="concessions.itemsToOrder" initialValue={concessions.itemsToOrder} save={save} />
+          <Toggle label="Inventory Check Complete" value={concessions.inventoryCheck} onChange={(v) => updateConcessions('inventoryCheck', v)} readOnly={readOnly} />
+          <SavedTextArea label="Items to Order" fieldPath="concessions.itemsToOrder" initialValue={concessions.itemsToOrder} save={save} readOnly={readOnly} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
-            <Toggle label="Ordered" value={concessions.ordered} onChange={(v) => updateConcessions('ordered', v)} />
-            <div className="sm:pl-4"><Toggle label="Arrived" value={concessions.arrived} onChange={(v) => updateConcessions('arrived', v)} /></div>
+            <Toggle label="Ordered" value={concessions.ordered} onChange={(v) => updateConcessions('ordered', v)} readOnly={readOnly} />
+            <div className="sm:pl-4"><Toggle label="Arrived" value={concessions.arrived} onChange={(v) => updateConcessions('arrived', v)} readOnly={readOnly} /></div>
           </div>
         </div>
       </div>

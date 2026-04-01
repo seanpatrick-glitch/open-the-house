@@ -7,11 +7,20 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import Login from './components/Login'
 import Dashboard from './components/Dashboard'
 import ShowTracker from './components/ShowTracker'
+import UserManagement from './components/UserManagement'
 
 // ProtectedRoute: only logged-in users can see this screen
 function ProtectedRoute({ children }) {
   const { currentUser } = useAuth()
   return currentUser ? children : <Navigate to="/" replace />
+}
+
+// AdminRoute: only admin users can see this screen
+function AdminRoute({ children }) {
+  const { currentUser, isAdmin } = useAuth()
+  if (!currentUser) return <Navigate to="/" replace />
+  if (!isAdmin())   return <Navigate to="/dashboard" replace />
+  return children
 }
 
 // PublicRoute: if you're already logged in, skip the login page
@@ -30,6 +39,7 @@ export default function App() {
           <Route path="/"          element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/show/:showId" element={<ProtectedRoute><ShowTracker /></ProtectedRoute>} />
+          <Route path="/users"     element={<AdminRoute><UserManagement /></AdminRoute>} />
           <Route path="*"          element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

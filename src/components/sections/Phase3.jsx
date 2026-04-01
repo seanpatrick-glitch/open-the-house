@@ -10,19 +10,21 @@ const CHECKLIST = [
   'Shop or order remaining needs',
 ]
 
-function Checkbox({ label, checked, onChange }) {
+function Checkbox({ label, checked, onChange, readOnly }) {
   return (
-    <label className="flex items-start gap-3 py-2.5 cursor-pointer group select-none">
-      <input type="checkbox" checked={checked || false} onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5 w-5 h-5 accent-amber-500 cursor-pointer flex-shrink-0" />
-      <span className={`text-sm leading-relaxed ${checked ? 'line-through text-gray-400' : 'text-gray-700 group-hover:text-gray-900'}`}>
+    <label className={`flex items-start gap-3 py-2.5 select-none ${readOnly ? 'cursor-default' : 'cursor-pointer group'}`}>
+      <input type="checkbox" checked={checked || false}
+        onChange={(e) => !readOnly && onChange(e.target.checked)}
+        disabled={readOnly}
+        className="mt-0.5 w-5 h-5 accent-amber-500 cursor-pointer flex-shrink-0 disabled:opacity-60" />
+      <span className={`text-sm leading-relaxed ${checked ? 'line-through text-gray-400' : 'text-gray-700'}`}>
         {label}
       </span>
     </label>
   )
 }
 
-export default function Phase3({ show, save }) {
+export default function Phase3({ show, save, readOnly }) {
   const checklist = show.phase3Checklist || {}
 
   return (
@@ -35,7 +37,7 @@ export default function Phase3({ show, save }) {
       <div className="divide-y divide-gray-50">
         {CHECKLIST.map((item, i) => (
           <Checkbox key={i} label={item} checked={checklist[`item${i}`]}
-            onChange={(v) => save(`phase3Checklist.item${i}`, v)} />
+            onChange={(v) => save(`phase3Checklist.item${i}`, v)} readOnly={readOnly} />
         ))}
       </div>
     </div>

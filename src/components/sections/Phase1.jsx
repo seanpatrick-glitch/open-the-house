@@ -11,17 +11,18 @@ const CHECKLIST = [
   'Watch for reusable materials',
 ]
 
-function Checkbox({ label, checked, onChange }) {
+function Checkbox({ label, checked, onChange, readOnly }) {
   return (
-    <label className="flex items-start gap-3 py-2.5 cursor-pointer group select-none">
+    <label className={`flex items-start gap-3 py-2.5 select-none ${readOnly ? 'cursor-default' : 'cursor-pointer group'}`}>
       <input
         type="checkbox"
         checked={checked || false}
-        onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5 w-5 h-5 accent-amber-500 cursor-pointer flex-shrink-0"
+        onChange={(e) => !readOnly && onChange(e.target.checked)}
+        disabled={readOnly}
+        className="mt-0.5 w-5 h-5 accent-amber-500 flex-shrink-0 disabled:opacity-60"
       />
       <span className={`text-sm leading-relaxed transition-colors ${
-        checked ? 'line-through text-gray-400' : 'text-gray-700 group-hover:text-gray-900'
+        checked ? 'line-through text-gray-400' : 'text-gray-700'
       }`}>
         {label}
       </span>
@@ -29,24 +30,31 @@ function Checkbox({ label, checked, onChange }) {
   )
 }
 
-function TextArea({ label, fieldPath, initialValue, save }) {
+function TextArea({ label, fieldPath, initialValue, save, readOnly }) {
   const [value, setValue] = useState(initialValue || '')
   useEffect(() => { setValue(initialValue || '') }, [initialValue])
-  function handleChange(e) { setValue(e.target.value); save(fieldPath, e.target.value) }
+  function handleChange(e) {
+    if (readOnly) return
+    setValue(e.target.value)
+    save(fieldPath, e.target.value)
+  }
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <textarea value={value} onChange={handleChange} rows={3}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-y" />
+      <textarea value={value} onChange={handleChange} rows={3} readOnly={readOnly}
+        className={`w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none resize-y ${
+          readOnly ? 'bg-gray-50 text-gray-600 cursor-default' : 'focus:ring-2 focus:ring-amber-400'
+        }`} />
     </div>
   )
 }
 
-export default function Phase1({ show, save }) {
+export default function Phase1({ show, save, readOnly }) {
   const checklist = show.phase1Checklist || {}
   const fields    = show.phase1Fields    || {}
 
   function updateChecklist(index, val) {
+    if (readOnly) return
     save(`phase1Checklist.item${index}`, val)
   }
 
@@ -62,17 +70,18 @@ export default function Phase1({ show, save }) {
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1">Checklist</h3>
         <div className="divide-y divide-gray-50">
           {CHECKLIST.map((item, i) => (
-            <Checkbox key={i} label={item} checked={checklist[`item${i}`]} onChange={(v) => updateChecklist(i, v)} />
+            <Checkbox key={i} label={item} checked={checklist[`item${i}`]}
+              onChange={(v) => updateChecklist(i, v)} readOnly={readOnly} />
           ))}
         </div>
       </div>
 
       {/* Text fields */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <TextArea label="Lobby Concept / Theme"              fieldPath="phase1Fields.lobbyConcept"       initialValue={fields.lobbyConcept}       save={save} />
-        <TextArea label="Interactive Elements / Photo Op Ideas" fieldPath="phase1Fields.interactiveElements" initialValue={fields.interactiveElements} save={save} />
-        <TextArea label="Build Materials to Watch For"       fieldPath="phase1Fields.buildMaterials"     initialValue={fields.buildMaterials}     save={save} />
-        <TextArea label="Volunteer Needs Notes"              fieldPath="phase1Fields.volunteerNotes"     initialValue={fields.volunteerNotes}     save={save} />
+        <TextArea label="Lobby Concept / Theme"                fieldPath="phase1Fields.lobbyConcept"        initialValue={fields.lobbyConcept}        save={save} readOnly={readOnly} />
+        <TextArea label="Interactive Elements / Photo Op Ideas" fieldPath="phase1Fields.interactiveElements" initialValue={fields.interactiveElements} save={save} readOnly={readOnly} />
+        <TextArea label="Build Materials to Watch For"         fieldPath="phase1Fields.buildMaterials"      initialValue={fields.buildMaterials}      save={save} readOnly={readOnly} />
+        <TextArea label="Volunteer Needs Notes"                fieldPath="phase1Fields.volunteerNotes"      initialValue={fields.volunteerNotes}      save={save} readOnly={readOnly} />
       </div>
     </div>
   )

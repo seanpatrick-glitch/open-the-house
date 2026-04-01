@@ -11,11 +11,12 @@ const PHASES = [
   { num: 4, label: 'Install Week',              sub: '1 Week Out' },
 ]
 
-export default function PhaseTracker({ show, save }) {
+export default function PhaseTracker({ show, save, readOnly }) {
   const current    = show.currentPhase   || 1
   const startDates = show.phaseStartDates || {}
 
   async function setPhase(num) {
+    if (readOnly) return
     const today = new Date().toLocaleDateString('en-US', {
       month: 'short', day: 'numeric', year: 'numeric'
     })
@@ -47,9 +48,11 @@ export default function PhaseTracker({ show, save }) {
             <button
               key={phase.num}
               onClick={() => setPhase(phase.num)}
+              disabled={readOnly}
               className={`flex-1 rounded-xl border-2 p-4 text-left transition-all ${
                 isCurrent ? 'border-amber-500 bg-amber-50 shadow-sm'
                 : isPast  ? 'border-green-300 bg-green-50'
+                : readOnly ? 'border-gray-200 bg-white cursor-default'
                 :            'border-gray-200 bg-white hover:border-amber-200 hover:bg-amber-50/30'
               }`}
             >
@@ -80,9 +83,11 @@ export default function PhaseTracker({ show, save }) {
         })}
       </div>
 
-      <p className="text-xs text-gray-400 mt-4">
-        Click any phase to mark it active. Start dates are recorded automatically.
-      </p>
+      {!readOnly && (
+        <p className="text-xs text-gray-400 mt-4">
+          Click any phase to mark it active. Start dates are recorded automatically.
+        </p>
+      )}
     </div>
   )
 }

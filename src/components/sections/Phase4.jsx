@@ -10,36 +10,44 @@ const CHECKLIST = [
   'Concessions ready',
 ]
 
-function Checkbox({ label, checked, onChange }) {
+function Checkbox({ label, checked, onChange, readOnly }) {
   return (
-    <label className="flex items-start gap-3 py-2.5 cursor-pointer group select-none">
-      <input type="checkbox" checked={checked || false} onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5 w-5 h-5 accent-amber-500 cursor-pointer flex-shrink-0" />
-      <span className={`text-sm leading-relaxed ${checked ? 'line-through text-gray-400' : 'text-gray-700 group-hover:text-gray-900'}`}>
+    <label className={`flex items-start gap-3 py-2.5 select-none ${readOnly ? 'cursor-default' : 'cursor-pointer group'}`}>
+      <input type="checkbox" checked={checked || false}
+        onChange={(e) => !readOnly && onChange(e.target.checked)}
+        disabled={readOnly}
+        className="mt-0.5 w-5 h-5 accent-amber-500 cursor-pointer flex-shrink-0 disabled:opacity-60" />
+      <span className={`text-sm leading-relaxed ${checked ? 'line-through text-gray-400' : 'text-gray-700'}`}>
         {label}
       </span>
     </label>
   )
 }
 
-function SavedField({ label, note, fieldPath, initialValue, save, multiline = false }) {
+function SavedField({ label, note, fieldPath, initialValue, save, multiline = false, readOnly }) {
   const [val, setVal] = useState(initialValue || '')
   useEffect(() => { setVal(initialValue || '') }, [initialValue])
-  const cls = "w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+  const baseCls = "w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none"
+  const editCls = "focus:ring-2 focus:ring-amber-400"
+  const roCls   = "bg-gray-50 text-gray-600 cursor-default"
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">
         {label} {note && <span className="text-gray-400 font-normal text-xs">({note})</span>}
       </label>
       {multiline
-        ? <textarea value={val} rows={4} onChange={(e) => { setVal(e.target.value); save(fieldPath, e.target.value) }} className={cls + ' resize-y'} />
-        : <input    value={val}          onChange={(e) => { setVal(e.target.value); save(fieldPath, e.target.value) }} className={cls} />
+        ? <textarea value={val} rows={4} readOnly={readOnly}
+            onChange={(e) => { if (!readOnly) { setVal(e.target.value); save(fieldPath, e.target.value) } }}
+            className={`${baseCls} resize-y ${readOnly ? roCls : editCls}`} />
+        : <input value={val} readOnly={readOnly}
+            onChange={(e) => { if (!readOnly) { setVal(e.target.value); save(fieldPath, e.target.value) } }}
+            className={`${baseCls} ${readOnly ? roCls : editCls}`} />
       }
     </div>
   )
 }
 
-export default function Phase4({ show, save }) {
+export default function Phase4({ show, save, readOnly }) {
   const checklist = show.phase4Checklist || {}
   const fields    = show.phase4Fields    || {}
 
@@ -55,7 +63,7 @@ export default function Phase4({ show, save }) {
         <div className="divide-y divide-gray-50">
           {CHECKLIST.map((item, i) => (
             <Checkbox key={i} label={item} checked={checklist[`item${i}`]}
-              onChange={(v) => save(`phase4Checklist.item${i}`, v)} />
+              onChange={(v) => save(`phase4Checklist.item${i}`, v)} readOnly={readOnly} />
           ))}
         </div>
       </div>
@@ -67,6 +75,7 @@ export default function Phase4({ show, save }) {
           fieldPath="phase4Fields.installDays"
           initialValue={fields.installDays}
           save={save}
+          readOnly={readOnly}
         />
         <SavedField
           label="Install Notes"
@@ -74,6 +83,7 @@ export default function Phase4({ show, save }) {
           initialValue={fields.installNotes}
           save={save}
           multiline
+          readOnly={readOnly}
         />
       </div>
     </div>
