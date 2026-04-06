@@ -15,6 +15,7 @@ import Phase1          from './sections/Phase1'
 import Phase2          from './sections/Phase2'
 import Phase3          from './sections/Phase3'
 import Phase4          from './sections/Phase4'
+import FinalDressPlan   from './sections/FinalDressPlan'
 import ApprovalsTracker from './sections/ApprovalsTracker'
 import OrdersTracker   from './sections/OrdersTracker'
 import TodoList        from './sections/TodoList'
@@ -27,8 +28,9 @@ const NAV_LINKS = [
   ['#phase1',     'Phase 1'],
   ['#phase2',     'Phase 2'],
   ['#phase3',     'Phase 3'],
-  ['#phase4',     'Phase 4'],
-  ['#approvals',  'Approvals'],
+  ['#phase4',      'Phase 4'],
+  ['#final-dress', 'Final Dress'],
+  ['#approvals',   'Approvals'],
   ['#orders',     'Orders'],
   ['#todos',      'To Do'],
   ['#post-show',  'Post-Show'],
@@ -145,6 +147,11 @@ export default function ShowTracker() {
         <section id="phase4">
           <Phase4 show={show} save={save} readOnly={readOnly} />
           <SectionNotes showId={showId} section="phase4" />
+        </section>
+
+        <section id="final-dress">
+          <FinalDressPlan show={show} save={save} readOnly={readOnly} />
+          <SectionNotes showId={showId} section="final-dress" />
         </section>
 
         <section id="approvals">
