@@ -45,10 +45,9 @@ function newShowData() {
     logoUrl:  '',
     logoPath: '',
     drinks: [
-      { name: '', ingredients: '', menuFinalized: false },
-      { name: '', ingredients: '', menuFinalized: false },
-      { name: '', ingredients: '', menuFinalized: false },
-      { name: '', ingredients: '', menuFinalized: false },
+      { name: '', ingredients: '', instructions: '', menuVerbiage: '', finalized: false, drinkType: 'alcoholic' },
+      { name: '', ingredients: '', instructions: '', menuVerbiage: '', finalized: false, drinkType: 'alcoholic' },
+      { name: '', ingredients: '', instructions: '', menuVerbiage: '', finalized: false, drinkType: 'mocktail'  },
     ],
     showgrams:   { ideas: '', finalChoice: '', approvalNeeded: false, ordered: false, arrived: false },
     concessions: { inventoryCheck: false, itemsToOrder: '', ordered: false, arrived: false },

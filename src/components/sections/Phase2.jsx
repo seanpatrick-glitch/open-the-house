@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
+import { ref, uploadBytesResumable, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../../firebase'
 import toast from 'react-hot-toast'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
+import jsPDF from 'jspdf'
 
 const CHECKLIST = [
   'Check available materials for builds',
@@ -25,7 +26,8 @@ const DEFAULT_SIGNAGE = [
   { id: 'showgram-tags',       label: 'Showgram Tags' },
 ]
 
-const DEFAULT_SIGNAGE_IDS = new Set(DEFAULT_SIGNAGE.map(d => d.id))
+// 'volunteer-bar-guide' is also treated as a default (read-only label, auto-generated)
+const DEFAULT_SIGNAGE_IDS = new Set([...DEFAULT_SIGNAGE.map(d => d.id), 'volunteer-bar-guide'])
 
 const STATUS_STAGES = ['Conceptualized', 'Design in Progress', 'Design Complete']
 
@@ -34,6 +36,28 @@ const STATUS_COLORS = {
   'Design in Progress': 'bg-blue-100 text-blue-700 border-blue-300',
   'Design Complete':    'bg-purple-100 text-purple-700 border-purple-300',
   'Uploaded':           'bg-green-100 text-green-700 border-green-300',
+}
+
+// Fixed drink slots: 2 alcoholic, 1 mocktail
+const DRINK_SLOTS = [
+  { type: 'alcoholic', label: 'Alcoholic' },
+  { type: 'alcoholic', label: 'Alcoholic' },
+  { type: 'mocktail',  label: 'Mocktail'  },
+]
+
+// Migrate old drink data (4 drinks, menuFinalized field) to new schema
+function normalizeDrinks(raw) {
+  return DRINK_SLOTS.map((slot, i) => {
+    const d = raw[i] || {}
+    return {
+      name:         d.name         || '',
+      ingredients:  d.ingredients  || '',
+      instructions: d.instructions || '',
+      menuVerbiage: d.menuVerbiage || '',
+      finalized:    d.finalized ?? d.menuFinalized ?? false,
+      drinkType:    slot.type,
+    }
+  })
 }
 
 // ── Reusable helpers ──────────────────────────────────────────────────────────
@@ -98,7 +122,7 @@ function SignageSection({ showId, signage, onSignageChange, readOnly }) {
   const [uploadingId,      setUploadingId]      = useState(null)
   const [uploadProgress,   setUploadProgress]   = useState(0)
   const [zipping,          setZipping]          = useState(false)
-  const [previewUrl,       setPreviewUrl]        = useState(null) // lightbox
+  const [previewUrl,       setPreviewUrl]        = useState(null)
   const fileInputRef    = useRef(null)
   const uploadingRowRef = useRef(null)
 
@@ -236,19 +260,25 @@ function SignageSection({ showId, signage, onSignageChange, readOnly }) {
 
       <div className="space-y-2">
         {signage.map((row) => {
-          const isDefault    = DEFAULT_SIGNAGE_IDS.has(row.id)
-          const isUploading  = uploadingId === row.id
-          const isUploaded   = !!row.fileUrl
-          const isImage      = row.fileType && row.fileType.startsWith('image/')
+          const isDefault   = DEFAULT_SIGNAGE_IDS.has(row.id)
+          const isBarGuide  = row.id === 'volunteer-bar-guide'
+          const isUploading = uploadingId === row.id
+          const isUploaded  = !!row.fileUrl
+          const isImage     = row.fileType && row.fileType.startsWith('image/')
 
           return (
-            <div key={row.id} className="border border-gray-200 rounded-xl p-3 bg-white">
+            <div key={row.id} className={`border rounded-xl p-3 bg-white ${isBarGuide ? 'border-amber-200 bg-amber-50/30' : 'border-gray-200'}`}>
               {/* Row controls */}
               <div className="flex flex-wrap items-center gap-2">
                 {/* Label */}
                 <div className="w-44 flex-shrink-0">
                   {isDefault || readOnly ? (
-                    <span className="text-sm font-medium text-gray-700">{row.label}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-medium text-gray-700">{row.label}</span>
+                      {isBarGuide && (
+                        <span className="text-xs bg-amber-100 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded-full font-medium">Auto</span>
+                      )}
+                    </div>
                   ) : (
                     <input
                       value={row.label}
@@ -259,30 +289,32 @@ function SignageSection({ showId, signage, onSignageChange, readOnly }) {
                   )}
                 </div>
 
-                {/* Status stage buttons */}
-                <div className="flex gap-1.5 flex-wrap">
-                  {STATUS_STAGES.map((stage) => (
-                    <button
-                      key={stage}
-                      onClick={() => !isUploaded && !readOnly && updateRow(row.id, { status: stage })}
-                      disabled={readOnly}
-                      className={`text-xs px-3 py-1 rounded-full font-medium border transition-all ${
-                        row.status === stage
-                          ? STATUS_COLORS[stage]
-                          : 'bg-white text-gray-400 border-gray-200'
-                      } ${isUploaded || readOnly ? 'opacity-40 cursor-default' : 'cursor-pointer hover:border-gray-300'}`}
-                    >
-                      {stage}
-                    </button>
-                  ))}
-                </div>
+                {/* Status stage buttons — not shown for bar guide */}
+                {!isBarGuide && (
+                  <div className="flex gap-1.5 flex-wrap">
+                    {STATUS_STAGES.map((stage) => (
+                      <button
+                        key={stage}
+                        onClick={() => !isUploaded && !readOnly && updateRow(row.id, { status: stage })}
+                        disabled={readOnly}
+                        className={`text-xs px-3 py-1 rounded-full font-medium border transition-all ${
+                          row.status === stage
+                            ? STATUS_COLORS[stage]
+                            : 'bg-white text-gray-400 border-gray-200'
+                        } ${isUploaded || readOnly ? 'opacity-40 cursor-default' : 'cursor-pointer hover:border-gray-300'}`}
+                      >
+                        {stage}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* Upload / Uploaded badge */}
                 {isUploaded ? (
                   <span className={`text-xs px-3 py-1 rounded-full font-medium border ${STATUS_COLORS['Uploaded']}`}>
-                    ✓ Uploaded
+                    ✓ {isBarGuide ? 'Generated' : 'Uploaded'}
                   </span>
-                ) : !readOnly ? (
+                ) : !readOnly && !isBarGuide ? (
                   <button
                     onClick={() => triggerUpload(row.id)}
                     disabled={isUploading}
@@ -290,10 +322,12 @@ function SignageSection({ showId, signage, onSignageChange, readOnly }) {
                   >
                     {isUploading ? `Uploading ${uploadProgress}%` : '↑ Upload File'}
                   </button>
+                ) : isBarGuide && !isUploaded ? (
+                  <span className="text-xs text-gray-400 italic">Pending drink finalization…</span>
                 ) : null}
 
-                {/* Re-upload button if already uploaded (admin only) */}
-                {isUploaded && !readOnly && (
+                {/* Re-upload button if already uploaded (admin only, not bar guide) */}
+                {isUploaded && !readOnly && !isBarGuide && (
                   <button
                     onClick={() => triggerUpload(row.id)}
                     disabled={isUploading}
@@ -359,9 +393,15 @@ function SignageSection({ showId, signage, onSignageChange, readOnly }) {
 export default function Phase2({ show, save, readOnly }) {
   const checklist   = show.phase2Checklist || {}
   const fields      = show.phase2Fields    || {}
-  const drinks      = show.drinks          || []
   const showgrams   = show.showgrams       || {}
   const concessions = show.concessions     || {}
+
+  // Normalize drinks to always be exactly 3 with the right shape
+  const drinks = normalizeDrinks(show.drinks || [])
+
+  const allFinalized = drinks.every(d => d.finalized)
+  const [barGuideGenerating, setBarGuideGenerating] = useState(false)
+  const prevAllFinalizedRef = useRef(false)
 
   // Build signage array — use saved data or fall back to defaults
   const signage = (show.signage && show.signage.length > 0)
@@ -388,6 +428,166 @@ export default function Phase2({ show, save, readOnly }) {
   function updateConcessions(key, val) {
     saveDirect('concessions', { ...concessions, [key]: val })
   }
+
+  async function generateBarGuide() {
+    if (barGuideGenerating) return
+    setBarGuideGenerating(true)
+    toast('Generating Volunteer Bar Guide PDF…')
+
+    try {
+      const pdf = new jsPDF({ unit: 'pt', format: 'letter' })
+      const pageWidth    = 612
+      const margin       = 72
+      const contentWidth = pageWidth - margin * 2
+
+      // ── Header band ──────────────────────────────────────────────────────
+      pdf.setFillColor(180, 83, 9) // amber-800
+      pdf.rect(0, 0, pageWidth, 88, 'F')
+
+      pdf.setTextColor(255, 255, 255)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(24)
+      pdf.text('Volunteer Bar Guide', margin, 44)
+
+      pdf.setFontSize(11)
+      pdf.setFont('helvetica', 'normal')
+      pdf.text(show.title || 'Show', margin, 64)
+
+      pdf.setFontSize(9)
+      pdf.setTextColor(255, 220, 160)
+      pdf.text('For volunteer use only — keep at the bar station during the show', margin, 80)
+
+      // ── Drinks ───────────────────────────────────────────────────────────
+      pdf.setTextColor(20, 20, 20)
+      let y = 118
+
+      drinks.forEach((drink, i) => {
+        const slot      = DRINK_SLOTS[i]
+        const drinkName = drink.name || `Drink ${i + 1}`
+
+        // Page break check
+        if (y > 680) { pdf.addPage(); y = 60 }
+
+        // Type badge line
+        pdf.setFontSize(8)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setTextColor(slot.type === 'mocktail' ? 13 : 88, slot.type === 'mocktail' ? 148 : 28, slot.type === 'mocktail' ? 136 : 148)
+        pdf.text(`— ${slot.label.toUpperCase()} —`, margin, y)
+        y += 16
+
+        // Drink name
+        pdf.setFontSize(18)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setTextColor(20, 20, 20)
+        pdf.text(drinkName, margin, y)
+        y += 26
+
+        // Ingredients
+        pdf.setFontSize(8)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setTextColor(120, 80, 0)
+        pdf.text('INGREDIENTS', margin, y)
+        y += 13
+
+        pdf.setFont('helvetica', 'normal')
+        pdf.setFontSize(10)
+        pdf.setTextColor(40, 40, 40)
+        const ingLines = pdf.splitTextToSize(drink.ingredients || '—', contentWidth)
+        ingLines.forEach(line => {
+          if (y > 720) { pdf.addPage(); y = 60 }
+          pdf.text(line, margin, y)
+          y += 14
+        })
+        y += 10
+
+        // Instructions
+        pdf.setFontSize(8)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setTextColor(120, 80, 0)
+        pdf.text('INSTRUCTIONS', margin, y)
+        y += 13
+
+        pdf.setFont('helvetica', 'normal')
+        pdf.setFontSize(10)
+        pdf.setTextColor(40, 40, 40)
+        const instLines = pdf.splitTextToSize(drink.instructions || '—', contentWidth)
+        instLines.forEach(line => {
+          if (y > 720) { pdf.addPage(); y = 60 }
+          pdf.text(line, margin, y)
+          y += 14
+        })
+        y += 20
+
+        // Divider between drinks
+        if (i < drinks.length - 1) {
+          if (y > 720) { pdf.addPage(); y = 60 }
+          pdf.setDrawColor(210, 210, 210)
+          pdf.setLineWidth(0.75)
+          pdf.line(margin, y, pageWidth - margin, y)
+          y += 28
+        }
+      })
+
+      // ── Footer ────────────────────────────────────────────────────────────
+      const totalPages = pdf.getNumberOfPages()
+      for (let p = 1; p <= totalPages; p++) {
+        pdf.setPage(p)
+        pdf.setFontSize(8)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(170, 170, 170)
+        pdf.text(`${show.title || 'Show'} — Volunteer Bar Guide`, margin, 780)
+        pdf.text(`Page ${p} of ${totalPages}`, pageWidth - margin, 780, { align: 'right' })
+      }
+
+      const pdfBlob = pdf.output('blob')
+
+      // Upload to Firebase Storage
+      const path      = `shows/${show.id}/barguide/volunteer-bar-guide.pdf`
+      const fileRef   = ref(storage, path)
+      await uploadBytes(fileRef, pdfBlob, { contentType: 'application/pdf' })
+      const downloadUrl = await getDownloadURL(fileRef)
+
+      // Add or update the volunteer-bar-guide entry in the signage array
+      const existingIdx = signage.findIndex(r => r.id === 'volunteer-bar-guide')
+      let updatedSignage
+      if (existingIdx >= 0) {
+        updatedSignage = signage.map((r, idx) =>
+          idx === existingIdx
+            ? { ...r, fileUrl: downloadUrl, filePath: path, fileName: 'Volunteer Bar Guide.pdf', fileType: 'application/pdf', status: 'Uploaded' }
+            : r
+        )
+      } else {
+        updatedSignage = [
+          ...signage,
+          {
+            id:       'volunteer-bar-guide',
+            label:    'Volunteer Bar Guide',
+            status:   'Uploaded',
+            fileUrl:  downloadUrl,
+            filePath: path,
+            fileName: 'Volunteer Bar Guide.pdf',
+            fileType: 'application/pdf',
+          },
+        ]
+      }
+      await saveDirect('signage', updatedSignage)
+
+      toast.success('Bar Guide generated — find it in Signage Tracker!')
+    } catch (err) {
+      console.error(err)
+      toast.error('Could not generate Bar Guide PDF.')
+    }
+
+    setBarGuideGenerating(false)
+  }
+
+  // Auto-generate when all 3 drinks become finalized for the first time
+  useEffect(() => {
+    if (allFinalized && !prevAllFinalizedRef.current && !readOnly) {
+      generateBarGuide()
+    }
+    prevAllFinalizedRef.current = allFinalized
+  }, [allFinalized]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-7">
@@ -419,26 +619,118 @@ export default function Phase2({ show, save, readOnly }) {
 
       {/* Specialty Drinks */}
       <div>
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Specialty Drinks (up to 4)</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {(drinks.length > 0 ? drinks : [{},{},{},{}]).map((drink, i) => (
-            <div key={i} className="border border-gray-200 rounded-xl p-4 space-y-3">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Drink {i + 1}</p>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Drink Name</label>
-                <input value={drink.name || ''} readOnly={readOnly}
-                  onChange={(e) => !readOnly && updateDrink(i, 'name', e.target.value)}
-                  className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none ${readOnly ? 'bg-gray-50 text-gray-600 cursor-default' : 'focus:ring-1 focus:ring-amber-400'}`} />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Ingredients</label>
-                <textarea value={drink.ingredients || ''} rows={2} readOnly={readOnly}
-                  onChange={(e) => !readOnly && updateDrink(i, 'ingredients', e.target.value)}
-                  className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none resize-y ${readOnly ? 'bg-gray-50 text-gray-600 cursor-default' : 'focus:ring-1 focus:ring-amber-400'}`} />
-              </div>
-              <Toggle label="Drink Menu Finalized" value={drink.menuFinalized} onChange={(v) => updateDrink(i, 'menuFinalized', v)} readOnly={readOnly} />
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Specialty Drinks</h3>
+          {allFinalized ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs bg-green-100 text-green-700 border border-green-300 px-3 py-1 rounded-full font-medium">
+                ✓ All Finalized
+              </span>
+              {!readOnly && (
+                <button
+                  onClick={generateBarGuide}
+                  disabled={barGuideGenerating}
+                  className="text-xs bg-amber-700 hover:bg-amber-800 text-white font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {barGuideGenerating ? 'Generating…' : '↻ Regenerate Bar Guide'}
+                </button>
+              )}
             </div>
-          ))}
+          ) : (
+            <span className="text-xs text-gray-400">
+              {drinks.filter(d => d.finalized).length}/3 finalized
+            </span>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 gap-5">
+          {DRINK_SLOTS.map((slot, i) => {
+            const drink = drinks[i]
+            return (
+              <div key={i} className="border border-gray-200 rounded-xl p-4 space-y-3">
+                {/* Card header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Drink {i + 1}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold border ${
+                      slot.type === 'mocktail'
+                        ? 'bg-teal-50 text-teal-700 border-teal-200'
+                        : 'bg-purple-50 text-purple-700 border-purple-200'
+                    }`}>
+                      {slot.label}
+                    </span>
+                  </div>
+                  {drink.finalized && (
+                    <span className="text-xs font-semibold text-green-600">✓ Finalized</span>
+                  )}
+                </div>
+
+                {/* Drink Name */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Drink Name</label>
+                  <input
+                    value={drink.name}
+                    readOnly={readOnly}
+                    onChange={(e) => !readOnly && updateDrink(i, 'name', e.target.value)}
+                    className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none ${
+                      readOnly ? 'bg-gray-50 text-gray-600 cursor-default' : 'focus:ring-1 focus:ring-amber-400'
+                    }`}
+                  />
+                </div>
+
+                {/* Ingredients */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Ingredients</label>
+                  <textarea
+                    value={drink.ingredients}
+                    rows={3}
+                    readOnly={readOnly}
+                    onChange={(e) => !readOnly && updateDrink(i, 'ingredients', e.target.value)}
+                    className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none resize-y ${
+                      readOnly ? 'bg-gray-50 text-gray-600 cursor-default' : 'focus:ring-1 focus:ring-amber-400'
+                    }`}
+                  />
+                </div>
+
+                {/* Instructions */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Instructions</label>
+                  <textarea
+                    value={drink.instructions}
+                    rows={4}
+                    readOnly={readOnly}
+                    onChange={(e) => !readOnly && updateDrink(i, 'instructions', e.target.value)}
+                    placeholder={readOnly ? '' : 'Step-by-step instructions for making this drink…'}
+                    className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none resize-y ${
+                      readOnly ? 'bg-gray-50 text-gray-600 cursor-default' : 'focus:ring-1 focus:ring-amber-400'
+                    }`}
+                  />
+                </div>
+
+                {/* Menu Verbiage */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Menu Verbiage</label>
+                  <textarea
+                    value={drink.menuVerbiage}
+                    rows={2}
+                    readOnly={readOnly}
+                    onChange={(e) => !readOnly && updateDrink(i, 'menuVerbiage', e.target.value)}
+                    placeholder={readOnly ? '' : 'Fancy description for the drink menu sign…'}
+                    className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none resize-y ${
+                      readOnly ? 'bg-gray-50 text-gray-600 cursor-default' : 'focus:ring-1 focus:ring-amber-400'
+                    }`}
+                  />
+                </div>
+
+                <Toggle
+                  label="Finalized"
+                  value={drink.finalized}
+                  onChange={(v) => updateDrink(i, 'finalized', v)}
+                  readOnly={readOnly}
+                />
+              </div>
+            )
+          })}
         </div>
       </div>
 

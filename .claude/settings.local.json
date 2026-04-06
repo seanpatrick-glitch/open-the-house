@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /c/Users/Other/\"Tsp Prep\")",
+      "Bash(grep -r \"barGuide\\\\|bar guide\\\\|BAR_GUIDE\\\\|PDF\\\\|pdf\\\\|generate.*pdf\\\\|pdfkit\\\\|jspdf\" /c/Users/Other/Tsp Prep/src --include=*.js --include=*.jsx --include=*.ts --include=*.tsx)",
+      "Bash(find /c/Users/Other/Tsp Prep/src -type f \\\\\\( -name \"*.jsx\" -o -name \"*.js\" -o -name \"*.tsx\" -o -name \"*.ts\" \\\\\\) -exec wc -l {} +)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)"
+    ]
+  }
+}
