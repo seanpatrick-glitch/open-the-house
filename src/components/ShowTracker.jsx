@@ -15,25 +15,23 @@ import Phase1          from './sections/Phase1'
 import Phase2          from './sections/Phase2'
 import Phase3          from './sections/Phase3'
 import Phase4          from './sections/Phase4'
-import Volunteers      from './sections/Volunteers'
 import ApprovalsTracker from './sections/ApprovalsTracker'
 import OrdersTracker   from './sections/OrdersTracker'
-import FileUploads     from './sections/FileUploads'
+import TodoList        from './sections/TodoList'
 import PostShowNotes   from './sections/PostShowNotes'
 
 // Jump-nav links for quick scrolling to any section
 const NAV_LINKS = [
-  ['#show-info',   'Show Info'],
-  ['#timeline',    'Timeline'],
-  ['#phase1',      'Phase 1'],
-  ['#phase2',      'Phase 2'],
-  ['#phase3',      'Phase 3'],
-  ['#phase4',      'Phase 4'],
-  ['#volunteers',  'Volunteers'],
-  ['#approvals',   'Approvals'],
-  ['#orders',      'Orders'],
-  ['#files',       'Files'],
-  ['#post-show',   'Post-Show'],
+  ['#show-info',  'Show Info'],
+  ['#timeline',   'Timeline'],
+  ['#phase1',     'Phase 1'],
+  ['#phase2',     'Phase 2'],
+  ['#phase3',     'Phase 3'],
+  ['#phase4',     'Phase 4'],
+  ['#approvals',  'Approvals'],
+  ['#orders',     'Orders'],
+  ['#todos',      'To Do'],
+  ['#post-show',  'Post-Show'],
 ]
 
 export default function ShowTracker() {
@@ -149,11 +147,6 @@ export default function ShowTracker() {
           <SectionNotes showId={showId} section="phase4" />
         </section>
 
-        <section id="volunteers">
-          <Volunteers show={show} save={save} readOnly={readOnly} />
-          <SectionNotes showId={showId} section="volunteers" />
-        </section>
-
         <section id="approvals">
           <ApprovalsTracker show={show} save={save} readOnly={readOnly} />
           <SectionNotes showId={showId} section="approvals" />
@@ -164,9 +157,9 @@ export default function ShowTracker() {
           <SectionNotes showId={showId} section="orders" />
         </section>
 
-        <section id="files">
-          <FileUploads showId={showId} readOnly={readOnly} />
-          <SectionNotes showId={showId} section="files" />
+        <section id="todos">
+          <TodoList show={show} readOnly={readOnly} />
+          <SectionNotes showId={showId} section="todos" />
         </section>
 
         <section id="post-show">

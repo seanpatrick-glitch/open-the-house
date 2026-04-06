@@ -10,6 +10,16 @@ const CHECKLIST = [
   'Shop or order remaining needs',
 ]
 
+const BUILD_CHECKLIST = [
+  'Measure and plan build dimensions',
+  'Source lumber, foam, or materials',
+  'Cut and shape build pieces',
+  'Prime and base coat',
+  'Detail painting and finishing',
+  'Assemble and test fit',
+  'Install hardware and mounting',
+]
+
 function Checkbox({ label, checked, onChange, readOnly }) {
   return (
     <label className={`flex items-start gap-3 py-2.5 select-none ${readOnly ? 'cursor-default' : 'cursor-pointer group'}`}>
@@ -25,20 +35,35 @@ function Checkbox({ label, checked, onChange, readOnly }) {
 }
 
 export default function Phase3({ show, save, readOnly }) {
-  const checklist = show.phase3Checklist || {}
+  const checklist      = show.phase3Checklist      || {}
+  const buildChecklist = show.phase3BuildChecklist || {}
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <div className="flex items-center gap-3 mb-5 pb-3 border-b border-gray-100">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
+      <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
         <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-full">Phase 3</span>
         <h2 className="text-xl font-bold text-gray-900">2 Weeks Out — Ordering and Finalizing</h2>
       </div>
 
-      <div className="divide-y divide-gray-50">
-        {CHECKLIST.map((item, i) => (
-          <Checkbox key={i} label={item} checked={checklist[`item${i}`]}
-            onChange={(v) => save(`phase3Checklist.item${i}`, v)} readOnly={readOnly} />
-        ))}
+      {/* General checklist */}
+      <div>
+        <div className="divide-y divide-gray-50">
+          {CHECKLIST.map((item, i) => (
+            <Checkbox key={i} label={item} checked={checklist[`item${i}`]}
+              onChange={(v) => save(`phase3Checklist.item${i}`, v)} readOnly={readOnly} />
+          ))}
+        </div>
+      </div>
+
+      {/* Decor Build Items checklist */}
+      <div>
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1">Decor Build Items</h3>
+        <div className="divide-y divide-gray-50">
+          {BUILD_CHECKLIST.map((item, i) => (
+            <Checkbox key={i} label={item} checked={buildChecklist[`item${i}`]}
+              onChange={(v) => save(`phase3BuildChecklist.item${i}`, v)} readOnly={readOnly} />
+          ))}
+        </div>
       </div>
     </div>
   )
