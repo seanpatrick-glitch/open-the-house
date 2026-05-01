@@ -12,9 +12,9 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }) {
-  const [currentUser,    setCurrentUser]    = useState(null)
-  const [userProfile,    setUserProfile]    = useState(null)  // { name, role }
-  const [loading,        setLoading]        = useState(true)
+  const [currentUser, setCurrentUser] = useState(null)
+  const [userProfile, setUserProfile] = useState(null)  // { uid, email, role, venueId }
+  const [loading,     setLoading]     = useState(true)
 
   function login(email, password) {
     return signInWithEmailAndPassword(auth, email, password)
@@ -24,7 +24,6 @@ export function AuthProvider({ children }) {
     return signOut(auth)
   }
 
-  // Returns true if the logged-in user is the admin (you)
   function isAdmin() {
     return userProfile?.role === 'admin'
   }
@@ -33,14 +32,28 @@ export function AuthProvider({ children }) {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user)
       if (user) {
-        // Load the user's name and role from Firestore users/{uid}
-        const snap = await getDoc(doc(db, 'users', user.uid))
-        if (snap.exists()) {
-          setUserProfile(snap.data())
-        } else {
-          // Fallback — treat as admin if no profile doc exists yet
-          setUserProfile({ name: user.email, role: 'admin' })
+        const userVenueSnap = await getDoc(doc(db, 'userVenues', user.uid))
+        if (!userVenueSnap.exists()) {
+          setUserProfile(null)
+          setLoading(false)
+          return
         }
+
+        const { venueId } = userVenueSnap.data()
+        const profileSnap = await getDoc(doc(db, 'venues', venueId, 'users', user.uid))
+        if (!profileSnap.exists()) {
+          setUserProfile(null)
+          setLoading(false)
+          return
+        }
+
+        const data = profileSnap.data()
+        setUserProfile({
+          uid:     data.uid,
+          email:   data.email,
+          role:    data.role,
+          venueId,
+        })
       } else {
         setUserProfile(null)
       }
@@ -49,7 +62,7 @@ export function AuthProvider({ children }) {
     return unsubscribe
   }, [])
 
-  const value = { currentUser, userProfile, login, logout, isAdmin }
+  const value = { currentUser, userProfile, loading, login, logout, isAdmin }
 
   return (
     <AuthContext.Provider value={value}>

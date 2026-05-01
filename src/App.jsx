@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import Login from './components/Login'
+import SignupFlow from './components/auth/SignupFlow'
 import Dashboard from './components/Dashboard'
 import ShowTracker from './components/ShowTracker'
 import UserManagement from './components/UserManagement'
@@ -23,10 +24,12 @@ function AdminRoute({ children }) {
   return children
 }
 
-// PublicRoute: if you're already logged in, skip the login page
+// PublicRoute: only redirect to dashboard if the user is fully set up
+// (auth account exists AND venue profile exists). A user mid-signup
+// has currentUser but no userProfile yet and must not be redirected.
 function PublicRoute({ children }) {
-  const { currentUser } = useAuth()
-  return !currentUser ? children : <Navigate to="/dashboard" replace />
+  const { currentUser, userProfile } = useAuth()
+  return (currentUser && userProfile) ? <Navigate to="/dashboard" replace /> : children
 }
 
 export default function App() {
@@ -37,6 +40,7 @@ export default function App() {
         <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
         <Routes>
           <Route path="/"          element={<PublicRoute><Login /></PublicRoute>} />
+          <Route path="/signup"    element={<PublicRoute><SignupFlow /></PublicRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/show/:showId" element={<ProtectedRoute><ShowTracker /></ProtectedRoute>} />
           <Route path="/users"     element={<AdminRoute><UserManagement /></AdminRoute>} />
