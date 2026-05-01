@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import Login from './components/Login'
 import SignupFlow from './components/auth/SignupFlow'
+import AuthRouter from './auth/AuthRouter'
 import Dashboard from './components/Dashboard'
 import ShowTracker from './components/ShowTracker'
 import UserManagement from './components/UserManagement'
@@ -39,12 +40,13 @@ export default function App() {
         {/* Toast notifications (pop-up messages for save, upload, etc.) */}
         <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
         <Routes>
-          <Route path="/"          element={<PublicRoute><Login /></PublicRoute>} />
-          <Route path="/signup"    element={<PublicRoute><SignupFlow /></PublicRoute>} />
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/show/:showId" element={<ProtectedRoute><ShowTracker /></ProtectedRoute>} />
-          <Route path="/users"     element={<AdminRoute><UserManagement /></AdminRoute>} />
-          <Route path="*"          element={<Navigate to="/" replace />} />
+          <Route path="/"                  element={<PublicRoute><Login /></PublicRoute>} />
+          <Route path="/signup"            element={<PublicRoute><SignupFlow /></PublicRoute>} />
+          <Route path="/dashboard"         element={<ProtectedRoute><AuthRouter /></ProtectedRoute>} />
+          <Route path="/dashboard-legacy"  element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/show/:showId"      element={<ProtectedRoute><ShowTracker /></ProtectedRoute>} />
+          <Route path="/users"             element={<AdminRoute><UserManagement /></AdminRoute>} />
+          <Route path="*"                  element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
