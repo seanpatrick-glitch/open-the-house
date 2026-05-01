@@ -39,7 +39,7 @@ export default function Navbar({ title, backTo }) {
               ← Back
             </button>
           )}
-          <span className="font-bold text-lg truncate max-w-xs">{title || 'Show Prep'}</span>
+          <span className="font-bold text-lg truncate max-w-xs">{title || 'Open the House'}</span>
         </div>
 
         {/* Right side: user info + admin link + logout */}

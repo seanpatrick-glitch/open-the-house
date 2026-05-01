@@ -7,12 +7,12 @@ import { getStorage } from 'firebase/storage'
 import { getAuth } from 'firebase/auth'
 
 const firebaseConfig = {
-  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: "AIzaSyAcfAWxvJj0tThNZY7PDrEicaLhbFdsppg",
+  authDomain: "open-the-house.firebaseapp.com",
+  projectId: "open-the-house",
+  storageBucket: "open-the-house.firebasestorage.app",
+  messagingSenderId: "882406284232",
+  appId: "1:882406284232:web:76e4a421f3e9c4a5bd7efd"
 }
 
 const app = initializeApp(firebaseConfig)

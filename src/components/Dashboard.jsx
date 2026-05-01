@@ -114,14 +114,14 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar title="Show Prep" />
+      <Navbar title="Open the House" />
 
       <main className="max-w-5xl mx-auto px-4 py-8">
         {/* Page header */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Your Shows</h2>
-            <p className="text-gray-500 text-sm mt-1">Theatre South Playhouse · Front of House</p>
+            <p className="text-gray-500 text-sm mt-1">For the work before the house opens.</p>
           </div>
           <button
             onClick={addNewShow}
