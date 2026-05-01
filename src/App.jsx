@@ -10,6 +10,8 @@ import AuthRouter from './auth/AuthRouter'
 import Dashboard from './components/Dashboard'
 import ShowTracker from './components/ShowTracker'
 import UserManagement from './components/UserManagement'
+import InviteManager from './components/invites/InviteManager'
+import AcceptInvite from './components/invites/AcceptInvite'
 
 // ProtectedRoute: only logged-in users can see this screen
 function ProtectedRoute({ children }) {
@@ -42,9 +44,11 @@ export default function App() {
         <Routes>
           <Route path="/"                  element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/signup"            element={<PublicRoute><SignupFlow /></PublicRoute>} />
+          <Route path="/invite/:token"     element={<AcceptInvite />} />
           <Route path="/dashboard"         element={<ProtectedRoute><AuthRouter /></ProtectedRoute>} />
           <Route path="/dashboard-legacy"  element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/show/:showId"      element={<ProtectedRoute><ShowTracker /></ProtectedRoute>} />
+          <Route path="/invites"           element={<AdminRoute><InviteManager /></AdminRoute>} />
           <Route path="/users"             element={<AdminRoute><UserManagement /></AdminRoute>} />
           <Route path="*"                  element={<Navigate to="/" replace />} />
         </Routes>
