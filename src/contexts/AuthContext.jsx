@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, onSnapshot } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 
 const AuthContext = createContext()
@@ -13,7 +13,7 @@ export function useAuth() {
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null)
-  const [userProfile, setUserProfile] = useState(null)  // { uid, email, role, venueId }
+  const [userProfile, setUserProfile] = useState(null)  // { uid, email, orgId, role, level, scopeId }
   const [loading,     setLoading]     = useState(true)
 
   function login(email, password) {
@@ -29,37 +29,65 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    let profileUnsub = null
+
+    const authUnsub = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user)
-      if (user) {
-        const userVenueSnap = await getDoc(doc(db, 'userVenues', user.uid))
-        if (!userVenueSnap.exists()) {
-          setUserProfile(null)
-          setLoading(false)
-          return
-        }
 
-        const { venueId } = userVenueSnap.data()
-        const profileSnap = await getDoc(doc(db, 'venues', venueId, 'users', user.uid))
-        if (!profileSnap.exists()) {
-          setUserProfile(null)
-          setLoading(false)
-          return
-        }
-
-        const data = profileSnap.data()
-        setUserProfile({
-          uid:     data.uid,
-          email:   data.email,
-          role:    data.role,
-          venueId,
-        })
-      } else {
-        setUserProfile(null)
+      if (profileUnsub) {
+        profileUnsub()
+        profileUnsub = null
       }
-      setLoading(false)
+
+      if (!user) {
+        setUserProfile(null)
+        setLoading(false)
+        return
+      }
+
+      profileUnsub = onSnapshot(
+        doc(db, 'users', user.uid),
+        (snap) => {
+          if (!snap.exists()) {
+            setUserProfile(null)
+            setLoading(false)
+            return
+          }
+
+          const data = snap.data()
+          const orgs = data.organizations
+
+          if (!orgs || Object.keys(orgs).length === 0) {
+            setUserProfile(null)
+            setLoading(false)
+            return
+          }
+
+          const orgId = Object.keys(orgs)[0]
+          const membership = orgs[orgId]
+
+          setUserProfile({
+            uid:     user.uid,
+            email:   data.email,
+            orgId,
+            role:    membership.role,
+            level:   membership.level,
+            scopeId: membership.scopeId,
+          })
+          setLoading(false)
+        },
+        (error) => {
+          console.error('AuthContext profile listener error:', error)
+          setUserProfile(null)
+          setLoading(false)
+        }
+      )
     })
-    return unsubscribe
+
+    return () => {
+      authUnsub()
+      if (profileUnsub) profileUnsub()
+    }
   }, [])
 
   const value = { currentUser, userProfile, loading, login, logout, isAdmin }

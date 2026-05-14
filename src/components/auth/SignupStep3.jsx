@@ -19,32 +19,54 @@ export default function SignupStep3({ firebaseUser }) {
 
     setLoading(true)
     try {
-      const venueRef = await addDoc(collection(db, 'venues'), {
+      const orgRef = await addDoc(collection(db, 'organizations'), {
         name:      venueName.trim(),
+        type:      'theater',
+        ownerId:   firebaseUser.uid,
         createdAt: serverTimestamp(),
-        createdBy: firebaseUser.uid,
-        status:    'active',
+        subscription: {
+          tier:   'house',
+          status: 'trial',
+        },
       })
 
-      await setDoc(doc(db, 'venues', venueRef.id, 'users', firebaseUser.uid), {
-        uid:      firebaseUser.uid,
-        email:    firebaseUser.email,
-        role:     'admin',
-        joinedAt: serverTimestamp(),
+      await setDoc(doc(db, 'users', firebaseUser.uid), {
+        name:      firebaseUser.email,
+        email:     firebaseUser.email,
+        createdAt: serverTimestamp(),
+        organizations: {
+          [orgRef.id]: {
+            role:      'admin',
+            level:     'organization',
+            scopeId:   orgRef.id,
+            joinedAt:  serverTimestamp(),
+          },
+        },
       })
 
-      await setDoc(doc(db, 'userVenues', firebaseUser.uid), {
-        venueId:   venueRef.id,
-        role:      'admin',
-        updatedAt: serverTimestamp(),
-      })
-
+      await new Promise(resolve => setTimeout(resolve, 800))
       navigate('/dashboard')
     } catch (err) {
-      toast.error('Could not create venue. Please try again.')
+      toast.error('Could not create organization. Please try again.')
       console.error(err)
       setLoading(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+        <div className="text-center">
+          <div className="text-4xl mb-4">🎭</div>
+          <p className="text-white text-lg font-medium">
+            Setting up your organization...
+          </p>
+          <p className="text-gray-400 text-sm mt-2">
+            This will just take a moment.
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -53,13 +75,13 @@ export default function SignupStep3({ firebaseUser }) {
         <div className="text-center mb-8">
           <div className="text-4xl mb-3">🎭</div>
           <h1 className="text-3xl font-bold text-gray-900">Open the House</h1>
-          <p className="text-gray-500 mt-2 text-sm">Set up your venue</p>
+          <p className="text-gray-500 mt-2 text-sm">Set up your organization</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              What is the name of your venue?
+              What is the name of your organization?
             </label>
             <input
               type="text"
@@ -73,10 +95,9 @@ export default function SignupStep3({ firebaseUser }) {
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+            className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base mt-2"
           >
-            {loading ? 'Creating venue…' : 'Create venue'}
+            Create organization
           </button>
         </form>
 
