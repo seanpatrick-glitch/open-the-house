@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   doc,
-  getDoc,
   setDoc,
   updateDoc,
+  collectionGroup,
+  query,
+  where,
+  getDocs,
   serverTimestamp,
 } from 'firebase/firestore'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
@@ -15,24 +18,27 @@ export default function AcceptInvite() {
   const { token }  = useParams()
   const navigate   = useNavigate()
 
-  const [invite,   setInvite]   = useState(null)
-  const [status,   setStatus]   = useState('loading') // loading | invalid | accepted | expired | valid
-  const [email,    setEmail]    = useState('')
-  const [password, setPassword] = useState('')
-  const [confirm,  setConfirm]  = useState('')
+  const [invite,     setInvite]     = useState(null)
+  const [inviteRef,  setInviteRef]  = useState(null)
+  const [status,     setStatus]     = useState('loading') // loading | invalid | accepted | expired | valid
+  const [email,      setEmail]      = useState('')
+  const [password,   setPassword]   = useState('')
+  const [confirm,    setConfirm]    = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     async function loadInvite() {
       try {
-        const snap = await getDoc(doc(db, 'invites', token))
+        const q    = query(collectionGroup(db, 'invites'), where('token', '==', token))
+        const snap = await getDocs(q)
 
-        if (!snap.exists()) {
+        if (snap.empty) {
           setStatus('invalid')
           return
         }
 
-        const data = snap.data()
+        const docSnap = snap.docs[0]
+        const data    = docSnap.data()
 
         if (data.status === 'accepted') {
           setStatus('accepted')
@@ -47,6 +53,7 @@ export default function AcceptInvite() {
         }
 
         setInvite(data)
+        setInviteRef(docSnap.ref)
         setEmail(data.email)
         setStatus('valid')
       } catch (err) {
@@ -81,24 +88,23 @@ export default function AcceptInvite() {
       )
       const uid = credential.user.uid
 
-      await setDoc(doc(db, 'userVenues', uid), {
-        venueId:   invite.venueId,
-        role:      invite.role,
-        updatedAt: serverTimestamp(),
+      await setDoc(doc(db, 'users', uid), {
+        name:      email.trim(),
+        email:     email.trim(),
+        createdAt: serverTimestamp(),
+        organizations: {
+          [invite.orgId]: {
+            role:     invite.role,
+            level:    invite.level,
+            scopeId:  invite.scopeId,
+            joinedAt: serverTimestamp(),
+          },
+        },
       })
 
-      await setDoc(doc(db, 'venues', invite.venueId, 'users', uid), {
-        uid,
-        email:    email.trim(),
-        role:     invite.role,
-        joinedAt: serverTimestamp(),
-      })
+      await updateDoc(inviteRef, { status: 'accepted' })
 
-      await updateDoc(doc(db, 'invites', token), {
-        status: 'accepted',
-      })
-
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      await new Promise(resolve => setTimeout(resolve, 800))
       navigate('/dashboard')
     } catch (err) {
       console.error('AcceptInvite error:', err.code, err.message)
@@ -164,7 +170,7 @@ export default function AcceptInvite() {
         <div className="text-center mb-8">
           <div className="text-4xl mb-3">🎭</div>
           <h1 className="text-2xl font-bold text-gray-900">
-            You have been invited to join {invite.venueName}
+            You have been invited to join {invite.orgName}
           </h1>
           <p className="text-gray-500 mt-2 text-sm capitalize">
             You are joining as {invite.role}

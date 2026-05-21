@@ -32,19 +32,18 @@ export default function InviteCollaborator() {
   const [invites,       setInvites]       = useState([])
   const [loadingList,   setLoadingList]   = useState(true)
 
-  // Live query of all invites for this venue, filtered client-side to collaborators
+  // Live query of all invites for this organization, filtered client-side to collaborators
   useEffect(() => {
-    if (!userProfile?.venueId) return
+    if (!userProfile?.orgId) return
 
     const q = query(
-      collection(db, 'invites'),
-      where('venueId', '==', userProfile.venueId)
+      collection(db, 'organizations', userProfile.orgId, 'invites'),
+      where('role', '==', HARDCODED_ROLE)
     )
 
     const unsubscribe = onSnapshot(q, (snap) => {
       const docs = snap.docs
         .map((d) => ({ id: d.id, ...d.data() }))
-        .filter((d) => d.role === HARDCODED_ROLE)
       docs.sort((a, b) => {
         const aTime = a.createdAt?.toMillis?.() ?? 0
         const bTime = b.createdAt?.toMillis?.() ?? 0
@@ -55,7 +54,7 @@ export default function InviteCollaborator() {
     })
 
     return unsubscribe
-  }, [userProfile?.venueId])
+  }, [userProfile?.orgId])
 
   async function handleCreateInvite(e) {
     e.preventDefault()
@@ -69,24 +68,26 @@ export default function InviteCollaborator() {
     setGeneratedLink('')
 
     try {
-      const venueSnap = await getDoc(doc(db, 'venues', userProfile.venueId))
-      if (!venueSnap.exists()) {
-        toast.error('Could not read venue information. Please try again.')
+      const orgSnap = await getDoc(doc(db, 'organizations', userProfile.orgId))
+      if (!orgSnap.exists()) {
+        toast.error('Could not read organization information. Please try again.')
         setSubmitting(false)
         return
       }
-      const venueName = venueSnap.data().name
+      const orgName = orgSnap.data().name
 
       const token     = crypto.randomUUID()
       const now       = Timestamp.now()
       const expiresAt = Timestamp.fromMillis(now.toMillis() + 7 * 24 * 60 * 60 * 1000)
 
-      await setDoc(doc(db, 'invites', token), {
+      await setDoc(doc(db, 'organizations', userProfile.orgId, 'invites', token), {
         token,
         email:     email.trim(),
         role:      HARDCODED_ROLE,
-        venueId:   userProfile.venueId,
-        venueName,
+        level:     'organization',
+        scopeId:   userProfile.orgId,
+        orgId:     userProfile.orgId,
+        orgName,
         createdBy: userProfile.uid,
         createdAt: serverTimestamp(),
         expiresAt,
@@ -107,7 +108,7 @@ export default function InviteCollaborator() {
 
   async function handleRevoke(token) {
     try {
-      await deleteDoc(doc(db, 'invites', token))
+      await deleteDoc(doc(db, 'organizations', userProfile.orgId, 'invites', token))
       toast.success('Invite revoked.')
       if (generatedLink.includes(token)) setGeneratedLink('')
     } catch (err) {
