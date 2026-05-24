@@ -3,7 +3,8 @@ import { useAuth } from '../../contexts/AuthContext'
 
 const NAV_ITEMS = [
   { key: 'home',        label: 'Home',                   emoji: '🏠' },
-  { key: 'productions', label: 'Productions',            emoji: '🎭' },
+  { key: 'productions',  label: 'Productions',            emoji: '🎭' },
+  { key: 'departments',  label: 'Departments',            emoji: '🏢' },
   {
     key: 'volunteers-group',
     label: 'Volunteers',
