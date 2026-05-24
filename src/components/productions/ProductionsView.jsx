@@ -4,6 +4,7 @@ import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import CreatePlaceForm from './CreatePlaceForm'
 import CreateProductionForm from './CreateProductionForm'
+import ProductionDashboard from './ProductionDashboard'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -126,12 +127,7 @@ export default function ProductionsView() {
   const [productionsLoading, setProductionsLoading] = useState(true)
   const [showPlaceForm,      setShowPlaceForm]      = useState(false)
   const [showProdForm,       setShowProdForm]       = useState(false)
-  const [toast,              setToast]              = useState('')
-
-  function fireToast(msg) {
-    setToast(msg)
-    setTimeout(() => setToast(''), 3000)
-  }
+  const [selectedProduction, setSelectedProduction] = useState(null)
 
   // Real-time listener for all places in this org
   useEffect(() => {
@@ -210,61 +206,63 @@ export default function ProductionsView() {
     )
   }
 
-  // ── Places exist ────────────────────────────────────────────────────────────
+  // ── Production dashboard ────────────────────────────────────────────────────
+  if (selectedProduction) {
+    return (
+      <ProductionDashboard
+        production={selectedProduction}
+        places={places}
+        onBack={() => setSelectedProduction(null)}
+      />
+    )
+  }
+
+  // ── Productions list ────────────────────────────────────────────────────────
   return (
-    <>
-      <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl">
 
-        {/* Header — Create Production always visible when places exist */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Productions</h1>
-          <button
-            onClick={() => setShowProdForm(true)}
-            className="bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
-          >
-            + Create Production
-          </button>
-        </div>
-
-        {/* Inline create-production form */}
-        {showProdForm && (
-          <CreateProductionForm
-            places={places}
-            onSuccess={() => setShowProdForm(false)}
-            onCancel={() => setShowProdForm(false)}
-          />
-        )}
-
-        {/* Productions list / loading / empty state */}
-        {productionsLoading ? (
-          <div className="flex items-center justify-center h-24">
-            <p className="text-sm text-gray-400">Loading productions…</p>
-          </div>
-        ) : productions.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-12 text-center">
-            <p className="text-gray-500 text-sm">No productions yet.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {productions.map(prod => (
-              <ProductionCard
-                key={prod.id}
-                prod={prod}
-                placeName={placeMap[prod.placeId] ?? '—'}
-                onOpen={() => fireToast('Production dashboard coming in Step 3.')}
-              />
-            ))}
-          </div>
-        )}
-
+      {/* Header — Create Production always visible when places exist */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Productions</h1>
+        <button
+          onClick={() => setShowProdForm(true)}
+          className="bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
+        >
+          + Create Production
+        </button>
       </div>
 
-      {/* Toast — fixed bottom-right, auto-dismisses after 3 s */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-gray-900 text-white text-sm font-medium px-4 py-3 rounded-lg shadow-lg">
-          {toast}
+      {/* Inline create-production form */}
+      {showProdForm && (
+        <CreateProductionForm
+          places={places}
+          onSuccess={() => setShowProdForm(false)}
+          onCancel={() => setShowProdForm(false)}
+        />
+      )}
+
+      {/* Productions list / loading / empty state */}
+      {productionsLoading ? (
+        <div className="flex items-center justify-center h-24">
+          <p className="text-sm text-gray-400">Loading productions…</p>
+        </div>
+      ) : productions.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-12 text-center">
+          <p className="text-gray-500 text-sm">No productions yet.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {productions.map(prod => (
+            <ProductionCard
+              key={prod.id}
+              prod={prod}
+              placeName={placeMap[prod.placeId] ?? '—'}
+              onOpen={() => setSelectedProduction(prod)}
+            />
+          ))}
         </div>
       )}
-    </>
+
+    </div>
   )
 }
