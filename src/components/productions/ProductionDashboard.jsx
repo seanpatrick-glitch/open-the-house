@@ -1,4 +1,7 @@
-import React from 'react'
+import React, { useState } from 'react'
+import { doc, updateDoc } from 'firebase/firestore'
+import { db } from '../../firebase'
+import { useAuth } from '../../contexts/AuthContext'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -51,8 +54,54 @@ function formatDate(ts) {
 // ── ProductionDashboard ───────────────────────────────────────────────────────
 
 export default function ProductionDashboard({ production, places, onBack }) {
+  const { userProfile } = useAuth()
+
   const placeMap  = Object.fromEntries(places.map(p => [p.id, p.name]))
   const placeName = placeMap[production.placeId] ?? '—'
+
+  // Local copy of activeModules so the UI updates immediately on toggle
+  // without waiting for the Firestore listener to propagate back through
+  // the parent's selectedProduction snapshot.
+  const [activeModules, setActiveModules] = useState(
+    production.activeModules ?? {}
+  )
+
+  // Set of module keys whose Firestore write is currently in flight.
+  // Prevents double-clicks on a tile while its update is pending.
+  const [toggling, setToggling] = useState(new Set())
+
+  async function toggleModule(key) {
+    if (toggling.has(key)) return
+
+    const newValue = !activeModules[key]
+
+    // Optimistic update — flip immediately so the UI feels instant
+    setActiveModules(prev => ({ ...prev, [key]: newValue }))
+    setToggling(prev => new Set([...prev, key]))
+
+    try {
+      await updateDoc(
+        doc(
+          db,
+          'organizations', userProfile.orgId,
+          'places',        production.placeId,
+          'productions',   production.id
+        ),
+        // Dot notation — only this one key is written, nothing else is touched
+        { [`activeModules.${key}`]: newValue }
+      )
+    } catch (err) {
+      console.error('ProductionDashboard toggleModule error:', err)
+      // Revert the optimistic update if the write failed
+      setActiveModules(prev => ({ ...prev, [key]: !newValue }))
+    } finally {
+      setToggling(prev => {
+        const next = new Set(prev)
+        next.delete(key)
+        return next
+      })
+    }
+  }
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -97,30 +146,36 @@ export default function ProductionDashboard({ production, places, onBack }) {
         <h2 className="text-base font-semibold text-gray-800 mb-3">Active Modules</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {MODULE_KEYS.map(key => {
-            const isActive = production.activeModules?.[key] ?? false
+            const isActive   = activeModules[key] ?? false
+            const isToggling = toggling.has(key)
             return (
-              <div
+              <button
                 key={key}
-                className={`rounded-xl border px-4 py-3 flex items-center gap-3 ${
-                  isActive
-                    ? 'bg-amber-50 border-amber-300'
-                    : 'bg-white border-gray-200'
-                }`}
+                onClick={() => toggleModule(key)}
+                disabled={isToggling}
+                className={`
+                  rounded-xl border px-4 py-3 flex items-center gap-3 w-full text-left
+                  transition-colors
+                  ${isActive
+                    ? 'bg-amber-50 border-amber-300 hover:bg-amber-100'
+                    : 'bg-white border-gray-200 hover:bg-gray-50'}
+                  ${isToggling ? 'opacity-50 cursor-wait' : 'cursor-pointer'}
+                `}
               >
                 {/* Active / inactive indicator dot */}
                 <span
-                  className={`flex-shrink-0 w-2 h-2 rounded-full ${
+                  className={`flex-shrink-0 w-2 h-2 rounded-full transition-colors ${
                     isActive ? 'bg-green-500' : 'bg-gray-300'
                   }`}
                 />
                 <span
-                  className={`text-sm font-medium ${
+                  className={`text-sm font-medium transition-colors ${
                     isActive ? 'text-amber-800' : 'text-gray-400'
                   }`}
                 >
                   {MODULE_LABELS[key]}
                 </span>
-              </div>
+              </button>
             )
           })}
         </div>
