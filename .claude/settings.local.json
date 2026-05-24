@@ -6,7 +6,9 @@
       "Bash(find /c/Users/Other/Tsp Prep/src -type f \\\\\\( -name \"*.jsx\" -o -name \"*.js\" -o -name \"*.tsx\" -o -name \"*.ts\" \\\\\\) -exec wc -l {} +)",
       "Bash(npm install:*)",
       "Bash(npm run:*)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
     ]
   }
 }
