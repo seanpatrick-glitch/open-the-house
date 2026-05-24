@@ -3,6 +3,7 @@ import Sidebar from './Sidebar'
 import HomeView from '../dashboard/HomeView'
 import InviteCollaborator from '../invites/InviteCollaborator'
 import InviteVolunteer from '../invites/InviteVolunteer'
+import ProductionsView from '../productions/ProductionsView'
 
 // Section key → human-readable label for placeholder screens
 const SECTION_LABELS = {
@@ -30,6 +31,7 @@ function PlaceholderSection({ section }) {
 
 function SectionContent({ section, onNavigate }) {
   if (section === 'home')               return <HomeView onNavigate={onNavigate} />
+  if (section === 'productions')        return <ProductionsView />
   if (section === 'invite-collaborator') return <InviteCollaborator />
   if (section === 'invite-volunteer')    return <InviteVolunteer />
   return <PlaceholderSection section={section} />
