@@ -3,10 +3,11 @@ import { collection, onSnapshot } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import CreateDepartmentForm from './CreateDepartmentForm'
+import DepartmentDetail from './DepartmentDetail'
 
 // ── DepartmentRow ─────────────────────────────────────────────────────────────
 
-function DepartmentRow({ dept }) {
+function DepartmentRow({ dept, onOpen }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-4">
       <div className="flex items-center gap-4">
@@ -25,8 +26,13 @@ function DepartmentRow({ dept }) {
           )}
         </div>
 
-        {/* Step 2 placeholder */}
-        <span className="flex-shrink-0 text-xs text-gray-400">Coming soon.</span>
+        {/* Open button */}
+        <button
+          onClick={onOpen}
+          className="flex-shrink-0 text-sm font-semibold text-amber-600 hover:text-amber-700 transition-colors whitespace-nowrap"
+        >
+          Open →
+        </button>
 
       </div>
     </div>
@@ -39,9 +45,10 @@ export default function DepartmentsView() {
   const { userProfile } = useAuth()
   const { orgId } = userProfile
 
-  const [departments, setDepartments] = useState([])
-  const [deptLoading, setDeptLoading] = useState(true)
-  const [showForm,    setShowForm]    = useState(false)
+  const [departments,        setDepartments]        = useState([])
+  const [deptLoading,        setDeptLoading]        = useState(true)
+  const [showForm,           setShowForm]           = useState(false)
+  const [selectedDepartment, setSelectedDepartment] = useState(null)
 
   // Real-time listener for all departments in this org
   useEffect(() => {
@@ -65,6 +72,16 @@ export default function DepartmentsView() {
       <div className="flex items-center justify-center h-32">
         <p className="text-sm text-gray-400">Loading…</p>
       </div>
+    )
+  }
+
+  // ── Department detail view ──────────────────────────────────────────────────
+  if (selectedDepartment) {
+    return (
+      <DepartmentDetail
+        department={selectedDepartment}
+        onBack={() => setSelectedDepartment(null)}
+      />
     )
   }
 
@@ -113,7 +130,11 @@ export default function DepartmentsView() {
       {departments.length > 0 && (
         <div className="space-y-3">
           {departments.map(dept => (
-            <DepartmentRow key={dept.id} dept={dept} />
+            <DepartmentRow
+              key={dept.id}
+              dept={dept}
+              onOpen={() => setSelectedDepartment(dept)}
+            />
           ))}
         </div>
       )}
