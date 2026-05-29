@@ -1,4 +1,6 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import { doc, onSnapshot } from 'firebase/firestore'
+import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 
 const NAV_ITEMS = [
@@ -46,6 +48,19 @@ function hasActiveChild(item, activeSection) {
 
 export default function Sidebar({ activeSection, onNavigate, sidebarOpen }) {
   const { userProfile, logout } = useAuth()
+  const orgId = userProfile?.orgId
+  const [departmentsEnabled, setDepartmentsEnabled] = useState(false)
+
+  useEffect(() => {
+    if (!orgId) return
+    const orgRef = doc(db, 'organizations', orgId)
+    const unsubscribe = onSnapshot(orgRef, (snap) => {
+      if (snap.exists()) {
+        setDepartmentsEnabled(snap.data().departmentsEnabled ?? false)
+      }
+    })
+    return () => unsubscribe()
+  }, [orgId])
 
   async function handleSignOut() {
     await logout()
@@ -84,6 +99,7 @@ export default function Sidebar({ activeSection, onNavigate, sidebarOpen }) {
       {/* Nav items */}
       <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
         {NAV_ITEMS.map((item) => {
+          if (item.key === 'departments' && !departmentsEnabled) return null
           const childActive   = hasActiveChild(item, activeSection)
           const isLeafActive  = !item.children && item.key === activeSection
           const parentLit     = childActive
