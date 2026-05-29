@@ -1,0 +1,111 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    // Fetch the requesting user's Firestore document
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(uid())).data;
+    }
+
+    // Is the requesting user a member of the given org?
+    function isMember(orgId) {
+      return isSignedIn() && orgId in userDoc().organizations;
+    }
+
+    // Is the requesting user an admin of the given org?
+    function isAdmin(orgId) {
+      return isMember(orgId) && userDoc().organizations[orgId].role == 'admin';
+    }
+
+    // ── users ─────────────────────────────────────────────────────────────────
+    // Any signed-in user can read any user doc (required for org member lookups
+    // in CreateDepartmentForm and similar screens).
+    // A user may write only their own doc; admins may write any user doc.
+    match /users/{userId} {
+      allow read:  if isSignedIn();
+      allow write: if isSignedIn() && uid() == userId;
+    }
+
+    // ── organizations ─────────────────────────────────────────────────────────
+    match /organizations/{orgId} {
+      allow read:  if isMember(orgId);
+      allow write: if isAdmin(orgId);
+    }
+
+    // ── departments ───────────────────────────────────────────────────────────
+    match /departments/{departmentId} {
+      allow read:           if isMember(resource.data.orgId);
+      allow create:         if isAdmin(request.resource.data.orgId);
+      allow update, delete: if isAdmin(resource.data.orgId);
+    }
+
+    // ── timelines ─────────────────────────────────────────────────────────────
+    match /timelines/{timelineId} {
+      allow read:           if isMember(resource.data.orgId);
+      allow create:         if isAdmin(request.resource.data.orgId);
+      allow update, delete: if isAdmin(resource.data.orgId);
+    }
+
+    // ── tasks + subcollections ────────────────────────────────────────────────
+    match /tasks/{taskId} {
+      allow read:           if isMember(resource.data.orgId);
+      allow create:         if isAdmin(request.resource.data.orgId);
+      allow update, delete: if isAdmin(resource.data.orgId);
+
+      // comments — any org member can read/create; only author or admin can edit/delete
+      match /comments/{commentId} {
+        function taskOrgId() {
+          return get(/databases/$(database)/documents/tasks/$(taskId)).data.orgId;
+        }
+        allow read, create: if isMember(taskOrgId());
+        allow update:       if uid() == resource.data.createdBy;
+        allow delete:       if uid() == resource.data.createdBy || isAdmin(taskOrgId());
+      }
+
+      // clarificationFlags — any org member can read/create; author or admin can update/delete
+      match /clarificationFlags/{flagId} {
+        function taskOrgId() {
+          return get(/databases/$(database)/documents/tasks/$(taskId)).data.orgId;
+        }
+        allow read, create:   if isMember(taskOrgId());
+        allow update, delete: if uid() == resource.data.createdBy || isAdmin(taskOrgId());
+      }
+
+      // accessRequests — any org member can read/create; only admins can approve/deny/delete
+      match /accessRequests/{requestId} {
+        function taskOrgId() {
+          return get(/databases/$(database)/documents/tasks/$(taskId)).data.orgId;
+        }
+        allow read, create: if isMember(taskOrgId());
+        allow update:       if isAdmin(taskOrgId());
+        allow delete:       if isAdmin(taskOrgId());
+      }
+    }
+
+    // ── timelineTemplates + subcollection ─────────────────────────────────────
+    match /timelineTemplates/{templateId} {
+      allow read:           if isMember(resource.data.orgId);
+      allow create:         if isAdmin(request.resource.data.orgId);
+      allow update, delete: if isAdmin(resource.data.orgId);
+
+      match /templateTasks/{templateTaskId} {
+        function templateOrgId() {
+          return get(/databases/$(database)/documents/timelineTemplates/$(templateId)).data.orgId;
+        }
+        allow read:  if isMember(templateOrgId());
+        allow write: if isAdmin(templateOrgId());
+      }
+    }
+
+  }
+}
