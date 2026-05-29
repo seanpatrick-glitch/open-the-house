@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import CreateDepartmentForm from '../components/departments/CreateDepartmentForm';
 
 export default function DepartmentsView({ onNavigate }) {
   const { userProfile } = useAuth();
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
 
   const orgId = userProfile?.orgId;
 
@@ -28,6 +30,23 @@ export default function DepartmentsView({ onNavigate }) {
     return <div className="p-6 text-gray-500 text-sm">Loading departments...</div>;
   }
 
+  if (showForm) {
+    return (
+      <div className="p-6 max-w-4xl">
+        <button
+          onClick={() => setShowForm(false)}
+          className="text-sm text-gray-500 hover:text-gray-700 mb-6 flex items-center gap-1"
+        >
+          ← Back to Departments
+        </button>
+        <CreateDepartmentForm
+          onSuccess={() => setShowForm(false)}
+          onCancel={() => setShowForm(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
@@ -36,7 +55,7 @@ export default function DepartmentsView({ onNavigate }) {
           <p className="text-sm text-gray-500">Organize your venues, productions, and people by team.</p>
         </div>
         <button
-          onClick={() => onNavigate && onNavigate('departments/new')}
+          onClick={() => setShowForm(true)}
           className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           Add Department

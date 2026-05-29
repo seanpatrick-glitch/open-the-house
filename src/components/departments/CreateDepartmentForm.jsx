@@ -44,7 +44,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
 
     try {
       await addDoc(
-        collection(db, 'organizations', orgId, 'departments'),
+        collection(db, 'departments'),
         {
           name:              name.trim(),
           description:       description.trim(),
