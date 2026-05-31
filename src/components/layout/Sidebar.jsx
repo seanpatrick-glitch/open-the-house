@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext'
 const NAV_ITEMS = [
   { key: 'home',        label: 'Home',                   emoji: '🏠' },
   { key: 'productions',  label: 'Productions',            emoji: '🎭' },
+  { key: 'timeline',     label: 'Timeline',               emoji: '📅' },
   { key: 'departments',  label: 'Departments',            emoji: '🏢' },
   {
     key: 'volunteers-group',
