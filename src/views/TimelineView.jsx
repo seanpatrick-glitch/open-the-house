@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { TIMELINE_STATUS } from '../models/timeline';
 import CalendarGrid from '../components/timeline/CalendarGrid';
+import GanttView from '../components/timeline/GanttView';
 
 const STATUS_STYLES = {
   [TIMELINE_STATUS.NOT_STARTED]: 'bg-gray-100 text-gray-600',
@@ -27,10 +28,10 @@ function formatDate(ts) {
 
 export default function TimelineView() {
   const { userProfile } = useAuth();
-  const [tasks, setTasks]           = useState([]);
+  const [tasks, setTasks]             = useState([]);
   const [departments, setDepartments] = useState({});
-  const [loading, setLoading]       = useState(true);
-  const [viewMode, setViewMode]     = useState('list');
+  const [loading, setLoading]         = useState(true);
+  const [viewMode, setViewMode]       = useState('list');
 
   const orgId = userProfile?.orgId;
 
@@ -70,7 +71,7 @@ export default function TimelineView() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Timeline</h1>
           <p className="text-sm text-gray-500">
-            {viewMode === 'list' ? 'All tasks sorted by due date.' : 'Tasks by month.'}
+            {viewMode === 'list' ? 'All tasks sorted by due date.' : viewMode === 'calendar' ? 'Tasks by month.' : 'Tasks plotted by date.'}
           </p>
         </div>
         <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
@@ -86,10 +87,18 @@ export default function TimelineView() {
           >
             Calendar
           </button>
+          <button
+            onClick={() => setViewMode('gantt')}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'gantt' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            Timeline
+          </button>
         </div>
       </div>
 
-      {viewMode === 'calendar' ? (
+      {viewMode === 'gantt' ? (
+        <GanttView tasks={tasks} departments={departments} />
+      ) : viewMode === 'calendar' ? (
         <CalendarGrid tasks={tasks} departments={departments} />
       ) : (
         <>
