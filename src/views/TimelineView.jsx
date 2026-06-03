@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { TIMELINE_STATUS } from '../models/timeline';
@@ -31,7 +31,7 @@ export default function TimelineView() {
   const [tasks, setTasks]             = useState([]);
   const [departments, setDepartments] = useState({});
   const [loading, setLoading]         = useState(true);
-  const [viewMode, setViewMode]       = useState('list');
+  const [viewMode, setViewMode]       = useState(null);
 
   const orgId = userProfile?.orgId;
 
@@ -48,6 +48,26 @@ export default function TimelineView() {
     };
     loadDepartments();
 
+    // Load saved view preference
+    const loadViewPref = async () => {
+      try {
+        const userSnap = await getDoc(doc(db, 'users', userProfile.uid));
+        if (userSnap.exists() && userSnap.data().preferredTimelineView) {
+          setViewMode(userSnap.data().preferredTimelineView);
+          return;
+        }
+        const orgSnap = await getDoc(doc(db, 'organizations', orgId));
+        if (orgSnap.exists() && orgSnap.data().defaultView) {
+          setViewMode(orgSnap.data().defaultView);
+          return;
+        }
+      } catch (err) {
+        console.error('Error loading view preference:', err);
+      }
+      setViewMode('list');
+    };
+    loadViewPref();
+
     const q = query(
       collection(db, 'tasks'),
       where('orgId', '==', orgId),
@@ -61,7 +81,18 @@ export default function TimelineView() {
     return () => unsubscribe();
   }, [orgId]);
 
-  if (loading) {
+  async function handleViewChange(mode) {
+    setViewMode(mode);
+    try {
+      await updateDoc(doc(db, 'users', userProfile.uid), {
+        preferredTimelineView: mode,
+      });
+    } catch (err) {
+      console.error('Error saving view preference:', err);
+    }
+  }
+
+  if (loading || viewMode === null) {
     return <div className="p-6 text-gray-500 text-sm">Loading timeline...</div>;
   }
 
@@ -76,19 +107,19 @@ export default function TimelineView() {
         </div>
         <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
           <button
-            onClick={() => setViewMode('list')}
+            onClick={() => handleViewChange('list')}
             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
             List
           </button>
           <button
-            onClick={() => setViewMode('calendar')}
+            onClick={() => handleViewChange('calendar')}
             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'calendar' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
             Calendar
           </button>
           <button
-            onClick={() => setViewMode('gantt')}
+            onClick={() => handleViewChange('gantt')}
             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'gantt' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
             Timeline
