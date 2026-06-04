@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { TIMELINE_STATUS } from '../models/timeline';
 import CalendarGrid from '../components/timeline/CalendarGrid';
 import GanttView from '../components/timeline/GanttView';
+import TemplatesPanel from '../components/timeline/TemplatesPanel';
 
 const STATUS_STYLES = {
   [TIMELINE_STATUS.NOT_STARTED]: 'bg-gray-100 text-gray-600',
@@ -32,6 +33,7 @@ export default function TimelineView() {
   const [departments, setDepartments] = useState({});
   const [loading, setLoading]         = useState(true);
   const [viewMode, setViewMode]       = useState(null);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const orgId = userProfile?.orgId;
 
@@ -102,32 +104,44 @@ export default function TimelineView() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Timeline</h1>
           <p className="text-sm text-gray-500">
-            {viewMode === 'list' ? 'All tasks sorted by due date.' : viewMode === 'calendar' ? 'Tasks by month.' : 'Tasks plotted by date.'}
+            {showTemplates ? 'Reusable task sets for any production or event.'
+              : viewMode === 'list' ? 'All tasks sorted by due date.'
+              : viewMode === 'calendar' ? 'Tasks by month.'
+              : 'Tasks plotted by date.'}
           </p>
         </div>
-        <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => handleViewChange('list')}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setShowTemplates(t => !t)}
+            className={`text-sm font-medium px-4 py-2 rounded-lg border transition-colors ${showTemplates ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'border-gray-200 text-gray-600 hover:text-gray-900'}`}
           >
-            List
+            Templates
           </button>
-          <button
-            onClick={() => handleViewChange('calendar')}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'calendar' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            Calendar
-          </button>
-          <button
-            onClick={() => handleViewChange('gantt')}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'gantt' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            Timeline
-          </button>
+          {!showTemplates && (
+            <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
+              <button onClick={() => handleViewChange('list')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                List
+              </button>
+              <button onClick={() => handleViewChange('calendar')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'calendar' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                Calendar
+              </button>
+              <button onClick={() => handleViewChange('gantt')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'gantt' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                Timeline
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {viewMode === 'gantt' ? (
+      {showTemplates ? (
+        <TemplatesPanel
+          departments={departments}
+          onClose={() => setShowTemplates(false)}
+        />
+      ) : viewMode === 'gantt' ? (
         <GanttView tasks={tasks} departments={departments} />
       ) : viewMode === 'calendar' ? (
         <CalendarGrid tasks={tasks} departments={departments} />
@@ -156,22 +170,16 @@ export default function TimelineView() {
                       <tr key={task.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3">
                           <p className="font-medium text-gray-900">{task.title}</p>
-                          {task.production && (
-                            <p className="text-xs text-gray-400 mt-0.5">Production linked</p>
-                          )}
+                          {task.production && <p className="text-xs text-gray-400 mt-0.5">Production linked</p>}
                         </td>
-                        <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                          {formatDate(task.dueDate)}
-                        </td>
+                        <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{formatDate(task.dueDate)}</td>
                         <td className="px-4 py-3">
                           {dept ? (
                             <div className="flex items-center gap-2">
                               <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dept.colorCode || '#6366f1' }} />
                               <span className="text-gray-700">{dept.name}</span>
                             </div>
-                          ) : (
-                            <span className="text-gray-400">Unassigned</span>
-                          )}
+                          ) : <span className="text-gray-400">Unassigned</span>}
                         </td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[task.status] || STATUS_STYLES[TIMELINE_STATUS.NOT_STARTED]}`}>
