@@ -6,6 +6,7 @@ import { TIMELINE_STATUS } from '../models/timeline';
 import CalendarGrid from '../components/timeline/CalendarGrid';
 import GanttView from '../components/timeline/GanttView';
 import TemplatesPanel from '../components/timeline/TemplatesPanel';
+import NotificationBanner from '../components/timeline/NotificationBanner';
 
 const STATUS_STYLES = {
   [TIMELINE_STATUS.NOT_STARTED]: 'bg-gray-100 text-gray-600',
@@ -135,6 +136,8 @@ export default function TimelineView() {
           )}
         </div>
       </div>
+
+      {!showTemplates && <NotificationBanner tasks={tasks} />}
 
       {showTemplates ? (
         <TemplatesPanel
