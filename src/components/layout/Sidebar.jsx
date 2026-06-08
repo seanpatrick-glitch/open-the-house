@@ -4,39 +4,18 @@ import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 
 const NAV_ITEMS = [
-  { key: 'home',        label: 'Home',                   emoji: '🏠' },
-  { key: 'productions',  label: 'Productions',            emoji: '🎭' },
-  { key: 'timeline',     label: 'Timeline',               emoji: '📅' },
-  { key: 'departments',  label: 'Departments',            emoji: '🏢' },
-  {
-    key: 'volunteers-group',
-    label: 'Volunteers',
-    emoji: '🙋',
-    children: [
-      { key: 'volunteer-list',    label: 'Volunteer List'    },
-      { key: 'invite-volunteer',  label: 'Invite Volunteer'  },
-    ],
-  },
-  { key: 'lobby',       label: 'Lobby',                  emoji: '🏛️' },
-  { key: 'bar-program', label: 'Bar Program',            emoji: '🍹' },
-  {
-    key: 'inventory-group',
-    label: 'Inventory and Ordering',
-    emoji: '📦',
-    children: [
-      { key: 'inventory-beverages',   label: 'Beverages'               },
-      { key: 'inventory-concessions', label: 'Concessions and Snacks'  },
-      { key: 'inventory-merch',       label: 'Merch'                   },
-    ],
-  },
-  { key: 'promo', label: 'Promo', emoji: '📣' },
+  { key: 'home',        label: 'Home',        emoji: '🏠' },
+  { key: 'productions', label: 'Productions', emoji: '🎭' },
+  { key: 'timeline',    label: 'Timeline',    emoji: '📅' },
+  { key: 'departments', label: 'Departments', emoji: '🏢' },
+  { key: 'places',      label: 'Places',      emoji: '📍' },
   {
     key: 'collaborators-group',
     label: 'Collaborators',
     emoji: '👥',
     children: [
-      { key: 'collaborator-list',    label: 'Collaborator List'    },
-      { key: 'invite-collaborator',  label: 'Invite Collaborator'  },
+      { key: 'collaborator-list',   label: 'Collaborator List'   },
+      { key: 'invite-collaborator', label: 'Invite Collaborator' },
     ],
   },
   { key: 'settings', label: 'Settings', emoji: '⚙️' },
@@ -91,7 +70,7 @@ export default function Sidebar({ activeSection, onNavigate, sidebarOpen }) {
       {/* Logo + user info */}
       <div className="flex-shrink-0 px-5 pt-6 pb-5 border-b border-gray-700">
         <p className="text-white font-bold text-base leading-tight tracking-tight">
-          Open the House
+          Places People!
         </p>
         <p className="text-gray-400 text-xs mt-3 truncate">{userProfile?.email}</p>
         <p className="text-amber-500 text-xs capitalize mt-0.5">{userProfile?.role}</p>

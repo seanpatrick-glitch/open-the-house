@@ -20,6 +20,7 @@ const SECTION_LABELS = {
   'inventory-merch':       'Merch',
   promo:                   'Promo',
   'collaborator-list':     'Collaborator List',
+  places:                  'Places',
   settings:                'Settings',
 }
 
@@ -95,7 +96,7 @@ export default function DashboardShell() {
               <line x1="2" y1="17" x2="20" y2="17" />
             </svg>
           </button>
-          <span className="text-gray-900 font-semibold text-base">Open the House</span>
+          <span className="text-gray-900 font-semibold text-base">Places People!</span>
         </header>
 
         {/* Scrollable content area */}

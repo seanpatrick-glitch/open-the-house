@@ -44,6 +44,11 @@ export default function TimelineView() {
     if (!orgId) return;
 
     const loadDepartments = async () => {
+      const orgSnap = await getDoc(doc(db, 'organizations', orgId));
+      if (!orgSnap.exists() || !orgSnap.data().departmentsEnabled) {
+        setDepartments({});
+        return;
+      }
       const snap = await getDocs(
         query(collection(db, 'departments'), where('orgId', '==', orgId))
       );
