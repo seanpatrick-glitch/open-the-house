@@ -1,7 +1,7 @@
 # Places People! — Project State
 > Single source of truth for all Claude sessions. Read this first on every sync.
 > Last updated: 2026-06-07
-> Updated by: [chat name or Claude Code]
+> Updated by: Claude Code
 
 ---
 
@@ -29,9 +29,10 @@
 - Dashboard shell
 - Departments module (Steps 1 through 5 complete including Settings toggle, list view, inline creation form, department head assignment)
 - Planning Timeline Steps 1 through 7 committed
+- Planning Timeline Step 8 Part A committed (task creation form with visibleToAll toggle, CalendarGrid day offset bug fix)
 
 **In progress:**
-- Planning Timeline Step 8 Part A (task creation form with visibleToAll toggle) written and under test
+- Planning Timeline Step 8 Part B (next step TBD)
 
 **Blocked:**
 - Productions build cannot proceed until Feature Roadmap planning session completes the Productions spec
@@ -146,6 +147,7 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 
 ## SECTION 8: RECENT CHANGES
 
+- 2026-06-07: Planning Timeline Step 8 Part A committed — task creation form with visibleToAll toggle, CalendarGrid day offset bug fixed
 - 2026-06-07: PROJECT_STATE.md and PROMPT_LIBRARY.md added to docs folder in repo
 - 2026-06-03: Living Record chat established and initialized
 - 2026-05-27: Phase 1 validation confirmed complete. Three Strong Yes signals. Scope locked as broader live event operations.
