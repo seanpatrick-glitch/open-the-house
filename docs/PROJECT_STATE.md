@@ -1,7 +1,7 @@
 # Places People! — Project State
 > Single source of truth for all Claude sessions. Read this first on every sync.
-> Last updated: 2026-06-07
-> Updated by: Claude Code
+> Last updated: 2026-06-08
+> Updated by: Code Interpreter chat
 
 ---
 
@@ -20,29 +20,43 @@
 
 ## SECTION 2: BUILD STATUS
 
-**Overall:** Four foundational steps complete. App live at open-the-house.web.app.
+**Overall:** Planning Timeline complete through Step 8a. Post-timeline cleanup done. App live at open-the-house.web.app.
 
 **Complete:**
 - Organization creation flow
-- Role-based auth router
+- Role-based auth routing
 - Invite flow
 - Dashboard shell
-- Departments module (Steps 1 through 5 complete including Settings toggle, list view, inline creation form, department head assignment)
-- Planning Timeline Steps 1 through 7 committed
-- Planning Timeline Step 8 Part A committed (task creation form with visibleToAll toggle, CalendarGrid day offset bug fix)
+- Productions section (all four steps)
+- Departments (all five steps, fully deployed)
+- Planning Timeline Steps 1–8a:
+  - Step 1: Firestore data model, security rules deployed
+  - Step 2: Task list view (confirmed active, composite index resolved)
+  - Step 3: Calendar view with department filter and detail panel
+  - Step 4: Gantt view with department color coding, today marker, click-to-detail
+  - Step 5: View switcher with persisted preference on user document
+  - Step 6: Template creation and use-template flow with anchor date and live due date preview
+  - Step 7: In-app notification banner (overdue, due-soon, handoff-ready)
+  - Step 8a: Task creation form with visibleToAll toggle
+
+**Deferred:**
+- Step 8b: Access request system for Department Heads (deferred until Department Head role users exist in system for proper testing)
 
 **In progress:**
-- Planning Timeline Step 8 Part B (next step TBD)
-
-**Blocked:**
-- Productions build cannot proceed until Feature Roadmap planning session completes the Productions spec
+- Nothing currently active
 
 **Next build step:**
-- Complete and commit Planning Timeline Step 8, then post-timeline cleanup items
+- People coordination module spec session in Feature Roadmap chat, then build
 
-**Known cleanup items:**
-- Rename sidebar header from Open the House to Places People!
-- Fix department dropdowns to respect the departmentsEnabled toggle on the org document
+**Post-timeline cleanup completed:**
+- Sidebar header renamed from "Open the House" to "Places People!" in both desktop and mobile headers
+- Sidebar stripped to built modules only: Home, Timeline, Departments, Places, Productions, Collaborators, People, Settings
+- Old src/components/departments/DepartmentsView.jsx deleted
+- TimelineView loadDepartments updated to respect departmentsEnabled toggle on org document
+
+**Known bugs flagged (not blocking, fix-it session needed):**
+- Add a Place feature in Productions silently fails
+- Email invite generation failing
 
 **Firebase:**
 - Project: open-the-house (not show-prep-app)
@@ -147,6 +161,10 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 
 ## SECTION 8: RECENT CHANGES
 
+- 2026-06-08: Planning Timeline Steps 1–8a complete and committed. Post-timeline cleanup complete. Sidebar renamed, old departments file deleted, department dropdown respects departmentsEnabled toggle.
+- 2026-06-08: Firestore composite index (tasks: orgId ascending, dueDate ascending) confirmed active. Timeline Step 2 confirmed complete.
+- 2026-06-08: Firebase project misconfiguration resolved. .firebaserc was pointing to show-prep-app instead of open-the-house. Firebase CLI re-authenticated. Rules now deploy to correct project.
+- 2026-06-08: Recurring timezone bug fixed across multiple components. Date input strings were parsing as UTC midnight causing day-offset errors. Fix: local date construction using new Date(year, month - 1, day) throughout.
 - 2026-06-07: Planning Timeline Step 8 Part A committed — task creation form with visibleToAll toggle, CalendarGrid day offset bug fixed
 - 2026-06-07: PROJECT_STATE.md and PROMPT_LIBRARY.md added to docs folder in repo
 - 2026-06-03: Living Record chat established and initialized
