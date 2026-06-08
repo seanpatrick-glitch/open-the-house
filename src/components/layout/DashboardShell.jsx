@@ -21,6 +21,7 @@ const SECTION_LABELS = {
   promo:                   'Promo',
   'collaborator-list':     'Collaborator List',
   places:                  'Places',
+  people:                  'People',
   settings:                'Settings',
 }
 
