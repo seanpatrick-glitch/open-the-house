@@ -7,6 +7,7 @@ import CalendarGrid from '../components/timeline/CalendarGrid';
 import GanttView from '../components/timeline/GanttView';
 import TemplatesPanel from '../components/timeline/TemplatesPanel';
 import NotificationBanner from '../components/timeline/NotificationBanner';
+import CreateTaskForm from '../components/timeline/CreateTaskForm';
 
 const STATUS_STYLES = {
   [TIMELINE_STATUS.NOT_STARTED]: 'bg-gray-100 text-gray-600',
@@ -35,6 +36,7 @@ export default function TimelineView() {
   const [loading, setLoading]         = useState(true);
   const [viewMode, setViewMode]       = useState(null);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showCreateTask, setShowCreateTask] = useState(false);
 
   const orgId = userProfile?.orgId;
 
@@ -112,6 +114,14 @@ export default function TimelineView() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {!showTemplates && !showCreateTask && (
+            <button
+              onClick={() => setShowCreateTask(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              New Task
+            </button>
+          )}
           <button
             onClick={() => setShowTemplates(t => !t)}
             className={`text-sm font-medium px-4 py-2 rounded-lg border transition-colors ${showTemplates ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'border-gray-200 text-gray-600 hover:text-gray-900'}`}
@@ -139,7 +149,20 @@ export default function TimelineView() {
 
       {!showTemplates && <NotificationBanner tasks={tasks} />}
 
-      {showTemplates ? (
+      {showCreateTask && (
+        <div className="mb-6">
+          <button onClick={() => setShowCreateTask(false)}
+            className="text-sm text-gray-500 hover:text-gray-700 mb-4 flex items-center gap-1">
+            ← Back to Timeline
+          </button>
+          <CreateTaskForm
+            onSuccess={() => setShowCreateTask(false)}
+            onCancel={() => setShowCreateTask(false)}
+          />
+        </div>
+      )}
+
+      {!showCreateTask && (showTemplates ? (
         <TemplatesPanel
           departments={departments}
           onClose={() => setShowTemplates(false)}
@@ -197,7 +220,7 @@ export default function TimelineView() {
             </div>
           )}
         </>
-      )}
+      ))}
     </div>
   );
 }
