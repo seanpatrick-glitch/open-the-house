@@ -1,6 +1,6 @@
 # Places People! — Project State
 > Single source of truth for all Claude sessions. Read this first on every sync.
-> Last updated: 2026-06-08
+> Last updated: 2026-07-12
 > Updated by: Code Interpreter chat
 
 ---
@@ -161,6 +161,7 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 
 ## SECTION 8: RECENT CHANGES
 
+- 2026-07-12: UX session — first-run experience fully mapped in PP_FirstRun_Experience.md v2. Logo animation into timeline header locked. Founding philosophy confirmed as onboarding frame. Conversational intake sequence confirmed. Visual org chart with animated access tiles confirmed. Four onboarding tasks locked. Scope question and open/close dates added to first production creation. Four dashboard states named (Planning, Final Countdown, Live, Postmortem) with content hierarchy mapped for each. Invite review screen with editable email template locked. Inline role assignment with plain language chips and animated access tiles locked. Stage light timeline visual tentative, routed to Brand and Visual Identity. Personality quiz for non-admin onboarding flagged for Feature Roadmap. Minimum proof-of-concept moment confirmed: create production, two dates, timeline generates, assign task, notify person. Live dashboard deep dive and non-admin first experience remain open for next session.
 - 2026-06-08: Planning Timeline Steps 1–8a complete and committed. Post-timeline cleanup complete. Sidebar renamed, old departments file deleted, department dropdown respects departmentsEnabled toggle.
 - 2026-06-08: Firestore composite index (tasks: orgId ascending, dueDate ascending) confirmed active. Timeline Step 2 confirmed complete.
 - 2026-06-08: Firebase project misconfiguration resolved. .firebaserc was pointing to show-prep-app instead of open-the-house. Firebase CLI re-authenticated. Rules now deploy to correct project.
