@@ -46,7 +46,7 @@
 - Nothing currently active
 
 **Next build step:**
-- People coordination module spec session in Feature Roadmap chat, then build
+- People Coordination module. Feature Roadmap planning session held July 12 (Production tier, role inference, Provisional Admin, hybrid onboarding locked). Dedicated module spec session still needed for assignments, self-signup, hour tracking, and check-in. Current build state of person-types, custom field configuration, and record creation unconfirmed — verification needed before Phase 0 beta setup for Tempest can begin.
 
 **Post-timeline cleanup completed:**
 - Sidebar header renamed from "Open the House" to "Places People!" in both desktop and mobile headers
@@ -92,30 +92,37 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 ## SECTION 4: VALIDATION STATUS
 
 **Phase 1 status:** Complete
-**Calls completed:** 3
-**Strong Yes signals:** 3
+**Calls completed:** 4
+**Strong Yes signals:** 4
 **Scope confirmed:** Broader live event operations (not FOH-specific)
 
 **Confirmed contacts:**
 - Tempestt H — Orlando Fringe (Strong Yes, broader event ops scope)
 - Melissa F — Orlando Fringe (Strong Yes, broader event ops scope)
 - Sarah Catherine B — Theatre Winter Haven (Strong Yes, offered full season beta, first organic pricing signal)
+- Danielle — Central Florida Vocal Arts, production manager (Strong Yes, broader event ops scope)
+
+**Key language bank additions from Danielle:**
+- "A system that houses all the information and gives a timeline and checklist of items that should be done"
+- "I don't even know that I know all the things I do, because I just do them" — trainability framing, platform as handoff system
 
 **Pending contacts:**
-- Amber — Orlando Fringe volunteer coordinator (potential beta user, not confirmed)
-- Dan — Theatre Winter Haven producing director (validation call pending)
-- Jen T — validation call scheduled
+- Amber — Orlando Fringe volunteer coordinator (Facebook outreach sent, no response. Further outreach on hold until Sean has a direct conversation with her.)
+- Dan Chesnik — Theatre Winter Haven producing director (validation call pending)
+- Jen T — call was scheduled for late May, follow-up status unknown as of July 12
 
-**Phase 2:** App-forward outreach. Not yet started. Pending demo-ready build.
+**Phase 2:** App-forward outreach. Not yet started. Pending demo-ready build. Open decision as of July 12: whether to continue Phase 1 validation outreach (Dan Chesnik, Jen T) or begin Phase 2 infrastructure planning now that the 4 of 4 Strong Yes threshold is met.
 
 **Beta targets:**
-- Orlando Fringe (Tempestt, Amber) — first org
+- Orlando Fringe — Tempest (artist management, Winter Minifest) is primary target as of July 12. Amber (volunteer coordination) is a secondary consideration pending direct outreach.
 - Theatre Winter Haven (Sarah Catherine) — second org
 
-**Beta success threshold (Amber):**
-- Minimum: logs in and adds 5 or more records without texting Sean for help
-- Meaningful: enters full roster without a walkthrough
+**Beta success threshold (Tempest, primary target as of July 12):**
+- Minimum: logs in and adds 5 or more artists without texting Sean for help
+- Meaningful: enters full artist roster and names something missing
 - Strong signal: invites a team member without being asked
+
+**Beta framework (locked July 12):** Phase 0 pre-login setup — Sean configures org, venues, person-type fields, and example records before Tempest ever logs in, so she sees her festival, not a blank system. First beta task scoped to artist roster entry only. Feedback collection is conversational, two questions only (what felt easy, what felt missing or wrong), no survey or form. Invite framing is peer-to-peer, asking her to find what is wrong rather than adopt a tool.
 
 ---
 
@@ -125,11 +132,11 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 **Tagline:** There's more to the show than just the stage.
 **Brand hold:** LIFTED. Scope confirmed. Branding can proceed.
 
-**Visual identity direction:** Two finalists pending final selection.
-- Direction 1 (Opera Aesthetic): Playfair Display and DM Sans, crimson italic exclamation point, deep near-black with atmospheric crimson gradient
-- Direction 4 (Stage Call): Caveat wordmark, custom stage light SVG exclamation mark, electric blue action color, amber exclamation mark
+**Visual identity direction:** LOCKED as Direction 4 (Stage Call), July 12.
+- Direction 4 (Stage Call, chosen): Canvas-generated brush script wordmark, Places in white over People in electric blue, bristle texture with blue shadow offset. Exclamation point is a real PAR/Fresnel fixture photo, presented as a diagonal fixture with a second grounded fixture below. Tagline typeface is serif (Playfair Display territory, exact font pending confirmation). Deep blue atmosphere with theatrical haze, dual fixture photographic composition, dark by design. Isolated P brushstroke confirmed as standalone icon asset for favicon and app icon.
+- Direction 1 (Opera Aesthetic, not chosen): Playfair Display and DM Sans, crimson italic exclamation point, deep near-black with atmospheric crimson gradient. Full rebuild deferred now that Direction 4 is locked. Brand board retained at pp-brand-boards.html for reference.
 
-**Final direction:** Not yet locked. Pending fixture legibility confirmation at small lockup sizes.
+**Final direction:** LOCKED as Direction 4 (Stage Call). Remaining open question: is the Direction 4 Canvas brush script a licensable font or fully image-generated lettering with no underlying font file. Production implications pending. Direction 4 brand board rebuild needed to reflect the fully locked system. Favicon and app icon small-scale test for the isolated P mark not yet done.
 
 **Hard brand rules:**
 - No dashes ever anywhere in copy
@@ -143,24 +150,30 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 
 ## SECTION 6: ACTIVE HOLDS
 
-**Visual identity final direction:** On hold pending fixture legibility confirmation at small sizes.
+**Direction 4 font/licensing question:** On hold pending confirmation of whether the Canvas brush script is a licensable font or image-generated lettering with no underlying font file. Sean makes the final call. Direction 4 brand board rebuild and favicon/app icon small-scale test also pending on this.
 
 **Phase 2 outreach:** On hold pending demo-ready build.
 
-**Landing page:** On hold pending visual identity lock.
+**Landing page:** Copy drafted July 12 in Brand Voice and Messaging chat (hero, subhero, problem statement, six feature modules, who it's for, origin story, CTA placeholder, footer). Visual/design implementation on hold pending Direction 4 brand board rebuild. CTA mechanics on hold pending access flow build. Page format (long-form vs. tight single-page) not yet decided.
+
+**People Coordination module build:** Feature Roadmap planning session held July 12 (Production tier, role inference, Provisional Admin, hybrid onboarding locked). On hold pending a dedicated module spec session for assignments, self-signup, hour tracking, and check-in, and pending confirmation that person-types, custom field configuration, and record creation are functional in the current build — required before Phase 0 beta setup for Tempest can begin.
 
 ---
 
 ## SECTION 7: OPEN DECISIONS
 
-- Which visual identity direction: Direction 1 Opera Aesthetic or Direction 4 Stage Call?
-- Feature Roadmap planning session for Productions section not yet scheduled.
-- App Architecture chat needs updating to reflect Department as optional tier and Venue as real container.
+- RESOLVED July 12: Visual identity direction locked as Direction 4 (Stage Call).
+- Is the Direction 4 Canvas brush script a real licensable font or image-generated lettering?
+- RESOLVED July 12: Feature Roadmap planning session held (Production tier, role inference, Provisional Admin, hybrid onboarding locked). Still open: dedicated People Coordination module spec session for assignments, self-signup, hour tracking, and check-in not yet scheduled.
+- Does App Architecture chat need updating to reflect Department as optional tier, Venue as real container, Production as optional tier below Venue, and the new Provisional Admin / ownership invite flow?
+- Current State document flagged as stale July 12 — needs update to reflect Productions, Departments, and Timeline Steps 1 through 8a all complete.
+- Decision needed on whether to continue Phase 1 validation outreach (Dan Chesnik, Jen T) or begin Phase 2 infrastructure planning, now that the 4 of 4 Strong Yes threshold is met.
 
 ---
 
 ## SECTION 8: RECENT CHANGES
 
+- 2026-07-12: Reconciliation pass across today's session updates. Two conflicts checked with Sean and resolved: (1) Visual identity direction locked as Direction 4 (Stage Call) — Section 5/6/7 updated accordingly, Direction 1 marked as not chosen. (2) Feature Roadmap planning session for People Coordination marked as held July 12 (Production tier, role inference, Provisional Admin, hybrid onboarding locked) — remaining open item narrowed to the dedicated module spec session for assignments, self-signup, hour tracking, and check-in. Also updated without conflict: beta target recentered to Tempest (Amber demoted to secondary, pending direct outreach) across Section 4; Jen T status downgraded from "scheduled" to "follow-up status unknown"; Landing page hold updated to reflect copy drafted while visual implementation remains on hold; People Coordination build hold updated to include unconfirmed build state as a blocker; new open items added to Section 7 for the stale Current State document and the Phase 1 vs Phase 2 outreach decision. Section 4 in the repo copy was also brought up to parity with Drive (call count, Danielle, language bank) since it had drifted out of sync with the repo's own Section 8 history.
 - 2026-07-12: Command Center session close — PROJECT_STATE.md workflow confirmed working via Google Drive for Desktop sync. Command Center system prompt identified as needing update to reflect current state. People Coordination module confirmed as next build priority pending Feature Roadmap session. Four validation calls confirmed complete in Project State (Tempestt, Melissa, Sarah Catherine, Danielle). Visual identity confirmed as Direction 4 with font question still open. Open: Command Center system prompt update needed, People Coordination module Feature Roadmap planning session not yet scheduled, visual identity final direction call pending font question resolution, two known bugs open (Add a Place silent fail, email invite generation fail).
 - 2026-07-12: Feature Roadmap session — Production confirmed as internal name for optional configurable container below Venue, display label configurable per org, some orgs never use this tier. Production tier is optional: festival orgs create one or two Productions per year at event level, artist shows are Person records assigned to venues, not Productions. Role inference logic defined for people intake: three sequential questions infer role from plain language, Admin versus Secondary Admin defaults to Admin. Provisional Admin established as default state for first signup, with two paths: confirm as Admin, or select real role and send platform ownership invite to intended Admin, full access throughout. New invite type needed alongside standard collaborator invite. Hybrid onboarding confirmed: self-serve templates plus premium white glove add-on, AI-assisted onboarding is Phase 3. First-run experience spec v2 confirmed as UX build target. Open: People coordination module spec session needed (assignments, self-signup, hour tracking, check-in), Provisional Admin and ownership invite need App Architecture and UX briefings, Current State document is stale and needs updating to reflect Productions, Departments, and Timeline Steps 1 through 8a all complete.
 - 2026-07-12: Beta and Onboarding Management session — beta target recentered from Amber (volunteer coordination) to Tempest (artist management, Orlando Fringe Winter Minifest). Amber deferred as secondary consideration pending direct outreach. Beta framework designed and locked: Phase 0 pre-login setup principle (Sean configures org, venues, person-type fields, and example records before Tempest ever logs in, so she sees her festival, not a blank system). First beta task scoped to artist roster entry only, no other features in session one. Feedback collection locked as conversational two-question format (what felt easy, what felt missing or wrong), no survey or form. Three-tier success definition locked: minimum is logs in and adds five or more artists without help, meaningful is full roster entry plus names something missing, strong signal is invites a team member without being asked. Invite framing locked as peer-to-peer, asking her to find what is wrong rather than adopt a tool. Core adoption insight carried in from validation calls: the risk is not technical failure, it is that the tab closes and never reopens. Active blocker: people coordination module build state unconfirmed — whether person-types, custom field configuration, and record creation are functional determines whether Phase 0 setup can begin now or Code Interpreter must move first. Amber outreach on hold until Sean has a direct conversation with her.
