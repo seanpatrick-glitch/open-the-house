@@ -1,7 +1,7 @@
 # Places People! — Project State
 > Single source of truth for all Claude sessions. Read this first on every sync.
 > Last updated: 2026-07-12
-> Updated by: Code Interpreter chat
+> Updated by: Claude Code (full sync pass — Drive and repo copies merged to match exactly)
 
 ---
 
@@ -24,11 +24,11 @@
 
 **Complete:**
 - Organization creation flow
-- Role-based auth routing
+- Role-based auth router
 - Invite flow
 - Dashboard shell
 - Productions section (all four steps)
-- Departments (all five steps, fully deployed)
+- Departments module (all five steps including Settings toggle, list view, inline creation form, department head assignment)
 - Planning Timeline Steps 1–8a:
   - Step 1: Firestore data model, security rules deployed
   - Step 2: Task list view (confirmed active, composite index resolved)
@@ -38,15 +38,15 @@
   - Step 6: Template creation and use-template flow with anchor date and live due date preview
   - Step 7: In-app notification banner (overdue, due-soon, handoff-ready)
   - Step 8a: Task creation form with visibleToAll toggle
+- Post-timeline cleanup pass (sidebar renamed to Places People!, stale files deleted)
+- Firebase project misconfiguration fixed (.firebaserc now points to open-the-house not show-prep-app)
+- Composite index resolved (tasks collection, orgId ascending, dueDate ascending)
 
 **Deferred:**
-- Step 8b: Access request system for Department Heads (deferred until Department Head role users exist in system for proper testing)
+- Planning Timeline Step 8 Part B (access request and admin approval flow, aka Step 8b) deferred until Department Head role users exist in org for testing
 
 **In progress:**
 - Nothing currently active
-
-**Next build step:**
-- People Coordination module. Feature Roadmap planning session held July 12 (Production tier, role inference, Provisional Admin, hybrid onboarding locked). Dedicated module spec session still needed for assignments, self-signup, hour tracking, and check-in. Current build state of person-types, custom field configuration, and record creation unconfirmed — verification needed before Phase 0 beta setup for Tempest can begin.
 
 **Post-timeline cleanup completed:**
 - Sidebar header renamed from "Open the House" to "Places People!" in both desktop and mobile headers
@@ -54,13 +54,16 @@
 - Old src/components/departments/DepartmentsView.jsx deleted
 - TimelineView loadDepartments updated to respect departmentsEnabled toggle on org document
 
-**Known bugs flagged (not blocking, fix-it session needed):**
-- Add a Place feature in Productions silently fails
-- Email invite generation failing
+**Known open bugs:**
+- Add a Place silent fail in Productions
+- Email invite generation fail
 
 **Firebase:**
 - Project: open-the-house (not show-prep-app)
 - Composite index confirmed resolved: tasks collection, orgId ascending, dueDate ascending
+
+**Next build priority:**
+- People Coordination module. Feature Roadmap planning session held July 12 (Production tier, role inference, Provisional Admin, hybrid onboarding locked). Dedicated module spec session still needed for assignments, self-signup, hour tracking, and check-in. Current build state of person-types, custom field configuration, and record creation unconfirmed — verification needed before Phase 0 beta setup for Tempest can begin.
 
 ---
 
@@ -69,17 +72,20 @@
 **Hierarchy (locked):**
 Organization → Department (optional) → Venue → Production
 
-**Department:** Optional tier. Activated by larger orgs. Invisible to smaller orgs. Can be activated later without a rebuild.
+**Department:** Optional tier. Activated by larger orgs (fringe festivals, multi-department organizations). Invisible to smaller orgs. Can be activated later without a rebuild.
 
 **Venue:** Real container, not a tag. People can be assigned to a production, a venue, or both.
 
-**Role types (6):**
+**Role types:**
 - Admin (org-wide, title configurable)
 - Secondary Admin
 - Department Head
 - Org Collaborator (oversight, board/executive level)
+- Venue Manager (optional, site-specific)
 - Production Collaborator (scoped to one production)
 - Person (configurable label: volunteer, artist, staff, technician, etc.)
+
+Note: this list merges the role types previously recorded separately in the Drive and repo copies (which had drifted — one listed Venue Manager but not Secondary Admin/Department Head, the other the reverse). Flagged in Section 7 for confirmation in an App Architecture session, alongside Provisional Admin as a signup state rather than a permanent role.
 
 **People coordination module:**
 Three-layer intake schema. Universal fields always present. Toggleable common fields admin turns on or off. Admin-defined custom fields. Supported types: text, date, select, multiselect, checkbox groups, file upload.
@@ -127,7 +133,7 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 - Theatre Winter Haven (Sarah Catherine) — second org
 
 **Beta success threshold (Tempest, primary target as of July 12):**
-- Minimum: logs in and adds 5 or more artists without texting Sean for help
+- Minimum: logs in and adds 5+ artists without texting Sean for help
 - Meaningful: enters full artist roster and names something missing
 - Strong signal: invites a team member without being asked
 
@@ -143,7 +149,7 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 
 **Visual identity direction:** LOCKED as Direction 4 (Stage Call), July 12.
 - Direction 4 (Stage Call, chosen): Canvas-generated brush script wordmark, Places in white over People in electric blue, bristle texture with blue shadow offset. Exclamation point is a real PAR/Fresnel fixture photo, presented as a diagonal fixture with a second grounded fixture below. Tagline typeface is serif (Playfair Display territory, exact font pending confirmation). Deep blue atmosphere with theatrical haze, dual fixture photographic composition, dark by design. Isolated P brushstroke confirmed as standalone icon asset for favicon and app icon.
-- Direction 1 (Opera Aesthetic, not chosen): Playfair Display and DM Sans, crimson italic exclamation point, deep near-black with atmospheric crimson gradient. Full rebuild deferred now that Direction 4 is locked. Brand board retained at pp-brand-boards.html for reference.
+- Direction 1 (Opera Aesthetic, not chosen): Playfair Display + DM Sans, crimson italic exclamation point, deep near-black with atmospheric crimson gradient. Full rebuild deferred now that Direction 4 is locked. Brand board retained at pp-brand-boards.html for reference.
 
 **Final direction:** LOCKED as Direction 4 (Stage Call). Remaining open question: is the Direction 4 Canvas brush script a licensable font or fully image-generated lettering with no underlying font file. Production implications pending. Direction 4 brand board rebuild needed to reflect the fully locked system. Favicon and app icon small-scale test for the isolated P mark not yet done.
 
@@ -179,11 +185,15 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 - Approval flow data architecture decision needed before build: item level, phase level, or production level structure must be locked before Code Interpreter builds the in-platform approval flow.
 - Opening night readiness view formal spec needed before build.
 - Decision needed on whether to continue Phase 1 validation outreach (Dan Chesnik, Jen T) or begin Phase 2 infrastructure planning, now that the 4 of 4 Strong Yes threshold is met.
+- Role types list in Section 3 needs confirmation in an App Architecture session: merges two previously-drifted lists (Venue Manager vs. Secondary Admin/Department Head) and needs to reconcile Provisional Admin as a signup state.
 
 ---
 
 ## SECTION 8: RECENT CHANGES
 
+> Most recent first. Last 5 significant changes.
+
+- 2026-07-12: Full sync pass — Drive and repo copies of PROJECT_STATE.md had drifted independently in both directions (repo held extra Section 2 build detail, a Firebase note, and older Section 8 history from May–June that Drive lacked; Drive held newer Section 8 entries and extra Section 9 file IDs that repo lacked). Merged into one authoritative version written identically to both files, per Sean's request that the two match exactly. No content deleted: all unique history entries from both copies preserved and reordered chronologically. Section 3 role types reconciled as a union (was two different 5/6-role lists) and flagged in Section 7 for confirmation in an App Architecture session. Section 10 merged to include the repo copy's "never delete content" instruction, which Drive was missing.
 - 2026-07-12: Competitive Landscape session — competitive map confirmed: real competition is Google Sheets, Docs, and group texts, not software, and Places People! has no competitor in the high theater specificity / high operational depth quadrant. Operational depth axis defined as moving from "holds information" to "drives decisions and actions," with opening night readiness view, volunteer gap detection, phase completion gates, and collaborator-configured updates named as the features that make that move. Opening night readiness view confirmed as the single highest-value pre-launch feature, demonstrable in the Loom demo. Collaborator-configured update preferences spec'd: collaborators set their own notification preferences at the point of joining a production, phase completions and key milestones only, not task-level noise. In-platform approval flows spec'd: purchase links, budget line items, and uploaded files submitted for approval with Pending, Approved, and Flagged for Discussion states, timestamped, attached to the production, serving as a governance record for board members and executive directors — confirmed as top of the Phase 2 build list. Open: approval flow data architecture decision needed before build (item level vs. phase level vs. production level), opening night readiness view formal spec needed before build. Current State document conflict flagged: its Section 4 lists Productions spec as the active blocker, but the actual active blocker is the Timeline spec in the Feature Roadmap chat.
 - 2026-07-12: Backfilled Section 3 with Planning Timeline architecture details from an earlier spec session that had never been recorded there, surfaced during today's full-project update pass. Most of that update's content — Planning Timeline built through Step 8a, Productions and Departments complete, Firestore data model deployed — was already completed and recorded in Section 8 as of June 2026, so it was not re-logged. New to the record: production-timeline relationship confirmed as Scenario C built in two stages, cross-department access requests restricted to Department Heads only, Org Collaborators confirmed view-only with clarification flag capability, Phase 1 notification spec confirmed as in-app plus email with three triggers (overdue, due-soon, handoff-ready), view switcher spec (three views — timeline, calendar, list — with org default plus per-person override), and recurring timeline templates using offsetDays from anchor date.
 - 2026-07-12: Reconciliation pass across today's session updates. Two conflicts checked with Sean and resolved: (1) Visual identity direction locked as Direction 4 (Stage Call) — Section 5/6/7 updated accordingly, Direction 1 marked as not chosen. (2) Feature Roadmap planning session for People Coordination marked as held July 12 (Production tier, role inference, Provisional Admin, hybrid onboarding locked) — remaining open item narrowed to the dedicated module spec session for assignments, self-signup, hour tracking, and check-in. Also updated without conflict: beta target recentered to Tempest (Amber demoted to secondary, pending direct outreach) across Section 4; Jen T status downgraded from "scheduled" to "follow-up status unknown"; Landing page hold updated to reflect copy drafted while visual implementation remains on hold; People Coordination build hold updated to include unconfirmed build state as a blocker; new open items added to Section 7 for the stale Current State document and the Phase 1 vs Phase 2 outreach decision. Section 4 in the repo copy was also brought up to parity with Drive (call count, Danielle, language bank) since it had drifted out of sync with the repo's own Section 8 history.
@@ -194,13 +204,16 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 - 2026-07-12: Brand and Visual Identity session — Direction 4 wordmark typeface changed from Caveat to Canvas-generated brush script (white Places over blue People, bristle texture, blue shadow offset). Direction 4 logotype color split locked: Places in white, People in electric blue. Direction 4 tagline typeface updated to serif (Playfair Display territory, exact font pending confirmation). Exclamation point locked as real PAR/Fresnel fixture photo, presented as diagonal fixture with second grounded fixture below. Direction 4 atmosphere confirmed: deep blue with theatrical haze, dual fixture composition, dark by design. Isolated P brushstroke confirmed as standalone icon asset for favicon and app icon use. Typo flagged in Canvas output: fromplanning missing a space. Tagline confirmed locked: There's more to the show than just the stage. Both brand boards (Direction 4 Stage Call and Direction 1 Opera Aesthetic) delivered as pp-brand-boards.html. Open: font identification for Direction 4 brush script (licensed font vs image-generated lettering), Direction 4 brand board rebuild needed to reflect locked system, decision needed on whether Direction 1 is still live in parallel or Direction 4 has been chosen, favicon and app icon small-scale test for isolated P mark not yet done. Direction 1 full rebuild deferred pending parallel vs. chosen decision.
 - 2026-07-12: Validation call 4 completed with Danielle, production manager at Central Florida Vocal Arts — Strong Yes, broader event ops scope. Full debrief completed (Q1 through Q3 in her exact words). Three new Language Bank entries added, including trainability named as a new signal angle ("I don't even know that I know all the things I do, because I just do them"). Validation Tracker rebuilt as new xlsx with three tabs: Phase 1 Contacts (all four calls logged), Language Bank (all quotes), Phase 2 App Demos (placeholder, on hold). Phase 1 threshold status: 4 of 4 Strong Yes signals across four different org types. Open: Jen T follow-up status unknown (call was scheduled late May), Amber Facebook outreach no response, decision needed on continuing Phase 1 vs beginning Phase 2 infrastructure planning. Phase 2 app-forward outreach remains on hold pending demo-ready build.
 - 2026-07-12: UX session — first-run experience fully mapped in PP_FirstRun_Experience.md v2. Logo animation into timeline header locked. Founding philosophy confirmed as onboarding frame. Conversational intake sequence confirmed. Visual org chart with animated access tiles confirmed. Four onboarding tasks locked. Scope question and open/close dates added to first production creation. Four dashboard states named (Planning, Final Countdown, Live, Postmortem) with content hierarchy mapped for each. Invite review screen with editable email template locked. Inline role assignment with plain language chips and animated access tiles locked. Stage light timeline visual tentative, routed to Brand and Visual Identity. Personality quiz for non-admin onboarding flagged for Feature Roadmap. Minimum proof-of-concept moment confirmed: create production, two dates, timeline generates, assign task, notify person. Live dashboard deep dive and non-admin first experience remain open for next session.
+- 2026-07-12: Prompt Library updated to v8. Living Record chat retired. Sync system simplified: all chats read PROJECT_STATE.md from Drive via fileId 1GpItz6boWZFTyjVZoZN4h7FRJFsTuDHp. Claude Code writes via local file path. Weekly Master Log scheduler added as automated Claude Code workflow. Prompts 9 and 13 merged into single session-close prompt. Google Doc version of PROJECT_STATE.md deleted. MD file is now canonical.
+- 2026-07-12: New machine setup complete. Repo cloned, dependencies installed, app running at localhost:5173. Claude Code installed and authenticated. Google Drive for Desktop configured at G:\My Drive.
+- 2026-06-23: Phase 1 validation confirmed complete with four Strong Yes signals. Danielle at CFVA added as fourth contact. Trainability framing added to language bank.
 - 2026-06-08: Planning Timeline Steps 1–8a complete and committed. Post-timeline cleanup complete. Sidebar renamed, old departments file deleted, department dropdown respects departmentsEnabled toggle.
 - 2026-06-08: Firestore composite index (tasks: orgId ascending, dueDate ascending) confirmed active. Timeline Step 2 confirmed complete.
 - 2026-06-08: Firebase project misconfiguration resolved. .firebaserc was pointing to show-prep-app instead of open-the-house. Firebase CLI re-authenticated. Rules now deploy to correct project.
 - 2026-06-08: Recurring timezone bug fixed across multiple components. Date input strings were parsing as UTC midnight causing day-offset errors. Fix: local date construction using new Date(year, month - 1, day) throughout.
-- 2026-06-07: Planning Timeline Step 8 Part A committed — task creation form with visibleToAll toggle, CalendarGrid day offset bug fixed
-- 2026-06-07: PROJECT_STATE.md and PROMPT_LIBRARY.md added to docs folder in repo
-- 2026-06-03: Living Record chat established and initialized
+- 2026-06-07: Planning Timeline Step 8 Part A committed — task creation form with visibleToAll toggle, CalendarGrid day offset bug fixed.
+- 2026-06-07: PROJECT_STATE.md and PROMPT_LIBRARY.md added to docs folder in repo.
+- 2026-06-03: Living Record chat established and initialized.
 - 2026-05-27: Phase 1 validation confirmed complete. Three Strong Yes signals. Scope locked as broader live event operations.
 - 2026-05-26: Places People! name and tagline locked. Brand hold lifted.
 - 2026-05-20: Department confirmed as optional fourth tier. Communication layer designed in two phases.
@@ -211,8 +224,10 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 
 | Document | fileId |
 |---|---|
+| PP Project State (Google Drive MD file) | 1GpItz6boWZFTyjVZoZN4h7FRJFsTuDHp |
+| PP Prompt Library | 1MwVx3OtbVDSV2eiPoDY-nSqqG3ifHNcN |
+| PP Master Log | 1nMIRAXX-usCkUam-LsKK_9qu4WNYnMNlkgZ3iMSy6vc |
 | Validation Tracker | 1pVnHj_bqpc3tJn-DbajNt8mR0ce4yR2mXuvGT-dlub0 |
-| Master Log | 1nMIRAXX-usCkUam-LsKK_9qu4WNYnMNlkgZ3iMSy6vc |
 | Brand Voice Guide v2 | 1p6sCqfFge6GqEDvuKwWl_HnkiESH6XPYemUGSas7i6k |
 | Call Guide v2 | 1CaCu_iUHMvyn6uRw8PBfwMLYXlnadjmtirDiVz5ao6E |
 
@@ -220,20 +235,34 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 
 ## SECTION 10: HOW CLAUDE CODE UPDATES THIS FILE
 
-At the end of any build session where something meaningful changed:
+When a build session produces a meaningful change, Claude Code should:
 
-1. Edit the relevant section directly
-2. Add a one-line dated entry at the top of Section 8
-3. Update the Last updated date at the top of the file
-4. Commit and push with message format: state: [what changed in one short phrase]
+1. Edit this file under the relevant section
+2. Update Section 8 (Recent Changes) with a one-line dated entry at the top
+3. Update the Last Updated date at the top of the file
+4. Write the updated file to `G:\My Drive\Places People\PROJECT_STATE.md`
+5. Also write to repo at `C:\Users\seanp\open-the-house\docs\PROJECT_STATE.md`
+6. Stage, commit, and push with a descriptive commit message formatted as:
+   `state: [what changed in one short phrase]`
 
-What counts as worth committing: a build step completed and tested, a decision that affects architecture, a blocker identified or resolved, a cleanup item completed.
+**What counts as a meaningful change worth committing:**
+- A build step is completed and tested
+- A decision is made that affects architecture or data model
+- A known cleanup item is resolved
+- A new blocker is identified
+- A section of the nav or data model changes
 
-What does not need a commit: debugging that did not resolve, exploration without a decision, minor wording changes.
+**What does not need a state commit:**
+- Debugging sessions that end without a resolution
+- Exploratory conversations that do not produce a decision
+- Minor wording changes in copy
 
-Never delete content from this file. Only update what changed and add to Section 8.
+**Never delete content from this file.** Only update what changed and add to Section 8; when an open item is resolved, mark it RESOLVED with a date rather than removing it. The Drive copy and repo copy must always match exactly — if they drift, reconcile by merging (never by picking one and discarding the other's unique content) and record the reconciliation in Section 8.
 
 ---
 
 *Places People! | PROJECT_STATE.md | Sean Philbin | Orlando, FL | 2026*
+*Primary read path: Google Drive fileId 1GpItz6boWZFTyjVZoZN4h7FRJFsTuDHp*
+*Repo copy: https://github.com/seanpatrick-glitch/open-the-house/blob/main/docs/PROJECT_STATE.md*
+*Local path: G:\My Drive\Places People\PROJECT_STATE.md*
 *Read live at: https://raw.githubusercontent.com/seanpatrick-glitch/open-the-house/main/docs/PROJECT_STATE.md*
