@@ -175,7 +175,7 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 - Is the Direction 4 Canvas brush script a real licensable font or image-generated lettering?
 - RESOLVED July 12: Feature Roadmap planning session held (Production tier, role inference, Provisional Admin, hybrid onboarding locked). Still open: dedicated People Coordination module spec session for assignments, self-signup, hour tracking, and check-in not yet scheduled.
 - Does App Architecture chat need updating to reflect Department as optional tier, Venue as real container, Production as optional tier below Venue, and the new Provisional Admin / ownership invite flow?
-- Current State document flagged as stale July 12 — needs update to reflect Productions, Departments, and Timeline Steps 1 through 8a all complete. Competitive Landscape session (July 12) flagged a specific error: its Section 4 still lists Productions spec as the active blocker; the actual active blocker is the Timeline spec in the Feature Roadmap chat.
+- RESOLVED July 12: Current State document and other legacy project docs confirmed retired by Sean. PROJECT_STATE.md is the sole source of truth; no further sync needed against Current State.
 - Approval flow data architecture decision needed before build: item level, phase level, or production level structure must be locked before Code Interpreter builds the in-platform approval flow.
 - Opening night readiness view formal spec needed before build.
 - Decision needed on whether to continue Phase 1 validation outreach (Dan Chesnik, Jen T) or begin Phase 2 infrastructure planning, now that the 4 of 4 Strong Yes threshold is met.
