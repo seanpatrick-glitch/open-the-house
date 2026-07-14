@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { PERSON_STATUS } from '../models/people';
 import CreatePersonForm from '../components/people/CreatePersonForm';
 import CsvImportForm from '../components/people/CsvImportForm';
+import PersonProfileView from './PersonProfileView';
 
 const STATUS_STYLES = {
   [PERSON_STATUS.PENDING]:  'bg-amber-100 text-amber-700',
@@ -27,6 +28,7 @@ export default function PeopleView({ onNavigate }) {
   const [showForm, setShowForm]       = useState(false);
   const [showCsvImport, setShowCsvImport]       = useState(false);
   const [csvImportTypeId, setCsvImportTypeId]   = useState(null);
+  const [selectedPersonId, setSelectedPersonId] = useState(null);
 
   const orgId = userProfile?.orgId;
 
@@ -65,6 +67,15 @@ export default function PeopleView({ onNavigate }) {
 
   if (loading) {
     return <div className="p-6 text-gray-500 text-sm">Loading...</div>;
+  }
+
+  if (selectedPersonId) {
+    return (
+      <PersonProfileView
+        personId={selectedPersonId}
+        onBack={() => setSelectedPersonId(null)}
+      />
+    );
   }
 
   return (
@@ -184,7 +195,7 @@ export default function PeopleView({ onNavigate }) {
                     <tr
                       key={person.id}
                       className="hover:bg-gray-50 transition-colors cursor-pointer"
-                      onClick={() => onNavigate && onNavigate(`people/${person.id}`)}
+                      onClick={() => setSelectedPersonId(person.id)}
                     >
                       <td className="px-4 py-3 font-medium text-gray-900">
                         {person.fieldValues?.name || <span className="text-gray-400">No name</span>}
