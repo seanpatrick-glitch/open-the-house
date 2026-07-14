@@ -3,6 +3,7 @@ import { doc, onSnapshot, getDoc, setDoc, serverTimestamp } from 'firebase/fires
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { PERSON_STATUS } from '../models/people';
+import AssignmentsPanel from '../components/people/AssignmentsPanel';
 
 const TOGGLEABLE_LABELS = {
   address:             'Address',
@@ -256,11 +257,12 @@ export default function PersonProfileView({ personId, onBack }) {
         </div>
       )}
 
-      {/* Assignments placeholder */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5">
-        <h2 className="text-sm font-semibold text-gray-700 mb-1">Assignments</h2>
-        <p className="text-sm text-gray-400">Productions and venues will appear here. Coming in Step 7.</p>
-      </div>
+      {isStaff && (
+        <div className="bg-white border border-gray-200 rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-gray-700 mb-4">Assignments</h2>
+          <AssignmentsPanel person={person} />
+        </div>
+      )}
     </div>
   );
 }

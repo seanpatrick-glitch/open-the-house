@@ -224,13 +224,28 @@ export default function ProductionsView() {
       {/* Header — Create Production always visible when places exist */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Productions</h1>
-        <button
-          onClick={() => setShowProdForm(true)}
-          className="bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
-        >
-          + Create Production
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowPlaceForm(true)}
+            className="border border-gray-200 bg-white hover:border-gray-300 text-gray-600 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            Add a Place
+          </button>
+          <button
+            onClick={() => setShowProdForm(true)}
+            className="bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
+          >
+            + Create Production
+          </button>
+        </div>
       </div>
+
+      {showPlaceForm && (
+        <CreatePlaceForm
+          onSuccess={() => setShowPlaceForm(false)}
+          onCancel={() => setShowPlaceForm(false)}
+        />
+      )}
 
       {/* Inline create-production form */}
       {showProdForm && (

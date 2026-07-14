@@ -161,5 +161,23 @@ service cloud.firestore {
       allow write: if isAdminOrSecondary(orgId);
     }
 
+    // ── places + productions ──────────────────────────────────────────────────────
+    match /organizations/{orgId}/places/{placeId} {
+      allow read:           if isMember(orgId);
+      allow create:         if isAdminOrSecondary(orgId);
+      allow update, delete: if isAdminOrSecondary(orgId);
+
+      match /productions/{productionId} {
+        allow read:           if isMember(orgId);
+        allow create:         if isAdminOrSecondary(orgId);
+        allow update, delete: if isAdminOrSecondary(orgId);
+      }
+    }
+
+    // ── collectionGroup query for productions ─────────────────────────────────────
+    match /{path=**}/productions/{productionId} {
+      allow read: if isMember(resource.data.orgId);
+    }
+
   }
 }
