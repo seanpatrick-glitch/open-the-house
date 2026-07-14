@@ -12,6 +12,7 @@ import ShowTracker from './components/ShowTracker'
 import UserManagement from './components/UserManagement'
 import InviteManager from './components/invites/InviteManager'
 import AcceptInvite from './components/invites/AcceptInvite'
+import SelfSignupPage from './components/people/SelfSignupPage'
 
 // ProtectedRoute: only logged-in users can see this screen
 function ProtectedRoute({ children }) {
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="/"                  element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/signup"            element={<PublicRoute><SignupFlow /></PublicRoute>} />
           <Route path="/invite/:token"     element={<AcceptInvite />} />
+          <Route path="/signup/:orgId/:tokenId" element={<SelfSignupPage />} />
           <Route path="/dashboard"         element={<ProtectedRoute><AuthRouter /></ProtectedRoute>} />
           <Route path="/dashboard-legacy"  element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/show/:showId"      element={<ProtectedRoute><ShowTracker /></ProtectedRoute>} />

@@ -20,9 +20,15 @@ export default function AuthRouter() {
     return <Navigate to="/" replace />
   }
 
-  if (userProfile.role === 'admin')        return <AdminView />
-  if (userProfile.role === 'collaborator') return <CollaboratorView />
-  if (userProfile.role === 'volunteer')    return <VolunteerView />
+  if (userProfile.role === 'admin')             return <AdminView />
+  if (userProfile.role === 'secondaryAdmin')    return <AdminView />
+  if (userProfile.role === 'departmentHead')    return <AdminView />
+  if (userProfile.role === 'orgCollaborator')   return <CollaboratorView />
+  if (userProfile.role === 'collaborator')      return <CollaboratorView />
+  if (userProfile.role === 'venueManager')      return <AdminView />
+  if (userProfile.role === 'productionCollaborator') return <CollaboratorView />
+  if (userProfile.role === 'volunteer')         return <VolunteerView />
+  if (userProfile.role === 'person')            return <VolunteerView />
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">

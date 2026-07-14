@@ -129,7 +129,8 @@ service cloud.firestore {
 
     // ── personTypes ───────────────────────────────────────────────────────────────
     match /organizations/{orgId}/personTypes/{typeId} {
-      allow read:  if isStaffLevel(orgId);
+      allow get:   if true;
+      allow list:  if isStaffLevel(orgId);
       allow write: if isAdminOrSecondary(orgId);
     }
 
