@@ -13,6 +13,7 @@
     "firebase": "^10.7.1",
     "jspdf": "^4.2.1",
     "jszip": "^3.10.1",
+    "papaparse": "^5.5.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.4.1",

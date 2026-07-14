@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { PERSON_STATUS } from '../models/people';
 import CreatePersonForm from '../components/people/CreatePersonForm';
+import CsvImportForm from '../components/people/CsvImportForm';
 
 const STATUS_STYLES = {
   [PERSON_STATUS.PENDING]:  'bg-amber-100 text-amber-700',
@@ -24,6 +25,8 @@ export default function PeopleView({ onNavigate }) {
   const [typeFilter, setTypeFilter]   = useState('all');
   const [loading, setLoading]         = useState(true);
   const [showForm, setShowForm]       = useState(false);
+  const [showCsvImport, setShowCsvImport]       = useState(false);
+  const [csvImportTypeId, setCsvImportTypeId]   = useState(null);
 
   const orgId = userProfile?.orgId;
 
@@ -58,6 +61,8 @@ export default function PeopleView({ onNavigate }) {
     ? people
     : people.filter(p => p.typeId === typeFilter);
 
+  const csvImportType = personTypes.find(t => t.id === csvImportTypeId) || null;
+
   if (loading) {
     return <div className="p-6 text-gray-500 text-sm">Loading...</div>;
   }
@@ -69,12 +74,34 @@ export default function PeopleView({ onNavigate }) {
           <h1 className="text-2xl font-bold text-gray-900 mb-1">People</h1>
           <p className="text-sm text-gray-500">Everyone your organization coordinates, in one place.</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          Add Person
-        </button>
+        <div className="flex items-center gap-2">
+          {personTypes.length > 0 && !showForm && !showCsvImport && (
+            <div className="relative group">
+              <button className="border border-gray-200 text-gray-600 hover:border-gray-300 text-sm font-medium px-4 py-2 rounded-lg transition-colors bg-white">
+                Import CSV
+              </button>
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-10 hidden group-hover:block">
+                {personTypes.map(type => (
+                  <button
+                    key={type.id}
+                    onClick={() => { setCsvImportTypeId(type.id); setShowCsvImport(true); }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-xl last:rounded-b-xl transition-colors"
+                  >
+                    {type.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {!showForm && !showCsvImport && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              Add Person
+            </button>
+          )}
+        </div>
       </div>
 
       {showForm && (
@@ -90,7 +117,21 @@ export default function PeopleView({ onNavigate }) {
         </div>
       )}
 
-      {!showForm && (
+      {showCsvImport && csvImportType && (
+        <div className="mb-6">
+          <button onClick={() => { setShowCsvImport(false); setCsvImportTypeId(null); }}
+            className="text-sm text-gray-500 hover:text-gray-700 mb-4 flex items-center gap-1">
+            ← Back to People
+          </button>
+          <CsvImportForm
+            personType={csvImportType}
+            onSuccess={() => { setShowCsvImport(false); setCsvImportTypeId(null); }}
+            onCancel={() => { setShowCsvImport(false); setCsvImportTypeId(null); }}
+          />
+        </div>
+      )}
+
+      {!showForm && !showCsvImport && (
         <>
           {personTypes.length > 0 && (
             <div className="flex items-center gap-2 mb-5 flex-wrap">
