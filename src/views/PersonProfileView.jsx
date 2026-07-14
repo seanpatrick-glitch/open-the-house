@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { PERSON_STATUS } from '../models/people';
 import AssignmentsPanel from '../components/people/AssignmentsPanel';
+import HoursPanel from '../components/people/HoursPanel';
 
 const TOGGLEABLE_LABELS = {
   address:             'Address',
@@ -258,9 +259,16 @@ export default function PersonProfileView({ personId, onBack }) {
       )}
 
       {isStaff && (
-        <div className="bg-white border border-gray-200 rounded-xl p-5">
+        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Assignments</h2>
           <AssignmentsPanel person={person} />
+        </div>
+      )}
+
+      {isStaff && (
+        <div className="bg-white border border-gray-200 rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-gray-700 mb-4">Hours</h2>
+          <HoursPanel person={person} />
         </div>
       )}
     </div>
