@@ -3,6 +3,7 @@ import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestor
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { PERSON_STATUS } from '../models/people';
+import CreatePersonForm from '../components/people/CreatePersonForm';
 
 const STATUS_STYLES = {
   [PERSON_STATUS.PENDING]:  'bg-amber-100 text-amber-700',
@@ -22,6 +23,7 @@ export default function PeopleView({ onNavigate }) {
   const [personTypes, setPersonTypes] = useState([]);
   const [typeFilter, setTypeFilter]   = useState('all');
   const [loading, setLoading]         = useState(true);
+  const [showForm, setShowForm]       = useState(false);
 
   const orgId = userProfile?.orgId;
 
@@ -68,83 +70,100 @@ export default function PeopleView({ onNavigate }) {
           <p className="text-sm text-gray-500">Everyone your organization coordinates, in one place.</p>
         </div>
         <button
-          onClick={() => onNavigate && onNavigate('people/new')}
+          onClick={() => setShowForm(true)}
           className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           Add Person
         </button>
       </div>
 
-      {personTypes.length > 0 && (
-        <div className="flex items-center gap-2 mb-5 flex-wrap">
-          <button
-            onClick={() => setTypeFilter('all')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              typeFilter === 'all'
-                ? 'bg-indigo-600 text-white'
-                : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
-            }`}
-          >
-            All
+      {showForm && (
+        <div className="mb-6">
+          <button onClick={() => setShowForm(false)}
+            className="text-sm text-gray-500 hover:text-gray-700 mb-4 flex items-center gap-1">
+            ← Back to People
           </button>
-          {personTypes.map(type => (
-            <button
-              key={type.id}
-              onClick={() => setTypeFilter(type.id)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                typeFilter === type.id
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
-              }`}
-            >
-              {type.label}
-            </button>
-          ))}
+          <CreatePersonForm
+            onSuccess={() => setShowForm(false)}
+            onCancel={() => setShowForm(false)}
+          />
         </div>
       )}
 
-      {filtered.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-xl p-10 text-center">
-          <p className="text-gray-500 text-sm mb-1">
-            {typeFilter === 'all' ? 'No people yet.' : `No ${personTypes.find(t => t.id === typeFilter)?.label ?? 'people'} yet.`}
-          </p>
-          <p className="text-gray-400 text-sm">Add your first person to get started.</p>
-        </div>
-      ) : (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 bg-gray-50">
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Type</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Email</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.map(person => (
-                <tr
-                  key={person.id}
-                  className="hover:bg-gray-50 transition-colors cursor-pointer"
-                  onClick={() => onNavigate && onNavigate(`people/${person.id}`)}
+      {!showForm && (
+        <>
+          {personTypes.length > 0 && (
+            <div className="flex items-center gap-2 mb-5 flex-wrap">
+              <button
+                onClick={() => setTypeFilter('all')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  typeFilter === 'all'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                All
+              </button>
+              {personTypes.map(type => (
+                <button
+                  key={type.id}
+                  onClick={() => setTypeFilter(type.id)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    typeFilter === type.id
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
+                  }`}
                 >
-                  <td className="px-4 py-3 font-medium text-gray-900">
-                    {person.fieldValues?.name || <span className="text-gray-400">No name</span>}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{person.typeLabel}</td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {person.fieldValues?.email || <span className="text-gray-400">—</span>}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[person.status] || STATUS_STYLES[PERSON_STATUS.PENDING]}`}>
-                      {STATUS_LABELS[person.status] || 'Pending'}
-                    </span>
-                  </td>
-                </tr>
+                  {type.label}
+                </button>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </div>
+          )}
+
+          {filtered.length === 0 ? (
+            <div className="bg-white border border-gray-200 rounded-xl p-10 text-center">
+              <p className="text-gray-500 text-sm mb-1">
+                {typeFilter === 'all' ? 'No people yet.' : `No ${personTypes.find(t => t.id === typeFilter)?.label ?? 'people'} yet.`}
+              </p>
+              <p className="text-gray-400 text-sm">Add your first person to get started.</p>
+            </div>
+          ) : (
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50">
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">Type</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">Email</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filtered.map(person => (
+                    <tr
+                      key={person.id}
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => onNavigate && onNavigate(`people/${person.id}`)}
+                    >
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        {person.fieldValues?.name || <span className="text-gray-400">No name</span>}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">{person.typeLabel}</td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {person.fieldValues?.email || <span className="text-gray-400">—</span>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[person.status] || STATUS_STYLES[PERSON_STATUS.PENDING]}`}>
+                          {STATUS_LABELS[person.status] || 'Pending'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
