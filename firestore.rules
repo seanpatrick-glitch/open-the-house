@@ -27,6 +27,26 @@ service cloud.firestore {
       return isMember(orgId) && userDoc().organizations[orgId].role == 'admin';
     }
 
+    function isSecondaryAdmin(orgId) {
+      return isMember(orgId) && userDoc().organizations[orgId].role == 'secondaryAdmin';
+    }
+
+    function isDepartmentHead(orgId) {
+      return isMember(orgId) && userDoc().organizations[orgId].role == 'departmentHead';
+    }
+
+    function isAdminOrSecondary(orgId) {
+      return isAdmin(orgId) || isSecondaryAdmin(orgId);
+    }
+
+    function isStaffLevel(orgId) {
+      return isAdmin(orgId) || isSecondaryAdmin(orgId) || isDepartmentHead(orgId);
+    }
+
+    function isPerson(orgId) {
+      return isMember(orgId) && userDoc().organizations[orgId].role == 'person';
+    }
+
     // ── users ─────────────────────────────────────────────────────────────────
     // Any signed-in user can read any user doc (required for org member lookups
     // in CreateDepartmentForm and similar screens).
@@ -105,6 +125,40 @@ service cloud.firestore {
         allow read:  if isMember(templateOrgId());
         allow write: if isAdmin(templateOrgId());
       }
+    }
+
+    // ── personTypes ───────────────────────────────────────────────────────────────
+    match /organizations/{orgId}/personTypes/{typeId} {
+      allow read:  if isStaffLevel(orgId);
+      allow write: if isAdminOrSecondary(orgId);
+    }
+
+    // ── people + subcollections ───────────────────────────────────────────────────
+    match /organizations/{orgId}/people/{personId} {
+      allow read, write: if isAdminOrSecondary(orgId);
+      allow read:        if isDepartmentHead(orgId);
+      allow write:       if isDepartmentHead(orgId)
+        && get(/databases/$(database)/documents/organizations/$(orgId)/personTypes/$(resource.data.typeId)).data.departmentHeadId == request.auth.uid;
+      allow read:        if isPerson(orgId)
+        && resource.data.uid == request.auth.uid;
+      allow create:      if request.resource.data.status == 'pending'
+        && request.resource.data.createdBy == 'self-signup';
+    }
+
+    match /organizations/{orgId}/people/{personId}/internalData/{docId} {
+      allow read, write: if isStaffLevel(orgId);
+    }
+
+    match /organizations/{orgId}/people/{personId}/hours/{entryId} {
+      allow read, write: if isStaffLevel(orgId);
+      allow read:        if isPerson(orgId)
+        && get(/databases/$(database)/documents/organizations/$(orgId)/people/$(personId)).data.uid == request.auth.uid;
+    }
+
+    // ── signupTokens ──────────────────────────────────────────────────────────────
+    match /organizations/{orgId}/signupTokens/{tokenId} {
+      allow read:  if resource.data.active == true;
+      allow write: if isAdminOrSecondary(orgId);
     }
 
   }
