@@ -1,0 +1,151 @@
+import { useState, useEffect } from 'react';
+import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
+import { useAuth } from '../contexts/AuthContext';
+import { PERSON_STATUS } from '../models/people';
+
+const STATUS_STYLES = {
+  [PERSON_STATUS.PENDING]:  'bg-amber-100 text-amber-700',
+  [PERSON_STATUS.ACTIVE]:   'bg-green-100 text-green-700',
+  [PERSON_STATUS.INACTIVE]: 'bg-gray-100 text-gray-500',
+};
+
+const STATUS_LABELS = {
+  [PERSON_STATUS.PENDING]:  'Pending',
+  [PERSON_STATUS.ACTIVE]:   'Active',
+  [PERSON_STATUS.INACTIVE]: 'Inactive',
+};
+
+export default function PeopleView({ onNavigate }) {
+  const { userProfile } = useAuth();
+  const [people, setPeople]           = useState([]);
+  const [personTypes, setPersonTypes] = useState([]);
+  const [typeFilter, setTypeFilter]   = useState('all');
+  const [loading, setLoading]         = useState(true);
+
+  const orgId = userProfile?.orgId;
+
+  useEffect(() => {
+    if (!orgId) return;
+
+    // Load person types for filter dropdown
+    const loadTypes = async () => {
+      const snap = await getDocs(
+        query(
+          collection(db, 'organizations', orgId, 'personTypes'),
+          where('active', '==', true)
+        )
+      );
+      setPersonTypes(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    };
+    loadTypes();
+
+    // Live people subscription
+    const q = query(
+      collection(db, 'organizations', orgId, 'people')
+    );
+    const unsub = onSnapshot(q, snap => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setPeople(data);
+      setLoading(false);
+    });
+    return () => unsub();
+  }, [orgId]);
+
+  const filtered = typeFilter === 'all'
+    ? people
+    : people.filter(p => p.typeId === typeFilter);
+
+  if (loading) {
+    return <div className="p-6 text-gray-500 text-sm">Loading...</div>;
+  }
+
+  return (
+    <div className="p-6 max-w-5xl">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">People</h1>
+          <p className="text-sm text-gray-500">Everyone your organization coordinates, in one place.</p>
+        </div>
+        <button
+          onClick={() => onNavigate && onNavigate('people/new')}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+        >
+          Add Person
+        </button>
+      </div>
+
+      {personTypes.length > 0 && (
+        <div className="flex items-center gap-2 mb-5 flex-wrap">
+          <button
+            onClick={() => setTypeFilter('all')}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              typeFilter === 'all'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
+            }`}
+          >
+            All
+          </button>
+          {personTypes.map(type => (
+            <button
+              key={type.id}
+              onClick={() => setTypeFilter(type.id)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                typeFilter === type.id
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
+              }`}
+            >
+              {type.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {filtered.length === 0 ? (
+        <div className="bg-white border border-gray-200 rounded-xl p-10 text-center">
+          <p className="text-gray-500 text-sm mb-1">
+            {typeFilter === 'all' ? 'No people yet.' : `No ${personTypes.find(t => t.id === typeFilter)?.label ?? 'people'} yet.`}
+          </p>
+          <p className="text-gray-400 text-sm">Add your first person to get started.</p>
+        </div>
+      ) : (
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-50">
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Type</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Email</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filtered.map(person => (
+                <tr
+                  key={person.id}
+                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => onNavigate && onNavigate(`people/${person.id}`)}
+                >
+                  <td className="px-4 py-3 font-medium text-gray-900">
+                    {person.fieldValues?.name || <span className="text-gray-400">No name</span>}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">{person.typeLabel}</td>
+                  <td className="px-4 py-3 text-gray-600">
+                    {person.fieldValues?.email || <span className="text-gray-400">—</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[person.status] || STATUS_STYLES[PERSON_STATUS.PENDING]}`}>
+                      {STATUS_LABELS[person.status] || 'Pending'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}

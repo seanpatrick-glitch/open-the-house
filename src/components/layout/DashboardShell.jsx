@@ -7,6 +7,7 @@ import ProductionsView from '../productions/ProductionsView'
 import DepartmentsView from '../../views/DepartmentsView'
 import TimelineView from '../../views/TimelineView'
 import SettingsView from '../../views/SettingsView'
+import PeopleView from '../../views/PeopleView'
 
 // Section key → human-readable label for placeholder screens
 const SECTION_LABELS = {
@@ -43,6 +44,7 @@ function SectionContent({ section, onNavigate }) {
   if (section === 'invite-collaborator') return <InviteCollaborator />
   if (section === 'invite-volunteer')    return <InviteVolunteer />
   if (section === 'settings')            return <SettingsView />
+  if (section === 'people')              return <PeopleView onNavigate={onNavigate} />
   return <PlaceholderSection section={section} />
 }
 
