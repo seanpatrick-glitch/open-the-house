@@ -1,7 +1,7 @@
 # Places People! — Project State
 > Single source of truth for all Claude sessions. Read this first on every sync.
-> Last updated: 2026-07-12
-> Updated by: Claude Code (full sync pass — Drive and repo copies merged to match exactly)
+> Last updated: 2026-07-14
+> Updated by: Claude Code (Code Interpreter and App Build session sync)
 
 ---
 
@@ -41,6 +41,9 @@
 - Post-timeline cleanup pass (sidebar renamed to Places People!, stale files deleted)
 - Firebase project misconfiguration fixed (.firebaserc now points to open-the-house not show-prep-app)
 - Composite index resolved (tasks collection, orgId ascending, dueDate ascending)
+- People Coordination module complete (Steps 1 through 9, July 14): person type configuration, roster view, manual record creation, CSV bulk import, person profile with internal tags, assignments panel, hour tracking, self-signup flow with token generation and public signup page. personType Firestore rule updated to allow unauthenticated get for the public signup form while keeping list restricted to staff.
+- Add a Place silent fail fixed (July 14): Places and productions Firestore rules added, including a collectionGroup rule for the productions query.
+- AuthRouter updated (July 14) to correctly route all seven canonical role values to their views — secondaryAdmin, departmentHead, orgCollaborator, venueManager, productionCollaborator, and person were previously all falling through to "Account not configured."
 
 **Deferred:**
 - Planning Timeline Step 8 Part B (access request and admin approval flow, aka Step 8b) deferred until Department Head role users exist in org for testing
@@ -55,7 +58,6 @@
 - TimelineView loadDepartments updated to respect departmentsEnabled toggle on org document
 
 **Known open bugs:**
-- Add a Place silent fail in Productions
 - Email invite generation fail
 
 **Firebase:**
@@ -63,7 +65,11 @@
 - Composite index confirmed resolved: tasks collection, orgId ascending, dueDate ascending
 
 **Next build priority:**
-- People Coordination module. Feature Roadmap planning session held July 12 (Production tier, role inference, Provisional Admin, hybrid onboarding locked). Dedicated module spec session still needed for assignments, self-signup, hour tracking, and check-in. Current build state of person-types, custom field configuration, and record creation unconfirmed — verification needed before Phase 0 beta setup for Tempest can begin.
+- PlacesView (nav item currently routes to a placeholder, view not yet built).
+- Email invite generation bug fix.
+- People module cleanup: unused onNavigate prop in PeopleView. Department assignment and staff toggle for the People module sent to Feature Roadmap for spec.
+- Check-in feature: the only People Coordination piece not yet specced or built. Needs a Feature Roadmap spec session before Code Interpreter builds it.
+- Beta Phase 0 setup for Tempest can now begin — People Coordination module confirmed functional as of July 14.
 
 ---
 
@@ -167,11 +173,11 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 
 **Direction 4 font/licensing question:** On hold pending confirmation of whether the Canvas brush script is a licensable font or image-generated lettering with no underlying font file. Sean makes the final call. Direction 4 brand board rebuild and favicon/app icon small-scale test also pending on this.
 
-**Phase 2 outreach:** On hold pending demo-ready build.
+**Phase 2 outreach:** On hold pending demo-ready build. Update July 14: app is now functionally demo-ready for Productions, Departments, Timeline, and People Coordination — Sean to confirm whether this satisfies the hold condition.
 
 **Landing page:** Copy drafted July 12 in Brand Voice and Messaging chat (hero, subhero, problem statement, six feature modules, who it's for, origin story, CTA placeholder, footer). Visual/design implementation on hold pending Direction 4 brand board rebuild. CTA mechanics on hold pending access flow build. Page format (long-form vs. tight single-page) not yet decided.
 
-**People Coordination module build:** Module spec complete as of July 12 — eight build steps locked in Feature Roadmap chat, App Architecture briefing written and ready to paste. On hold pending the App Architecture session to design the Firestore data model and security rules before Code Interpreter builds anything. Check-in feature deferred to a separate spec session.
+**People Coordination module build:** RESOLVED July 14. Build complete (Steps 1 through 9) — person type configuration, roster view, manual record creation, CSV bulk import, person profile with internal tags, assignments panel, hour tracking, and self-signup flow with token generation and public signup page, all functional. Firestore rules deployed. Remaining open: check-in feature not yet specced or built; department assignment and staff toggle for the module sent to Feature Roadmap for spec; minor cleanup (unused onNavigate prop in PeopleView). Beta Phase 0 setup for Tempest can now begin.
 
 ---
 
@@ -179,8 +185,8 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 
 - RESOLVED July 12: Visual identity direction locked as Direction 4 (Stage Call).
 - Is the Direction 4 Canvas brush script a real licensable font or image-generated lettering?
-- RESOLVED July 12: Feature Roadmap planning session held (Production tier, role inference, Provisional Admin, hybrid onboarding locked). Still open: dedicated People Coordination module spec session for assignments, self-signup, hour tracking, and check-in not yet scheduled.
-- Does App Architecture chat need updating to reflect Department as optional tier, Venue as real container, Production as optional tier below Venue, and the new Provisional Admin / ownership invite flow?
+- RESOLVED July 12: Feature Roadmap planning session held (Production tier, role inference, Provisional Admin, hybrid onboarding locked). RESOLVED July 14: assignments, self-signup, and hour tracking are now fully specced and built as part of the completed People Coordination module. Check-in remains unspecced and unbuilt — the only piece not yet scheduled.
+- RESOLVED July 12 (partial): App Architecture chat addressed Provisional Admin and ownership invite flow in full. Still open: whether Department as optional tier, Venue as real container, and Production as optional tier below Venue need re-confirmation in App Architecture chat.
 - RESOLVED July 12: Current State document and other legacy project docs confirmed retired by Sean. PROJECT_STATE.md is the sole source of truth; no further sync needed against Current State.
 - Approval flow data architecture decision needed before build: item level, phase level, or production level structure must be locked before Code Interpreter builds the in-platform approval flow.
 - Opening night readiness view formal spec needed before build.
@@ -194,6 +200,7 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 
 > Most recent first. Last 5 significant changes.
 
+- 2026-07-14: Code Interpreter and App Build session — People Coordination Steps 1 through 9 all complete: person type configuration, roster view, manual record creation, CSV bulk import, person profile with internal tags, assignments panel, hour tracking, and self-signup flow with token generation and public signup page. Places and productions Firestore rules added, resolving the known Add a Place silent fail bug, including a collectionGroup rule for the productions query. AuthRouter updated to route all seven canonical role values to correct views (secondaryAdmin, departmentHead, orgCollaborator, venueManager, productionCollaborator, and person were all previously falling through to "Account not configured"). personType Firestore rule updated to allow unauthenticated get for the public signup form while keeping list restricted to staff. Firestore rules deployed throughout the session to the open-the-house project. Open: email invite generation bug still unresolved, PlacesView not yet built (nav item routes to a placeholder), People module cleanup (unused onNavigate prop in PeopleView; department assignment and staff toggle sent to Feature Roadmap for spec). Beta Phase 0 setup can now begin — People Coordination is functional enough for pre-beta org configuration. On hold: Timeline Step 8 Part B still deferred until Department Head users exist for testing; Phase 2 outreach on hold pending demo-ready confirmation — app is now functionally demo-ready for Productions, Departments, Timeline, and People Coordination.
 - 2026-07-12: App Architecture and Technical Decisions session — Provisional Admin confirmed as state flag (provisionalAdmin boolean, accountState enum) on the user document, not a role value. Seven canonical role values locked: admin, secondaryAdmin, departmentHead, orgCollaborator, venueManager, productionCollaborator, person. Provisional Admin has full onboarding access from signup with no gates. Ownership transfer available any time from Settings. Incoming Admin sees read-only config summary screen before accepting ownership, with option to flag for adjustment. Ownership invite document needs four new fields: originalUserSelectedRole, configSummaryAcknowledged, configFlagged, flagNote. People Coordination module fully specced: person types at orgs/{orgId}/personTypes/{typeId} with departmentHeadId and departmentId fields, person records at orgs/{orgId}/people/{personId} with typeId, typeLabel, status, assignments array, totalHours, fieldValues map, internal tags in separate subcollection at internalData/notes (Person class excluded by rules), self-signup tokens at orgs/{orgId}/signupTokens/{tokenId}, hours subcollection at orgs/{orgId}/people/{personId}/hours/{entryId}. Full security rules spec produced. Flag for Code Interpreter: departmentHeadId and departmentId must be written to personType document when DH is assigned in Settings. Build order confirmed: Steps 1 through 5 first (type config, roster, manual creation, CSV import, profile view with internal tags), Steps 6 through 8 after those are stable.
 - 2026-07-12: People Coordination module fully specced in Feature Roadmap chat. Eight build steps locked. Key decisions: multi-type at launch, approval-gated self-signup with admin or Department Head approval authority, Department Head as primary record creation owner, emergency contact elevated to always-on, CSV bulk import added as Step 3b with column mapping UI, internal tags confirmed as admin and Department Head-only with an Internal label in the UI, beta framework unchanged with Sean as admin and Tempest as Department Head, check-in deferred to a separate spec session. App Architecture briefing written and ready to paste. Next step is an App Architecture session to design the Firestore data model and security rules before Code Interpreter builds anything.
 - 2026-07-12: Full sync pass — Drive and repo copies of PROJECT_STATE.md had drifted independently in both directions (repo held extra Section 2 build detail, a Firebase note, and older Section 8 history from May–June that Drive lacked; Drive held newer Section 8 entries and extra Section 9 file IDs that repo lacked). Merged into one authoritative version written identically to both files, per Sean's request that the two match exactly. No content deleted: all unique history entries from both copies preserved and reordered chronologically. Section 3 role types reconciled as a union (was two different 5/6-role lists) and flagged in Section 7 for confirmation in an App Architecture session. Section 10 merged to include the repo copy's "never delete content" instruction, which Drive was missing.
