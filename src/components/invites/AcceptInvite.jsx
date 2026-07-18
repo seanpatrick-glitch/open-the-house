@@ -2,12 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   doc,
+  getDoc,
   setDoc,
   updateDoc,
-  collectionGroup,
-  query,
-  where,
-  getDocs,
   serverTimestamp,
 } from 'firebase/firestore'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
@@ -15,12 +12,12 @@ import { db, auth } from '../../firebase'
 import toast from 'react-hot-toast'
 
 export default function AcceptInvite() {
-  const { token }  = useParams()
-  const navigate   = useNavigate()
+  const { orgId, token } = useParams()
+  const navigate         = useNavigate()
 
   const [invite,     setInvite]     = useState(null)
   const [inviteRef,  setInviteRef]  = useState(null)
-  const [status,     setStatus]     = useState('loading') // loading | invalid | accepted | expired | valid
+  const [status,     setStatus]     = useState('loading')
   const [email,      setEmail]      = useState('')
   const [password,   setPassword]   = useState('')
   const [confirm,    setConfirm]    = useState('')
@@ -28,17 +25,20 @@ export default function AcceptInvite() {
 
   useEffect(() => {
     async function loadInvite() {
+      if (!orgId || !token) {
+        setStatus('invalid')
+        return
+      }
       try {
-        const q    = query(collectionGroup(db, 'invites'), where('token', '==', token))
-        const snap = await getDocs(q)
+        const ref  = doc(db, 'organizations', orgId, 'invites', token)
+        const snap = await getDoc(ref)
 
-        if (snap.empty) {
+        if (!snap.exists()) {
           setStatus('invalid')
           return
         }
 
-        const docSnap = snap.docs[0]
-        const data    = docSnap.data()
+        const data = snap.data()
 
         if (data.status === 'accepted') {
           setStatus('accepted')
@@ -53,7 +53,7 @@ export default function AcceptInvite() {
         }
 
         setInvite(data)
-        setInviteRef(docSnap.ref)
+        setInviteRef(ref)
         setEmail(data.email)
         setStatus('valid')
       } catch (err) {
@@ -63,7 +63,7 @@ export default function AcceptInvite() {
     }
 
     loadInvite()
-  }, [token])
+  }, [orgId, token])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -87,6 +87,9 @@ export default function AcceptInvite() {
         auth, email.trim(), password
       )
       const uid = credential.user.uid
+
+      // Force a token refresh so request.auth is fully populated before the Firestore write
+      await credential.user.getIdToken(true)
 
       await setDoc(doc(db, 'users', uid), {
         name:      email.trim(),
@@ -118,8 +121,6 @@ export default function AcceptInvite() {
       setSubmitting(false)
     }
   }
-
-  // ── States ────────────────────────────────────────────────────────────────
 
   if (status === 'loading') {
     return (
@@ -161,8 +162,6 @@ export default function AcceptInvite() {
       </div>
     )
   }
-
-  // ── Valid invite — show signup form ───────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">

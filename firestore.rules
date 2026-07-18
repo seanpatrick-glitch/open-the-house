@@ -52,8 +52,9 @@ service cloud.firestore {
     // in CreateDepartmentForm and similar screens).
     // A user may write only their own doc; admins may write any user doc.
     match /users/{userId} {
-      allow read:  if isSignedIn();
-      allow write: if isSignedIn() && uid() == userId;
+      allow read:   if isSignedIn();
+      allow create: if isSignedIn() && uid() == userId;
+      allow update: if isSignedIn() && uid() == userId;
     }
 
     // ── organizations ─────────────────────────────────────────────────────────
@@ -178,6 +179,30 @@ service cloud.firestore {
     // ── collectionGroup query for productions ─────────────────────────────────────
     match /{path=**}/productions/{productionId} {
       allow read: if isMember(resource.data.orgId);
+    }
+
+    // ── invites ───────────────────────────────────────────────────────────────────
+    match /organizations/{orgId}/invites/{inviteId} {
+      allow get:            if true;
+      allow list:           if isMember(orgId);
+      allow create:         if isAdminOrSecondary(orgId);
+      allow update:         if isAdminOrSecondary(orgId);
+      allow delete:         if isAdminOrSecondary(orgId);
+    }
+
+    // ── collectionGroup query for invites (unauthenticated token lookup) ──────────
+    match /{path=**}/invites/{inviteId} {
+      allow get: if true;
+    }
+
+    // ── pendingInvites ────────────────────────────────────────────────────────────
+    match /organizations/{orgId}/pendingInvites/{inviteId} {
+      allow get:    if true;
+      allow list:   if isAdminOrSecondary(orgId);
+      allow create: if isAdminOrSecondary(orgId);
+      allow update: if isAdminOrSecondary(orgId)
+        || (isSignedIn() && resource.data.email == request.auth.token.email);
+      allow delete: if isAdminOrSecondary(orgId);
     }
 
   }
