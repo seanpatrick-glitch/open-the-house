@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { key: 'departments', label: 'Departments', emoji: '🏢' },
   { key: 'places',      label: 'Places',      emoji: '📍' },
   { key: 'productions', label: 'Productions', emoji: '🎭' },
+  { key: 'checkin', label: 'Check-In', emoji: '✅' },
   {
     key: 'collaborators-group',
     label: 'Collaborators',
