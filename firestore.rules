@@ -239,5 +239,15 @@ service cloud.firestore {
       allow delete: if isAdminOrSecondary(orgId);
     }
 
+    // ── personInviteTokens ────────────────────────────────────────────────────────
+    match /organizations/{orgId}/personInviteTokens/{tokenId} {
+      allow get:    if true;
+      allow list:   if isStaffLevel(orgId);
+      allow create: if isAdminOrSecondary(orgId);
+      allow update: if isAdminOrSecondary(orgId)
+        || (isSignedIn() && resource.data.email == request.auth.token.email);
+      allow delete: if isAdminOrSecondary(orgId);
+    }
+
   }
 }

@@ -14,6 +14,7 @@ import InviteManager from './components/invites/InviteManager'
 import AcceptInvite from './components/invites/AcceptInvite'
 import JoinPage from './components/invites/JoinPage'
 import SelfSignupPage from './components/people/SelfSignupPage'
+import PersonJoinPage from './components/people/PersonJoinPage'
 
 // ProtectedRoute: only logged-in users can see this screen
 function ProtectedRoute({ children }) {
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="/invites"           element={<AdminRoute><InviteManager /></AdminRoute>} />
           <Route path="/users"             element={<AdminRoute><UserManagement /></AdminRoute>} />
           <Route path="/join"              element={<JoinPage />} />
+          <Route path="/person-join"       element={<PersonJoinPage />} />
           <Route path="*"                  element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
