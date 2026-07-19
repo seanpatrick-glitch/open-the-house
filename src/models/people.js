@@ -3,9 +3,16 @@
 // All paths use organizations/{orgId} to match existing app structure.
 
 export const PERSON_STATUS = {
-  PENDING:  'pending',
-  ACTIVE:   'active',
-  INACTIVE: 'inactive',
+  APPLIED:     'applied',
+  WAITLISTED:  'waitlisted',
+  ACTIVE:      'active',
+  INACTIVE:    'inactive',
+};
+
+export const ACCOUNT_STATUS = {
+  NO_ACCOUNT: 'no_account',
+  INVITED:    'invited',
+  ACTIVE:     'active',
 };
 
 export const FIELD_TYPES = {
@@ -58,8 +65,10 @@ COLLECTION: organizations/{orgId}/people/{personId}
   orgId: string,
   typeId: string,                 // reference to personTypes/{typeId}
   typeLabel: string,              // denormalized for display
-  uid: string | null,             // Firebase Auth uid, null until account created
-  status: 'pending' | 'active' | 'inactive',
+  status: 'applied' | 'waitlisted' | 'active' | 'inactive',
+  staff: boolean,                 // default false. Active persons only. Set by admin or DH.
+  accountUid: string | null,      // Firebase Auth uid, written on invite acceptance
+  accountStatus: 'no_account' | 'invited' | 'active',
   createdBy: string,              // uid or 'self-signup'
   createdAt: Timestamp,
   approvedBy: string | null,      // uid, set when status moves pending → active

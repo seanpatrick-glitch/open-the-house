@@ -47,6 +47,28 @@ service cloud.firestore {
       return isMember(orgId) && userDoc().organizations[orgId].role == 'person';
     }
 
+    // Is the requesting user an active Person class member?
+    function isActivePerson(orgId) {
+      let personDoc = get(/databases/$(database)/documents/organizations/$(orgId)/people/$(uid()));
+      return personDoc != null
+        && personDoc.data.status == 'active';
+    }
+
+    // Is the requesting user an active staff-toggled Person class member?
+    function isActiveStaff(orgId) {
+      let personDoc = get(/databases/$(database)/documents/organizations/$(orgId)/people/$(uid()));
+      return personDoc != null
+        && personDoc.data.status == 'active'
+        && personDoc.data.staff == true;
+    }
+
+    // Is the requesting user in applied or waitlisted status?
+    function isAppliedOrWaitlisted(orgId) {
+      let personDoc = get(/databases/$(database)/documents/organizations/$(orgId)/people/$(uid()));
+      return personDoc != null
+        && (personDoc.data.status == 'applied' || personDoc.data.status == 'waitlisted');
+    }
+
     // ── users ─────────────────────────────────────────────────────────────────
     // Any signed-in user can read any user doc (required for org member lookups
     // in CreateDepartmentForm and similar screens).
@@ -137,14 +159,26 @@ service cloud.firestore {
 
     // ── people + subcollections ───────────────────────────────────────────────────
     match /organizations/{orgId}/people/{personId} {
+      // Admin and secondary admin: full access
       allow read, write: if isAdminOrSecondary(orgId);
-      allow read:        if isDepartmentHead(orgId);
-      allow write:       if isDepartmentHead(orgId)
+
+      // Department Head: read all, write only their assigned type
+      allow read:  if isDepartmentHead(orgId);
+      allow write: if isDepartmentHead(orgId)
         && get(/databases/$(database)/documents/organizations/$(orgId)/personTypes/$(resource.data.typeId)).data.departmentHeadId == request.auth.uid;
-      allow read:        if isPerson(orgId)
-        && resource.data.uid == request.auth.uid;
-      allow create:      if request.resource.data.status == 'pending'
+
+      // Applied, waitlisted, active Person class: read own record only
+      allow read: if (isAppliedOrWaitlisted(orgId) || isActivePerson(orgId) || isActiveStaff(orgId))
+        && resource.data.accountUid == request.auth.uid;
+
+      // Self-signup: allow create for applied records
+      allow create: if request.resource.data.status == 'applied'
         && request.resource.data.createdBy == 'self-signup';
+
+      // Account linking: allow update of accountUid and accountStatus only via token flow
+      allow update: if isSignedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['accountUid', 'accountStatus'])
+        && resource.data.accountUid == null;
     }
 
     match /organizations/{orgId}/people/{personId}/internalData/{docId} {
@@ -153,8 +187,8 @@ service cloud.firestore {
 
     match /organizations/{orgId}/people/{personId}/hours/{entryId} {
       allow read, write: if isStaffLevel(orgId);
-      allow read:        if isPerson(orgId)
-        && get(/databases/$(database)/documents/organizations/$(orgId)/people/$(personId)).data.uid == request.auth.uid;
+      allow read:        if isActivePerson(orgId)
+        && get(/databases/$(database)/documents/organizations/$(orgId)/people/$(personId)).data.accountUid == request.auth.uid;
     }
 
     // ── signupTokens ──────────────────────────────────────────────────────────────
