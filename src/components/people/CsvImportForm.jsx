@@ -131,6 +131,9 @@ export default function CsvImportForm({ personType, onSuccess, onCancel }) {
             approvedAt:  serverTimestamp(),
             assignments: [],
             totalHours:  0,
+            accountUid:    null,
+            accountStatus: 'no_account',
+            staff:         false,
             fieldValues,
           }
         );

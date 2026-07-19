@@ -74,6 +74,9 @@ export default function CreatePersonForm({ onSuccess, onCancel }) {
           approvedAt:  serverTimestamp(),
           assignments: [],
           totalHours:  0,
+          accountUid:    null,
+          accountStatus: 'no_account',
+          staff:         false,
           fieldValues: {
             name:             fieldValues.name?.trim() || '',
             email:            fieldValues.email?.trim() || '',
