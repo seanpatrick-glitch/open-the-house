@@ -8,15 +8,17 @@ import CsvImportForm from '../components/people/CsvImportForm';
 import PersonProfileView from './PersonProfileView';
 
 const STATUS_STYLES = {
-  [PERSON_STATUS.PENDING]:  'bg-amber-100 text-amber-700',
-  [PERSON_STATUS.ACTIVE]:   'bg-green-100 text-green-700',
-  [PERSON_STATUS.INACTIVE]: 'bg-gray-100 text-gray-500',
+  [PERSON_STATUS.APPLIED]:    'bg-amber-100 text-amber-700',
+  [PERSON_STATUS.WAITLISTED]: 'bg-purple-100 text-purple-700',
+  [PERSON_STATUS.ACTIVE]:     'bg-green-100 text-green-700',
+  [PERSON_STATUS.INACTIVE]:   'bg-gray-100 text-gray-500',
 };
 
 const STATUS_LABELS = {
-  [PERSON_STATUS.PENDING]:  'Pending',
-  [PERSON_STATUS.ACTIVE]:   'Active',
-  [PERSON_STATUS.INACTIVE]: 'Inactive',
+  [PERSON_STATUS.APPLIED]:    'Applied',
+  [PERSON_STATUS.WAITLISTED]: 'Waitlisted',
+  [PERSON_STATUS.ACTIVE]:     'Active',
+  [PERSON_STATUS.INACTIVE]:   'Inactive',
 };
 
 export default function PeopleView({ onNavigate }) {
@@ -188,6 +190,7 @@ export default function PeopleView({ onNavigate }) {
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Type</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Email</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">Account</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -205,9 +208,18 @@ export default function PeopleView({ onNavigate }) {
                         {person.fieldValues?.email || <span className="text-gray-400">—</span>}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[person.status] || STATUS_STYLES[PERSON_STATUS.PENDING]}`}>
-                          {STATUS_LABELS[person.status] || 'Pending'}
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[person.status] || STATUS_STYLES[PERSON_STATUS.APPLIED]}`}>
+                          {STATUS_LABELS[person.status] || 'Applied'}
                         </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {person.accountStatus === 'active' ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Account active</span>
+                        ) : person.accountStatus === 'invited' ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Invited</span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">No account</span>
+                        )}
                       </td>
                     </tr>
                   ))}
