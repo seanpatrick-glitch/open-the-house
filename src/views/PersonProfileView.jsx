@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { PERSON_STATUS } from '../models/people';
 import AssignmentsPanel from '../components/people/AssignmentsPanel';
 import HoursPanel from '../components/people/HoursPanel';
+import PersonInviteForm from '../components/people/PersonInviteForm';
 
 const TOGGLEABLE_LABELS = {
   address:             'Address',
@@ -15,15 +16,17 @@ const TOGGLEABLE_LABELS = {
 };
 
 const STATUS_STYLES = {
-  [PERSON_STATUS.PENDING]:  'bg-amber-100 text-amber-700',
-  [PERSON_STATUS.ACTIVE]:   'bg-green-100 text-green-700',
-  [PERSON_STATUS.INACTIVE]: 'bg-gray-100 text-gray-500',
+  [PERSON_STATUS.APPLIED]:    'bg-amber-100 text-amber-700',
+  [PERSON_STATUS.WAITLISTED]: 'bg-purple-100 text-purple-700',
+  [PERSON_STATUS.ACTIVE]:     'bg-green-100 text-green-700',
+  [PERSON_STATUS.INACTIVE]:   'bg-gray-100 text-gray-500',
 };
 
 const STATUS_LABELS = {
-  [PERSON_STATUS.PENDING]:  'Pending',
-  [PERSON_STATUS.ACTIVE]:   'Active',
-  [PERSON_STATUS.INACTIVE]: 'Inactive',
+  [PERSON_STATUS.APPLIED]:    'Applied',
+  [PERSON_STATUS.WAITLISTED]: 'Waitlisted',
+  [PERSON_STATUS.ACTIVE]:     'Active',
+  [PERSON_STATUS.INACTIVE]:   'Inactive',
 };
 
 export default function PersonProfileView({ personId, onBack }) {
@@ -43,6 +46,7 @@ export default function PersonProfileView({ personId, onBack }) {
   const [notes, setNotes]           = useState('');
   const [savingInternal, setSavingInternal] = useState(false);
   const [internalSaved, setInternalSaved]   = useState(false);
+  const [showInviteForm, setShowInviteForm] = useState(false);
 
   useEffect(() => {
     if (!orgId || !personId) return;
@@ -149,12 +153,40 @@ export default function PersonProfileView({ personId, onBack }) {
           </h1>
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-500">{person.typeLabel}</span>
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[person.status] || STATUS_STYLES[PERSON_STATUS.PENDING]}`}>
-              {STATUS_LABELS[person.status] || 'Pending'}
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[person.status] || STATUS_STYLES[PERSON_STATUS.APPLIED]}`}>
+              {STATUS_LABELS[person.status] || 'Applied'}
             </span>
           </div>
         </div>
+        {isStaff && (!person.accountStatus || person.accountStatus === 'no_account') && !showInviteForm && (
+          <button
+            onClick={() => setShowInviteForm(true)}
+            className="border border-indigo-200 text-indigo-600 hover:bg-indigo-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            Invite to Platform
+          </button>
+        )}
+        {isStaff && person.accountStatus === 'invited' && (
+          <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-50 text-blue-700">
+            Invite sent
+          </span>
+        )}
+        {isStaff && person.accountStatus === 'active' && (
+          <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-green-50 text-green-700">
+            Account active
+          </span>
+        )}
       </div>
+
+      {showInviteForm && (
+        <div className="mb-4">
+          <PersonInviteForm
+            person={person}
+            onSuccess={() => setShowInviteForm(false)}
+            onCancel={() => setShowInviteForm(false)}
+          />
+        </div>
+      )}
 
       {/* Universal fields */}
       <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
