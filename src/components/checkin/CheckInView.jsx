@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
+import CheckInTokenGenerator from './CheckInTokenGenerator';
 
 function parseLocalDate(dateStr) {
   if (!dateStr) return null;
@@ -28,6 +29,8 @@ export default function CheckInView() {
   const [loading, setLoading]             = useState(false);
   const [loadingProds, setLoadingProds]   = useState(true);
   const [saving, setSaving]               = useState({});
+  const [showQR, setShowQR] = useState(false);
+  const [qrProduction, setQrProduction] = useState(null);
 
   // Load all productions for this org
   useEffect(() => {
@@ -192,7 +195,25 @@ export default function CheckInView() {
             <p className="text-xs text-gray-400">
               {Object.keys(checkins).length} checked in
             </p>
+            <button
+              onClick={() => {
+                const prod = productions.find(p => p.id === selectedProd);
+                setQrProduction(prod);
+                setShowQR(true);
+              }}
+              className="text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+            >
+              QR Check-In
+            </button>
           </div>
+          {showQR && qrProduction && (
+            <div className="p-4 border-b border-gray-200">
+              <CheckInTokenGenerator
+                production={qrProduction}
+                onClose={() => setShowQR(false)}
+              />
+            </div>
+          )}
           <div className="divide-y divide-gray-100">
             {roster.map(person => {
               const checkedIn = !!checkins[person.id];

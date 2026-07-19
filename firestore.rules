@@ -49,24 +49,20 @@ service cloud.firestore {
 
     // Is the requesting user an active Person class member?
     function isActivePerson(orgId) {
-      let personDoc = get(/databases/$(database)/documents/organizations/$(orgId)/people/$(uid()));
-      return personDoc != null
-        && personDoc.data.status == 'active';
+      return isSignedIn() && isMember(orgId)
+        && userDoc().organizations[orgId].role == 'person';
     }
 
     // Is the requesting user an active staff-toggled Person class member?
     function isActiveStaff(orgId) {
-      let personDoc = get(/databases/$(database)/documents/organizations/$(orgId)/people/$(uid()));
-      return personDoc != null
-        && personDoc.data.status == 'active'
-        && personDoc.data.staff == true;
+      return isSignedIn() && isMember(orgId)
+        && userDoc().organizations[orgId].role == 'person';
     }
 
     // Is the requesting user in applied or waitlisted status?
     function isAppliedOrWaitlisted(orgId) {
-      let personDoc = get(/databases/$(database)/documents/organizations/$(orgId)/people/$(uid()));
-      return personDoc != null
-        && (personDoc.data.status == 'applied' || personDoc.data.status == 'waitlisted');
+      return isSignedIn() && isMember(orgId)
+        && userDoc().organizations[orgId].role == 'person';
     }
 
     // ── users ─────────────────────────────────────────────────────────────────
@@ -263,7 +259,7 @@ service cloud.firestore {
 
       // Active Person class: write own check-in only via valid token
       allow create: if isActivePerson(orgId)
-        && request.resource.data.personId == request.auth.uid
+        && get(/databases/$(database)/documents/organizations/$(orgId)/people/$(request.resource.data.personId)).data.accountUid == request.auth.uid
         && request.resource.data.checkedInBy == 'self'
         && request.resource.data.tokenId != null
         && exists(/databases/$(database)/documents/organizations/$(orgId)/checkinTokens/$(request.resource.data.tokenId))
@@ -273,7 +269,7 @@ service cloud.firestore {
 
       // Active Person class: read own check-in history
       allow read: if isActivePerson(orgId)
-        && resource.data.personId == request.auth.uid;
+        && get(/databases/$(database)/documents/organizations/$(orgId)/people/$(resource.data.personId)).data.accountUid == request.auth.uid;
     }
 
   }

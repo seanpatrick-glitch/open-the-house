@@ -15,6 +15,7 @@ import AcceptInvite from './components/invites/AcceptInvite'
 import JoinPage from './components/invites/JoinPage'
 import SelfSignupPage from './components/people/SelfSignupPage'
 import PersonJoinPage from './components/people/PersonJoinPage'
+import SelfCheckInPage from './components/checkin/SelfCheckInPage'
 
 // ProtectedRoute: only logged-in users can see this screen
 function ProtectedRoute({ children }) {
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="/users"             element={<AdminRoute><UserManagement /></AdminRoute>} />
           <Route path="/join"              element={<JoinPage />} />
           <Route path="/person-join"       element={<PersonJoinPage />} />
+          <Route path="/self-checkin"      element={<SelfCheckInPage />} />
           <Route path="*"                  element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
