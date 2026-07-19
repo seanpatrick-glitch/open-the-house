@@ -249,5 +249,32 @@ service cloud.firestore {
       allow delete: if isAdminOrSecondary(orgId);
     }
 
+    // ── checkinTokens ─────────────────────────────────────────────────────────────
+    match /organizations/{orgId}/checkinTokens/{tokenId} {
+      allow get:    if true;
+      allow list:   if isStaffLevel(orgId);
+      allow write:  if isStaffLevel(orgId);
+    }
+
+    // ── checkins ──────────────────────────────────────────────────────────────────
+    match /organizations/{orgId}/checkins/{checkinId} {
+      // Staff: full read and write
+      allow read, write: if isStaffLevel(orgId);
+
+      // Active Person class: write own check-in only via valid token
+      allow create: if isActivePerson(orgId)
+        && request.resource.data.personId == request.auth.uid
+        && request.resource.data.checkedInBy == 'self'
+        && request.resource.data.tokenId != null
+        && exists(/databases/$(database)/documents/organizations/$(orgId)/checkinTokens/$(request.resource.data.tokenId))
+        && get(/databases/$(database)/documents/organizations/$(orgId)/checkinTokens/$(request.resource.data.tokenId)).data.active == true
+        && get(/databases/$(database)/documents/organizations/$(orgId)/checkinTokens/$(request.resource.data.tokenId)).data.assignmentId == request.resource.data.assignmentId
+        && request.time < get(/databases/$(database)/documents/organizations/$(orgId)/checkinTokens/$(request.resource.data.tokenId)).data.validUntil;
+
+      // Active Person class: read own check-in history
+      allow read: if isActivePerson(orgId)
+        && resource.data.personId == request.auth.uid;
+    }
+
   }
 }
