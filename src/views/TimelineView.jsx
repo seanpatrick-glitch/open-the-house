@@ -38,6 +38,7 @@ export default function TimelineView() {
   const [showTemplates, setShowTemplates] = useState(false);
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [levelFilter, setLevelFilter] = useState('all');
+  const [orgUsers, setOrgUsers] = useState([]);
 
   const orgId = userProfile?.orgId;
 
@@ -58,6 +59,15 @@ export default function TimelineView() {
       setDepartments(map);
     };
     loadDepartments();
+
+    // Load org users for assignee display
+    getDocs(collection(db, 'users'))
+      .then(snap => {
+        const filtered = snap.docs
+          .map(d => ({ uid: d.id, ...d.data() }))
+          .filter(u => Object.keys(u.organizations ?? {}).includes(orgId));
+        setOrgUsers(filtered);
+      });
 
     // Load saved view preference
     const loadViewPref = async () => {
@@ -221,6 +231,7 @@ export default function TimelineView() {
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Task</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Due</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Department</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">Assignee</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
                   </tr>
                 </thead>
@@ -241,6 +252,18 @@ export default function TimelineView() {
                               <span className="text-gray-700">{dept.name}</span>
                             </div>
                           ) : <span className="text-gray-400">Unassigned</span>}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          {task.primaryAssigneeUid ? (
+                            <span className="text-gray-700">
+                              {orgUsers.find(u => u.uid === task.primaryAssigneeUid)?.email || 'Assigned'}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">Unassigned</span>
+                          )}
+                          {task.contributorUids?.length > 0 && (
+                            <span className="ml-1 text-xs text-gray-400">+{task.contributorUids.length}</span>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[task.status] || STATUS_STYLES[TIMELINE_STATUS.NOT_STARTED]}`}>
