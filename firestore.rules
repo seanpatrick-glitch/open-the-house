@@ -97,9 +97,30 @@ service cloud.firestore {
 
     // ── tasks + subcollections ────────────────────────────────────────────────
     match /tasks/{taskId} {
+      // Admin: full access
       allow read:           if isMember(resource.data.orgId);
       allow create:         if isAdmin(request.resource.data.orgId);
       allow update, delete: if isAdmin(resource.data.orgId);
+
+      // Secondary admin: full access
+      allow create:         if isSecondaryAdmin(request.resource.data.orgId);
+      allow update, delete: if isSecondaryAdmin(resource.data.orgId);
+
+      // Department Head: read all org tasks, write only department-level tasks
+      // where a department document exists with departmentHeadUid == their uid
+      allow read: if isDepartmentHead(resource.data.orgId);
+      allow create: if isDepartmentHead(request.resource.data.orgId)
+        && request.resource.data.level == 'department'
+        && exists(/databases/$(database)/documents/departments/$(request.resource.data.departmentId))
+        && get(/databases/$(database)/documents/departments/$(request.resource.data.departmentId)).data.departmentHeadUid == request.auth.uid
+        && get(/databases/$(database)/documents/departments/$(request.resource.data.departmentId)).data.orgId == request.resource.data.orgId;
+      allow update, delete: if isDepartmentHead(resource.data.orgId)
+        && resource.data.level == 'department'
+        && exists(/databases/$(database)/documents/departments/$(resource.data.departmentId))
+        && get(/databases/$(database)/documents/departments/$(resource.data.departmentId)).data.departmentHeadUid == request.auth.uid;
+
+      // Contributors: read tasks where their uid is in contributorUids
+      allow read: if request.auth.uid in resource.data.contributorUids;
 
       // comments — any org member can read/create; only author or admin can edit/delete
       match /comments/{commentId} {

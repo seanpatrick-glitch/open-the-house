@@ -21,6 +21,11 @@ export const ACCESS_REQUEST_STATUS = {
   DENIED: 'denied',
 };
 
+export const TASK_LEVELS = {
+  ORG:        'org',
+  DEPARTMENT: 'department',
+};
+
 /*
 COLLECTION: timelines/{timelineId}
 {
@@ -45,6 +50,13 @@ COLLECTION: tasks/{taskId}
   dueDate: Timestamp,
   startDate: Timestamp | null,
   status: 'not_started' | 'in_progress' | 'complete' | 'overdue',
+  level: 'org' | 'department',     // default 'org'. 'department' scopes task to one department.
+  departmentId: string | null,      // required when level is 'department', null when level is 'org'
+  promotedToOrg: boolean,           // default false. Admin-only toggle. Surfaces dept task in org view.
+  primaryAssigneeUid: string | null, // replaces assignedTo
+  currentAssigneeUid: string | null, // updated on handoff acceptance
+  handoffPending: boolean,          // default false
+  contributorUids: string[],        // array of uids, default []
   department: string | null,            // departmentId
   production: string | null,            // productionId
   visibleToAll: boolean,                // default false
