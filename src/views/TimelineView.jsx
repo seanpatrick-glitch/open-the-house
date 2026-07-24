@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, onSnapshot, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { TIMELINE_STATUS } from '../models/timeline';
+import { TIMELINE_STATUS, TASK_LEVELS } from '../models/timeline';
 import CalendarGrid from '../components/timeline/CalendarGrid';
 import GanttView from '../components/timeline/GanttView';
 import TemplatesPanel from '../components/timeline/TemplatesPanel';
@@ -37,6 +37,7 @@ export default function TimelineView() {
   const [viewMode, setViewMode]       = useState(null);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showCreateTask, setShowCreateTask] = useState(false);
+  const [levelFilter, setLevelFilter] = useState('all');
 
   const orgId = userProfile?.orgId;
 
@@ -90,6 +91,13 @@ export default function TimelineView() {
     });
     return () => unsubscribe();
   }, [orgId]);
+
+  const filteredTasks = tasks.filter(task => {
+    if (levelFilter === 'all') return true;
+    if (levelFilter === 'org') return (task.level ?? 'org') === 'org' || task.promotedToOrg === true;
+    if (levelFilter === 'department') return task.level === 'department' && !task.promotedToOrg;
+    return true;
+  });
 
   async function handleViewChange(mode) {
     setViewMode(mode);
@@ -152,7 +160,29 @@ export default function TimelineView() {
         </div>
       </div>
 
-      {!showTemplates && <NotificationBanner tasks={tasks} />}
+      {!showTemplates && !showCreateTask && Object.keys(departments).length > 0 && (
+        <div className="flex items-center gap-2 mb-4">
+          {[
+            { key: 'all',        label: 'All Tasks' },
+            { key: 'org',        label: 'Org Timeline' },
+            { key: 'department', label: 'Department Tasks' },
+          ].map(opt => (
+            <button
+              key={opt.key}
+              onClick={() => setLevelFilter(opt.key)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                levelFilter === opt.key
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {!showTemplates && <NotificationBanner tasks={filteredTasks} />}
 
       {showCreateTask && (
         <div className="mb-6">
@@ -173,12 +203,12 @@ export default function TimelineView() {
           onClose={() => setShowTemplates(false)}
         />
       ) : viewMode === 'gantt' ? (
-        <GanttView tasks={tasks} departments={departments} />
+        <GanttView tasks={filteredTasks} departments={departments} />
       ) : viewMode === 'calendar' ? (
-        <CalendarGrid tasks={tasks} departments={departments} />
+        <CalendarGrid tasks={filteredTasks} departments={departments} />
       ) : (
         <>
-          {tasks.length === 0 ? (
+          {filteredTasks.length === 0 ? (
             <div className="bg-white border border-gray-200 rounded-xl p-10 text-center">
               <p className="text-gray-500 text-sm mb-1">No tasks yet.</p>
               <p className="text-gray-400 text-sm">Tasks will appear here once your timeline is set up.</p>
@@ -195,8 +225,8 @@ export default function TimelineView() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {tasks.map(task => {
-                    const dept = task.department ? departments[task.department] : null;
+                  {filteredTasks.map(task => {
+                    const dept = (task.departmentId || task.department) ? departments[task.departmentId || task.department] : null;
                     return (
                       <tr key={task.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3">

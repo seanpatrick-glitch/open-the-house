@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs, query, where, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
+import { TASK_LEVELS } from '../../models/timeline';
 
 function parseLocalDate(dateStr) {
   if (!dateStr) return null;
@@ -17,11 +18,12 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate]       = useState('');
   const [startDate, setStartDate]   = useState('');
-  const [department, setDepartment] = useState('');
   const [visibleToAll, setVisibleToAll] = useState(false);
   const [departments, setDepartments] = useState([]);
   const [saving, setSaving]         = useState(false);
   const [error, setError]           = useState('');
+  const [level, setLevel]             = useState(TASK_LEVELS.ORG);
+  const [departmentId, setDepartmentId] = useState('');
 
   useEffect(() => {
     if (!orgId) return;
@@ -42,13 +44,18 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
         title:                title.trim(),
         description:          description.trim(),
         assignedTo:           null,
-        assignedToDepartment: department || null,
         dueDate:              parseLocalDate(dueDate),
         startDate:            parseLocalDate(startDate),
         status:               'not_started',
-        department:           department || null,
         production:           null,
         visibleToAll,
+        level,
+        departmentId:         level === TASK_LEVELS.DEPARTMENT ? departmentId : null,
+        promotedToOrg:        false,
+        primaryAssigneeUid:   null,
+        currentAssigneeUid:   null,
+        handoffPending:       false,
+        contributorUids:      [],
         visibleToDepartments: [],
         dependsOn:            [],
         notifyOnComplete:     [],
@@ -97,12 +104,38 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
           </div>
         </div>
 
-        {departments.length > 0 && (
+        <div className="flex items-start justify-between gap-6 pt-1">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-            <select value={department} onChange={e => setDepartment(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option value="">All departments</option>
+            <p className="text-sm font-medium text-gray-700">Task Level</p>
+            <p className="text-xs text-gray-400 mt-0.5">Org tasks appear in the master timeline. Department tasks are owned by a department.</p>
+          </div>
+          <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => setLevel(TASK_LEVELS.ORG)}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${level === TASK_LEVELS.ORG ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Org
+            </button>
+            <button
+              type="button"
+              onClick={() => setLevel(TASK_LEVELS.DEPARTMENT)}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${level === TASK_LEVELS.DEPARTMENT ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Department
+            </button>
+          </div>
+        </div>
+
+        {level === TASK_LEVELS.DEPARTMENT && departments.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Department <span className="text-red-500">*</span></label>
+            <select
+              value={departmentId}
+              onChange={e => setDepartmentId(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">Select a department...</option>
               {departments.map(d => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
@@ -126,7 +159,7 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
       {error && <p className="text-sm text-red-600 mt-4">{error}</p>}
 
       <div className="flex items-center gap-3 mt-6">
-        <button onClick={handleSubmit} disabled={saving || !title.trim() || !dueDate}
+        <button onClick={handleSubmit} disabled={saving || !title.trim() || !dueDate || (level === TASK_LEVELS.DEPARTMENT && !departmentId)}
           className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
           {saving ? 'Creating...' : 'Create Task'}
         </button>
