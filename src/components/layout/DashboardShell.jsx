@@ -9,9 +9,11 @@ import TimelineView from '../../views/TimelineView'
 import SettingsView from '../../views/SettingsView'
 import PeopleView from '../../views/PeopleView'
 import CheckInView from '../checkin/CheckInView'
+import MessageView from '../../views/MessageView'
 
 // Section key → human-readable label for placeholder screens
 const SECTION_LABELS = {
+  messages:                'Messages',
   productions:             'Productions',
   checkin:                 'Check-In',
   departments:             'Departments',
@@ -40,6 +42,7 @@ function PlaceholderSection({ section }) {
 
 function SectionContent({ section, onNavigate }) {
   if (section === 'home')               return <HomeView onNavigate={onNavigate} />
+  if (section === 'messages')            return <MessageView />
   if (section === 'productions')        return <ProductionsView />
   if (section === 'checkin')            return <CheckInView />
   if (section === 'timeline')           return <TimelineView />

@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 
 const NAV_ITEMS = [
   { key: 'home',        label: 'Home',        emoji: '🏠' },
+  { key: 'messages',    label: 'Messages',    emoji: '💬' },
   { key: 'timeline',    label: 'Timeline',    emoji: '📅' },
   { key: 'departments', label: 'Departments', emoji: '🏢' },
   { key: 'places',      label: 'Places',      emoji: '📍' },
