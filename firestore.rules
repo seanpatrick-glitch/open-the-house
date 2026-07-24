@@ -341,5 +341,39 @@ service cloud.firestore {
         || request.auth.uid == taskDoc().currentAssigneeUid;
     }
 
+    // ── threads + messages ────────────────────────────────────────────────────────
+    match /organizations/{orgId}/threads/{threadId} {
+      allow read, write: if isAdminOrSecondary(orgId);
+
+      allow read, write: if isDepartmentHead(orgId)
+        && (resource.data.participantA == request.auth.uid
+            || resource.data.participantB == request.auth.uid);
+
+      allow read, write: if isActivePerson(orgId)
+        && (resource.data.participantA == request.auth.uid
+            || resource.data.participantB == request.auth.uid);
+
+      allow create: if isActivePerson(orgId)
+        && request.resource.data.participantA == request.auth.uid;
+
+      match /messages/{messageId} {
+        allow read, write: if isAdminOrSecondary(orgId);
+
+        allow read, write: if isDepartmentHead(orgId)
+          && (get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantA == request.auth.uid
+              || get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantB == request.auth.uid);
+
+        allow read, write: if isActivePerson(orgId)
+          && (get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantA == request.auth.uid
+              || get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantB == request.auth.uid);
+      }
+    }
+
+    // ── broadcasts ────────────────────────────────────────────────────────────────
+    match /organizations/{orgId}/broadcasts/{broadcastId} {
+      allow read: if isStaffLevel(orgId);
+      allow write: if isAdminOrSecondary(orgId) || isDepartmentHead(orgId);
+    }
+
   }
 }
