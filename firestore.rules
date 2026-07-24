@@ -293,5 +293,53 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/organizations/$(orgId)/people/$(resource.data.personId)).data.accountUid == request.auth.uid;
     }
 
+    // ── task handoffs ─────────────────────────────────────────────────────────────
+    match /tasks/{taskId}/handoffs/{handoffId} {
+      function taskData() {
+        return get(/databases/$(database)/documents/tasks/$(taskId)).data;
+      }
+      // Admin and secondary admin: full access
+      allow read, write: if isAdminOrSecondary(taskData().orgId);
+
+      // Current assignee: can initiate handoff
+      allow create: if isSignedIn()
+        && request.auth.uid == taskData().currentAssigneeUid
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.status == 'pending';
+
+      // Recipient: can accept or return
+      allow read: if isSignedIn()
+        && (request.auth.uid == resource.data.fromUid
+            || request.auth.uid == resource.data.toUid);
+      allow update: if isSignedIn()
+        && request.auth.uid == resource.data.toUid
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'responseNote', 'resolvedAt']);
+    }
+
+    // ── task history ──────────────────────────────────────────────────────────────
+    match /tasks/{taskId}/history/{entryId} {
+      function taskOrgId() {
+        return get(/databases/$(database)/documents/tasks/$(taskId)).data.orgId;
+      }
+      allow read: if isStaffLevel(taskOrgId())
+        || request.auth.uid == get(/databases/$(database)/documents/tasks/$(taskId)).data.currentAssigneeUid;
+      allow create: if isStaffLevel(taskOrgId())
+        || request.auth.uid == get(/databases/$(database)/documents/tasks/$(taskId)).data.currentAssigneeUid;
+    }
+
+    // ── task notes ────────────────────────────────────────────────────────────────
+    match /tasks/{taskId}/notes/{noteId} {
+      function taskDoc() {
+        return get(/databases/$(database)/documents/tasks/$(taskId)).data;
+      }
+      allow read: if isStaffLevel(taskDoc().orgId)
+        || request.auth.uid in taskDoc().contributorUids
+        || request.auth.uid == taskDoc().currentAssigneeUid;
+      allow create: if isStaffLevel(taskDoc().orgId)
+        || request.auth.uid in taskDoc().contributorUids
+        || request.auth.uid == taskDoc().currentAssigneeUid;
+    }
+
   }
 }

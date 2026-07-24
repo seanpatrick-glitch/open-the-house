@@ -8,6 +8,7 @@ import GanttView from '../components/timeline/GanttView';
 import TemplatesPanel from '../components/timeline/TemplatesPanel';
 import NotificationBanner from '../components/timeline/NotificationBanner';
 import CreateTaskForm from '../components/timeline/CreateTaskForm';
+import TaskDetailPanel from '../components/timeline/TaskDetailPanel';
 
 const STATUS_STYLES = {
   [TIMELINE_STATUS.NOT_STARTED]: 'bg-gray-100 text-gray-600',
@@ -39,6 +40,7 @@ export default function TimelineView() {
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [levelFilter, setLevelFilter] = useState('all');
   const [orgUsers, setOrgUsers] = useState([]);
+  const [selectedTask, setSelectedTask] = useState(null);
 
   const orgId = userProfile?.orgId;
 
@@ -224,57 +226,68 @@ export default function TimelineView() {
               <p className="text-gray-400 text-sm">Tasks will appear here once your timeline is set up.</p>
             </div>
           ) : (
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Task</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Due</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Department</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Assignee</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filteredTasks.map(task => {
-                    const dept = (task.departmentId || task.department) ? departments[task.departmentId || task.department] : null;
-                    return (
-                      <tr key={task.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-3">
-                          <p className="font-medium text-gray-900">{task.title}</p>
-                          {task.production && <p className="text-xs text-gray-400 mt-0.5">Production linked</p>}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{formatDate(task.dueDate)}</td>
-                        <td className="px-4 py-3">
-                          {dept ? (
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dept.colorCode || '#6366f1' }} />
-                              <span className="text-gray-700">{dept.name}</span>
-                            </div>
-                          ) : <span className="text-gray-400">Unassigned</span>}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          {task.primaryAssigneeUid ? (
-                            <span className="text-gray-700">
-                              {orgUsers.find(u => u.uid === task.primaryAssigneeUid)?.email || 'Assigned'}
+            <div className="flex gap-6">
+              <div className="flex-1 min-w-0 bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-gray-50">
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Task</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Due</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Department</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Assignee</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filteredTasks.map(task => {
+                      const dept = (task.departmentId || task.department) ? departments[task.departmentId || task.department] : null;
+                      const isSelected = selectedTask?.id === task.id;
+                      return (
+                        <tr key={task.id}
+                          onClick={() => setSelectedTask(isSelected ? null : task)}
+                          className={`cursor-pointer transition-colors ${isSelected ? 'bg-indigo-50' : 'hover:bg-gray-50'}`}>
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-gray-900">{task.title}</p>
+                            {task.production && <p className="text-xs text-gray-400 mt-0.5">Production linked</p>}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{formatDate(task.dueDate)}</td>
+                          <td className="px-4 py-3">
+                            {dept ? (
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dept.colorCode || '#6366f1' }} />
+                                <span className="text-gray-700">{dept.name}</span>
+                              </div>
+                            ) : <span className="text-gray-400">Unassigned</span>}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {task.primaryAssigneeUid ? (
+                              <span className="text-gray-700">
+                                {orgUsers.find(u => u.uid === task.primaryAssigneeUid)?.email || 'Assigned'}
+                              </span>
+                            ) : <span className="text-gray-400">Unassigned</span>}
+                            {task.contributorUids?.length > 0 && (
+                              <span className="ml-1 text-xs text-gray-400">+{task.contributorUids.length}</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[task.status] || STATUS_STYLES[TIMELINE_STATUS.NOT_STARTED]}`}>
+                              {STATUS_LABELS[task.status] || 'Not started'}
                             </span>
-                          ) : (
-                            <span className="text-gray-400">Unassigned</span>
-                          )}
-                          {task.contributorUids?.length > 0 && (
-                            <span className="ml-1 text-xs text-gray-400">+{task.contributorUids.length}</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[task.status] || STATUS_STYLES[TIMELINE_STATUS.NOT_STARTED]}`}>
-                            {STATUS_LABELS[task.status] || 'Not started'}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {selectedTask && (
+                <TaskDetailPanel
+                  task={selectedTask}
+                  orgUsers={orgUsers}
+                  departments={departments}
+                  onClose={() => setSelectedTask(null)}
+                />
+              )}
             </div>
           )}
         </>
