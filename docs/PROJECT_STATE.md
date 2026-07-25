@@ -1,7 +1,7 @@
 # Places People! — Project State
 > Single source of truth for all Claude sessions. Read this first on every sync.
 > Last updated: 2026-07-25
-> Updated by: Claude Code (App Architecture session sync)
+> Updated by: Claude Code (Code Interpreter and App Build session sync)
 
 ---
 
@@ -45,6 +45,7 @@
 - Add a Place silent fail fixed (July 14): Places and productions Firestore rules added, including a collectionGroup rule for the productions query.
 - AuthRouter updated (July 14) to correctly route all seven canonical role values to their views — secondaryAdmin, departmentHead, orgCollaborator, venueManager, productionCollaborator, and person were previously all falling through to "Account not configured."
 - Email invite flow rebuilt on Firebase email link auth (July 18): sendSignInLinkToEmail replaces createUserWithEmailAndPassword. New JoinPage.jsx at /join route handles sign-in link completion, invite lookup via direct getDoc using orgId and inviteId in URL params, user document creation, and invite acceptance. pendingInvites subcollection added at organizations/{orgId}/pendingInvites/{inviteId} with updated Firestore rules (get open, list restricted to admins, self-accept update clause for joining user). users write rule split into create and update (both require uid == userId). organizations/{orgId}/invites rule added for old invite documents. orgId and inviteId encoded into the Firebase action code URL to survive incognito and browser sessions. Email link sign-in enabled in Firebase Authentication console. July 23 App Architecture session confirmed the root cause as a bootstrapping problem and validated Firebase Email Link Authentication as the correct fix; bootstrap write rule further simplified to allow authenticated self-create with a valid accountState.
+- Areas 1 through 4 complete (July 24, per the July 23 App Architecture spec): Firebase Functions scaffold initialized and committed. Migration scripts built and run (level field added to 4 existing task documents; assignedTo copied to primaryAssigneeUid/currentAssigneeUid with handoffPending and contributorUids initialized on 4 existing task documents). Area 2 (department timelines): task model updated with level/departmentId/promotedToOrg/primaryAssigneeUid/currentAssigneeUid/handoffPending/contributorUids, Firestore rules updated with DH task write access, timeline list view with level filter pills, CreateTaskForm with level selector and departmentId. Area 4 (multi-person assignment): primary assignee dropdown and contributors checklist in CreateTaskForm, assignee column in timeline list view. Area 3 (task handoff): handoff, history, and notes Firestore rules deployed, TaskDetailPanel with handoff initiation and batch-write accept/return flow wired into list view. Area 1 (messaging): messaging data model and rules deployed, MessagingView with two-panel inbox and thread view wired into app, Messages nav item added, two composite indexes created in Firebase console.
 - People access model Steps 1 through 6 complete (July 19): status enum updated to applied/waitlisted/active/inactive. Staff boolean, accountUid, and accountStatus added to person schema and all creation paths. Firestore rules updated with simplified role-based helpers. Roster account status column added. PersonInviteToken flow built (PersonInviteForm, PersonJoinPage at /person-join, personInviteTokens rules).
 - Check-in module built (July 19): data model deployed (checkins and checkinTokens rules with time-validity enforcement). DH check-in UI built (CheckInView with production/date picker and roster). QR self-check-in built (CheckInTokenGenerator, SelfCheckInPage at /self-checkin). accountUid lookup bug fixed across checkins create and read rules. qrcode.react installed.
 
@@ -62,21 +63,27 @@
 
 **Known open bugs:**
 - None currently open — both pre-beta bugs (Add a Place, email invite generation) resolved as of July 18.
-- Flagged for review: Firebase email delivery may need SMTP configuration review before beta (password reset emails not arriving reliably). Original admin account seanphilibin@yahoo.com status unclear after a lockout during testing; a second admin account was created manually (uid: 11t9LkUHF9Vm0ISiq3wfF5fQtHf2) as a workaround.
+- Flagged for review: Firebase email delivery may need SMTP configuration review before beta (password reset emails not arriving reliably). Original admin account seanphilibin@yahoo.com status unclear after a lockout during testing; a second admin account was created manually (uid: 11t9LkUHF9Vm0ISiq3wfF5fQtHf2) as a workaround. July 24 update: this same SMTP gap is now also blocking the three Cloud Functions (email on new message, readCount on broadcasts, task count denormalization) — see Section 6.
 
 **Firebase:**
 - Project: open-the-house (not show-prep-app)
 - Composite index confirmed resolved: tasks collection, orgId ascending, dueDate ascending
 
 **Next build priority:**
-- Four new areas (messaging, department timelines, task handoff, multi-person assignment) fully specced in the July 23 App Architecture session — see Section 3 for data model detail. Ready for Code Interpreter, build order Area 2 (department timelines) → Area 4 (multi-person assignment) → Area 3 (task handoff) → Area 1 (messaging), 26 steps total. Step 0: Firebase Functions initialization plus two migration scripts (assignedTo to primaryAssigneeUid, level field backfill on existing tasks). Two open items before rules deploy: DH departmentId read path needs confirmation; broadcast fan-out for more than 250 recipients needs chunked writes.
+- RESOLVED July 24: Areas 1 through 4 (messaging, department timelines, task handoff, multi-person assignment) all complete — see Complete list above.
+- Broadcast messaging not built — explicitly deferred to next session.
+- Three Cloud Functions not written (email on new message, readCount on broadcasts, task count denormalization) — deferred pending Firebase SMTP configuration resolution.
+- Org member query pattern needs an App Architecture decision on an orgMembers subcollection.
+- Calendar and Gantt detail panels are read-only, no handoff button — inconsistent with the list view's handoff flow (Area 3).
 - PlacesView (nav item currently routes to a placeholder, view not yet built).
 - CollaboratorView has no real content — needs functionality before beta collaborators are useful.
-- People module cleanup: unused onNavigate prop in PeopleView. isPerson unused function in firestore.rules also flagged for cleanup (July 19).
+- People module cleanup: unused onNavigate prop in PeopleView. isPerson unused function in firestore.rules also flagged for cleanup (July 19). Unused "or" import in MessagingView.jsx (July 24).
 - QR self-check-in end-to-end flow not fully tested — needs deployed build for mobile scan test.
 - Composite indexes for checkins needed: orgId/date and personId/date — Firestore will surface links on first query.
 - Staff toggle UI not yet built — boolean exists in data and rules but no UI to set it.
-- Beta Phase 0 setup for Tempest can now begin — People Coordination module confirmed functional as of July 14.
+- Test user cleanup needed: 19+ test accounts in the users collection as of July 24.
+- beta-stable git branch not yet created.
+- Beta Phase 0 setup for Tempest can now begin — People Coordination module confirmed functional as of July 14. Not yet confirmed complete as of July 24.
 
 ---
 
@@ -187,7 +194,7 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 
 **Direction 4 font/licensing question:** On hold pending confirmation of whether the Canvas brush script is a licensable font or image-generated lettering with no underlying font file. Sean makes the final call. Direction 4 brand board rebuild and favicon/app icon small-scale test also pending on this.
 
-**Phase 2 outreach:** On hold pending demo-ready build. Update July 14: app is now functionally demo-ready for Productions, Departments, Timeline, and People Coordination — Sean to confirm whether this satisfies the hold condition.
+**Phase 2 outreach:** On hold pending demo-ready build. Update July 14: app is now functionally demo-ready for Productions, Departments, Timeline, and People Coordination — Sean to confirm whether this satisfies the hold condition. Update July 24: framed as on hold pending beta launch.
 
 **Landing page:** Copy drafted July 12 in Brand Voice and Messaging chat (hero, subhero, problem statement, six feature modules, who it's for, origin story, CTA placeholder, footer). Visual/design implementation on hold pending Direction 4 brand board rebuild. CTA mechanics on hold pending access flow build. Page format (long-form vs. tight single-page) not yet decided.
 
@@ -196,6 +203,10 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 **Check-in Phase 2 and shift scheduling:** Explicitly deferred as of July 15 Feature Roadmap session. Check-in Phase 1 (presence-only) built July 19 — see Section 2. Phase 2 and shift scheduling remain out of scope until Phase 1 is validated in use.
 
 **Eventitron API integration and venue scheduling:** Both explicitly deferred to the roadmap as of the July 15 Feature Roadmap session. No spec work started.
+
+**Cloud Functions (messaging and department timelines):** Deferred as of July 24 pending Firebase SMTP configuration resolution. Three functions needed: email on new message, readCount on broadcasts, task count denormalization.
+
+**Broadcast messaging:** Deferred to next session as of July 24. Core messaging (threads, two-panel inbox, thread view) is built; broadcast fan-out is not.
 
 ---
 
@@ -220,6 +231,7 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 
 > Most recent first. Last 5 significant changes.
 
+- 2026-07-25: Reconciliation pass — repo copy of PROJECT_STATE.md had drifted one day behind Drive since July 24 (Areas 1 through 4 completion note in Section 2, the July 24 SMTP/Cloud Functions blocker note, the July 24 Next build priority bullets, the "or" import cleanup note, the 19+ test account and beta-stable branch notes, the Phase 2 outreach update, and the two new Section 6 blocks for Cloud Functions and broadcast messaging were all Drive-only). Merged into the repo copy with no content discarded from either side; both copies now byte-identical.
 - 2026-07-25: Code Interpreter and App Build session — test user cleanup complete: 15 test accounts deleted from the Firestore users collection and Firebase Auth, only seanphilibin@yahoo.com remains, three orphaned test org documents deleted. orgMembers subcollection migration script written and run: one member document written to organizations/Lx6iBiCdDeHvy2Cy6Kh3/members. Firestore rules updated: organizations/{orgId}/members rule added, isPerson function removed (previously flagged for cleanup July 19), deployed clean with no warnings. All org member queries updated to read from organizations/{orgId}/members instead of client-filtering the users collection: CreateDepartmentForm, CreateTaskForm, MessageView, TimelineView. UserManagement.jsx left untouched as legacy dead code, confirmed not wired into DashboardShell or active navigation. Write paths updated: JoinPage and PersonJoinPage now batch-write to both users/{uid} and organizations/{orgId}/members/{uid} on invite acceptance. Unused "or" import removed from MessagingView.jsx. Broadcast messaging built (previously deferred to next session as of July 24): BroadcastForm with Everyone and Department scope, fan-out to individual threads and messages in batches of 400, Send to Group button added to MessageView. personType scope deferred — members subcollection has no personTypeId field; decision on how to support it (add the field vs. query the people collection separately) sent to Feature Roadmap. New flag: Person class members with accounts are not reachable through messaging — broadcast and direct-message recipient lists only pull from the members subcollection, which is staff-level only; needs a Feature Roadmap and App Architecture decision. Open: Person class messaging gap (new); three Cloud Functions still not written (email on new message, readCount on broadcasts, task count denormalization), still blocked on Firebase SMTP configuration; PlacesView, staff toggle UI, and CollaboratorView still not built; Calendar and Gantt detail panels still read-only with no handoff button; QR self-check-in mobile test still not confirmed; checkins composite indexes still needed; beta-stable git branch still not created; Phase 0 setup for Tempest still not confirmed complete. On hold: Cloud Functions deferred pending Firebase SMTP configuration; Phase 2 outreach on hold pending beta launch.
 - 2026-07-23: Reconciliation pass on the App Architecture session above. Marked the queued "two App Architecture briefings" item in Section 7 as fully resolved (messaging/department timelines/task handoff/multi-person assignment now specced, not just briefed). Added the new architecture spec (schemas, Cloud Functions, composite indexes, migration scripts, 26-step build order) to Section 3 as its own block. Updated Section 2's Next build priority to reflect the spec is build-ready rather than just written. Appended a note to the July 18 email-invite Complete entry in Section 2: the July 23 session confirmed the bootstrapping root cause and further simplified the bootstrap write rule for accountState-based self-create — a genuine refinement beyond the original July 18 build, not a duplicate of it.
 - 2026-07-23: App Architecture session — invite flow root cause confirmed as a bootstrapping problem, Firebase Email Link Authentication confirmed as the correct fix. Two build steps produced: refactor invite generation to sendSignInLinkToEmail with pendingInvites subcollection, and build /join completion page. Bootstrap write rule simplified to allow authenticated self-create with valid accountState. Four new areas fully specced: thread-based messaging (threads, messages, broadcasts collections, denormalized read state, two Cloud Functions, two composite indexes), department timelines (level enum and departmentId and promotedToOrg on tasks, denormalized task counts on department document via Cloud Function, three composite indexes, DH-scoped write rules), task handoff (currentAssigneeUid and handoffPending on task document, handoffs subcollection, history subcollection append-only, atomic batch write on acceptance), multi-person task assignment (primaryAssigneeUid replacing assignedTo, contributorUids array, notes subcollection append-only, contributor composite index, notification routing split between primary and contributors). Two migration scripts needed as Step 0: assignedTo to primaryAssigneeUid, level field to existing tasks. Three Cloud Functions needed total. Firebase Functions initialization is Step 0 before any area build. Full 26-step ordered build sequence produced. Build order: Area 2, Area 4, Area 3, Area 1. Full composite index list produced. Open: DH departmentId read path needs confirmation before rules deploy; broadcast fan-out for more than 250 recipients needs chunked writes.
