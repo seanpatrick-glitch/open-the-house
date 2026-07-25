@@ -10,6 +10,7 @@ import {
   setDoc,
   updateDoc,
   serverTimestamp,
+  writeBatch,
 } from 'firebase/firestore'
 import { auth, db } from '../../firebase'
 
@@ -69,7 +70,9 @@ export default function JoinPage() {
           return
         }
 
-        await setDoc(doc(db, 'users', uid), {
+        const batch = writeBatch(db)
+
+        batch.set(doc(db, 'users', uid), {
           name:      email,
           email,
           createdAt: serverTimestamp(),
@@ -82,6 +85,23 @@ export default function JoinPage() {
             },
           },
         })
+
+        batch.set(
+          doc(db, 'organizations', invite.orgId, 'members', uid),
+          {
+            uid,
+            email,
+            displayName:     email,
+            role:            invite.role,
+            provisionalAdmin: false,
+            departmentId:    null,
+            joinedAt:        serverTimestamp(),
+            invitedBy:       null,
+            accountStatus:   'confirmed',
+          }
+        )
+
+        await batch.commit()
 
         await updateDoc(inviteDoc.ref, { status: 'accepted' })
 

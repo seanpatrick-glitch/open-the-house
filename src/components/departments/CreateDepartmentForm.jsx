@@ -21,10 +21,9 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
   useEffect(() => {
     async function fetchUsers() {
       try {
-        const snap = await getDocs(collection(db, 'users'))
+        const snap = await getDocs(collection(db, 'organizations', orgId, 'members'))
         const filtered = snap.docs
           .map(d => ({ uid: d.id, ...d.data() }))
-          .filter(u => Object.keys(u.organizations ?? {}).includes(orgId))
         setOrgUsers(filtered)
         if (filtered.length > 0) setDepartmentHeadUid(filtered[0].uid)
       } catch (err) {

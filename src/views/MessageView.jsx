@@ -11,11 +11,10 @@ export default function MessageView() {
 
   useEffect(() => {
     if (!orgId) return;
-    getDocs(collection(db, 'users'))
+    getDocs(collection(db, 'organizations', orgId, 'members'))
       .then(snap => {
         const filtered = snap.docs
-          .map(d => ({ uid: d.id, ...d.data() }))
-          .filter(u => Object.keys(u.organizations ?? {}).includes(orgId));
+          .map(d => ({ uid: d.id, ...d.data() }));
         setOrgUsers(filtered);
       });
   }, [orgId]);

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth';
-import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 
 export default function PersonJoinPage() {
@@ -63,13 +63,44 @@ export default function PersonJoinPage() {
         window.localStorage.removeItem('personInviteTokenId');
 
         // Link uid to person document
-        await updateDoc(
+        const batch = writeBatch(db);
+
+        batch.update(
           doc(db, 'organizations', orgId, 'people', token.personId),
           {
             accountUid:    uid,
             accountStatus: 'active',
           }
         );
+
+        batch.set(doc(db, 'users', uid), {
+          name:      email,
+          email,
+          createdAt: serverTimestamp(),
+          organizations: {
+            [orgId]: {
+              role:     'person',
+              joinedAt: serverTimestamp(),
+            },
+          },
+        });
+
+        batch.set(
+          doc(db, 'organizations', orgId, 'members', uid),
+          {
+            uid,
+            email,
+            displayName:     email,
+            role:            'person',
+            provisionalAdmin: false,
+            departmentId:    null,
+            joinedAt:        serverTimestamp(),
+            invitedBy:       null,
+            accountStatus:   'confirmed',
+          }
+        );
+
+        await batch.commit();
 
         // Mark token accepted
         await updateDoc(

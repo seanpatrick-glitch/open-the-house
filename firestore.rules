@@ -43,10 +43,6 @@ service cloud.firestore {
       return isAdmin(orgId) || isSecondaryAdmin(orgId) || isDepartmentHead(orgId);
     }
 
-    function isPerson(orgId) {
-      return isMember(orgId) && userDoc().organizations[orgId].role == 'person';
-    }
-
     // Is the requesting user an active Person class member?
     function isActivePerson(orgId) {
       return isSignedIn() && isMember(orgId)
@@ -373,6 +369,13 @@ service cloud.firestore {
     match /organizations/{orgId}/broadcasts/{broadcastId} {
       allow read: if isStaffLevel(orgId);
       allow write: if isAdminOrSecondary(orgId) || isDepartmentHead(orgId);
+    }
+
+    // ── org members subcollection ─────────────────────────────────────────────────
+    match /organizations/{orgId}/members/{memberId} {
+      allow read: if isMember(orgId);
+      allow write: if isAdminOrSecondary(orgId);
+      allow create: if isSignedIn() && request.auth.uid == memberId;
     }
 
   }
