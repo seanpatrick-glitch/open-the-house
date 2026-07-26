@@ -55,6 +55,9 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
           },
           createdAt: serverTimestamp(),
           createdBy: userProfile.uid,
+          openDate:  localDateToTimestamp(startDate),
+          closeDate: localDateToTimestamp(endDate),
+          venueId:   placeId,
         }
       )
 
