@@ -49,6 +49,10 @@ service cloud.firestore {
         && userDoc().organizations[orgId].role == 'person';
     }
 
+    function isOrgCollaborator(orgId) {
+      return isMember(orgId) && userDoc().organizations[orgId].role == 'orgCollaborator';
+    }
+
     // Is the requesting user an active staff-toggled Person class member?
     function isActiveStaff(orgId) {
       return isSignedIn() && isMember(orgId)
@@ -377,6 +381,25 @@ service cloud.firestore {
       allow read: if isMember(orgId);
       allow write: if isAdminOrSecondary(orgId);
       allow create: if isSignedIn() && request.auth.uid == memberId;
+    }
+
+    // ── flags ─────────────────────────────────────────────────────────────────────
+    match /organizations/{orgId}/flags/{flagId} {
+      allow read, write: if isAdminOrSecondary(orgId);
+
+      allow create: if isOrgCollaborator(orgId)
+        && request.resource.data.flaggedBy == request.auth.uid;
+      allow read: if isOrgCollaborator(orgId)
+        && resource.data.flaggedBy == request.auth.uid;
+
+      allow create: if isDepartmentHead(orgId)
+        && request.resource.data.flaggedBy == request.auth.uid;
+      allow read: if isDepartmentHead(orgId)
+        && (resource.data.targetUid == request.auth.uid
+            || resource.data.departmentId == null);
+
+      allow create: if isActivePerson(orgId)
+        && request.resource.data.flaggedBy == request.auth.uid;
     }
 
   }
