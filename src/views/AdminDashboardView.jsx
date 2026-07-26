@@ -235,14 +235,14 @@ function DashboardHeader({ state, activeProd, daysToOpen }) {
 }
 
 function DashboardContent({ state, tasks, tasksToday, tasksTomorrow, members, flags, checkinTokens, activeProd, orgId }) {
-  if (state === DASHBOARD_STATES.PLANNING)        return <PlanningState tasks={tasks} />;
+  if (state === DASHBOARD_STATES.PLANNING)        return <PlanningState tasks={tasks} orgId={orgId} />;
   if (state === DASHBOARD_STATES.FINAL_COUNTDOWN) return <FinalCountdownState tasksToday={tasksToday} tasksTomorrow={tasksTomorrow} members={members} />;
   if (state === DASHBOARD_STATES.LIVE)            return <LiveState tasks={tasks} members={members} flags={flags} checkinTokens={checkinTokens} />;
   if (state === DASHBOARD_STATES.POSTMORTEM)      return <PostmortemState tasks={tasks} activeProd={activeProd} />;
   return null;
 }
 
-function PlanningState({ tasks }) {
+function PlanningState({ tasks, orgId }) {
   const overdue  = tasks.filter(t => t.status === 'overdue');
   const upcoming = tasks.filter(t => t.status !== 'overdue');
 
@@ -261,6 +261,28 @@ function PlanningState({ tasks }) {
         ) : (
           <TaskList tasks={upcoming} />
         )}
+      </div>
+
+      {/* Quick actions */}
+      <div className="border-t border-gray-200 pt-6">
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">Quick Actions</h2>
+        <div className="flex flex-wrap gap-3">
+          <a href="#timeline"
+            onClick={e => { e.preventDefault(); window.dispatchEvent(new CustomEvent('navigate', { detail: 'timeline' })); }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-300 transition-colors">
+            Add a timeline task
+          </a>
+          <a href="#collaborators"
+            onClick={e => { e.preventDefault(); window.dispatchEvent(new CustomEvent('navigate', { detail: 'invite-collaborator' })); }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-300 transition-colors">
+            Invite a team member
+          </a>
+          <a href="#messages"
+            onClick={e => { e.preventDefault(); window.dispatchEvent(new CustomEvent('navigate', { detail: 'messages' })); }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-300 transition-colors">
+            Message the org
+          </a>
+        </div>
       </div>
     </div>
   );

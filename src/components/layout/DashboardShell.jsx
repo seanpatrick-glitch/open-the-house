@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Sidebar from './Sidebar'
 import HomeView from '../dashboard/HomeView'
 import InviteCollaborator from '../invites/InviteCollaborator'
@@ -58,6 +58,14 @@ function SectionContent({ section, onNavigate }) {
 export default function DashboardShell() {
   const [activeSection, setActiveSection] = useState('home')
   const [sidebarOpen,   setSidebarOpen]   = useState(false)
+
+  useEffect(() => {
+    const handler = (e) => {
+      handleNavigate(e.detail);
+    };
+    window.addEventListener('navigate', handler);
+    return () => window.removeEventListener('navigate', handler);
+  }, []);
 
   function handleNavigate(section) {
     setActiveSection(section)
