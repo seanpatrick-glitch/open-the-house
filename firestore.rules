@@ -282,6 +282,7 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/organizations/$(orgId)/checkinTokens/$(request.resource.data.tokenId))
         && get(/databases/$(database)/documents/organizations/$(orgId)/checkinTokens/$(request.resource.data.tokenId)).data.active == true
         && get(/databases/$(database)/documents/organizations/$(orgId)/checkinTokens/$(request.resource.data.tokenId)).data.assignmentId == request.resource.data.assignmentId
+        && request.time >= get(/databases/$(database)/documents/organizations/$(orgId)/checkinTokens/$(request.resource.data.tokenId)).data.validFrom
         && request.time < get(/databases/$(database)/documents/organizations/$(orgId)/checkinTokens/$(request.resource.data.tokenId)).data.validUntil;
 
       // Active Person class: read own check-in history
