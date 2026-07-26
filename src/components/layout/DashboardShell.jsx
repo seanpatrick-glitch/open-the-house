@@ -11,6 +11,8 @@ import PeopleView from '../../views/PeopleView'
 import CheckInView from '../checkin/CheckInView'
 import MessageView from '../../views/MessageView'
 import AdminDashboardView from '../../views/AdminDashboardView';
+import DHDashboardView from '../../views/DHDashboardView';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Section key → human-readable label for placeholder screens
 const SECTION_LABELS = {
@@ -41,8 +43,11 @@ function PlaceholderSection({ section }) {
   )
 }
 
-function SectionContent({ section, onNavigate }) {
-  if (section === 'home')               return <AdminDashboardView />;
+function SectionContent({ section, onNavigate, userProfile }) {
+  if (section === 'home') {
+    if (userProfile?.role === 'departmentHead') return <DHDashboardView />;
+    return <AdminDashboardView />;
+  }
   if (section === 'messages')            return <MessageView />
   if (section === 'productions')        return <ProductionsView />
   if (section === 'checkin')            return <CheckInView />
@@ -56,6 +61,7 @@ function SectionContent({ section, onNavigate }) {
 }
 
 export default function DashboardShell() {
+  const { userProfile } = useAuth();
   const [activeSection, setActiveSection] = useState('home')
   const [sidebarOpen,   setSidebarOpen]   = useState(false)
 
@@ -119,7 +125,7 @@ export default function DashboardShell() {
 
         {/* Scrollable content area */}
         <main className="flex-1 overflow-y-auto p-6">
-          <SectionContent section={activeSection} onNavigate={handleNavigate} />
+          <SectionContent section={activeSection} onNavigate={handleNavigate} userProfile={userProfile} />
         </main>
 
       </div>
