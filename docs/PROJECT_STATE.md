@@ -1,7 +1,7 @@
 # Places People! — Project State
 > Single source of truth for all Claude sessions. Read this first on every sync.
-> Last updated: 2026-07-25
-> Updated by: Claude Code (UX and User Flow session sync)
+> Last updated: 2026-07-26
+> Updated by: Claude Code (Feature Roadmap session sync)
 
 ---
 
@@ -70,20 +70,21 @@
 - Composite index confirmed resolved: tasks collection, orgId ascending, dueDate ascending
 
 **Next build priority:**
-- RESOLVED July 24: Areas 1 through 4 (messaging, department timelines, task handoff, multi-person assignment) all complete — see Complete list above.
-- Broadcast messaging not built — explicitly deferred to next session.
+Ordered for the next Code Interpreter session, per the July 26 Feature Roadmap session:
+1. CheckInTokenGenerator start time fix — needs a start time input so validFrom is set by the DH, not the creation timestamp. Required before the QR self-check-in mobile test.
+2. Collaborator view build — view-only: production status, people count, admin-elevated flags, one quick action to flag a note for Admin.
+3. Person view build — confirmed from the UX Dashboard Scope doc; messaging quick action routes to a direct DH thread start, bypassing the broadcast recipient picker.
+4. Departments page enhancements — task completion and people count on cards, tap routes to the filtered timeline.
+5. PlacesView build — new build from zero: venue list with place cards, place detail view, Add a Place button. No schedule view for beta.
+
+Also still open:
 - Three Cloud Functions not written (email on new message, readCount on broadcasts, task count denormalization) — deferred pending Firebase SMTP configuration resolution.
-- Org member query pattern needs an App Architecture decision on an orgMembers subcollection.
 - Calendar and Gantt detail panels are read-only, no handoff button — inconsistent with the list view's handoff flow (Area 3).
-- PlacesView (nav item currently routes to a placeholder, view not yet built).
-- CollaboratorView has no real content — needs functionality before beta collaborators are useful.
-- People module cleanup: unused onNavigate prop in PeopleView. isPerson unused function in firestore.rules also flagged for cleanup (July 19). Unused "or" import in MessagingView.jsx (July 24).
-- QR self-check-in end-to-end flow not fully tested — needs deployed build for mobile scan test.
+- People module cleanup: unused onNavigate prop in PeopleView.
 - Composite indexes for checkins needed: orgId/date and personId/date — Firestore will surface links on first query.
 - Staff toggle UI not yet built — boolean exists in data and rules but no UI to set it.
-- Test user cleanup needed: 19+ test accounts in the users collection as of July 24.
 - beta-stable git branch not yet created.
-- Beta Phase 0 setup for Tempest can now begin — People Coordination module confirmed functional as of July 14. Not yet confirmed complete as of July 24.
+- Beta Phase 0 setup for Tempest can now begin — People Coordination module confirmed functional as of July 14. Not yet confirmed complete.
 
 ---
 
@@ -208,6 +209,8 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 
 **Broadcast messaging:** Deferred to next session as of July 24. Core messaging (threads, two-panel inbox, thread view) is built; broadcast fan-out is not.
 
+**Timeline Step 8 Part B:** Explicitly deferred to Stage 1B as of the July 26 Feature Roadmap session — kept on hold until two roles exist to test the access request and admin approval flow.
+
 ---
 
 ## SECTION 7: OPEN DECISIONS
@@ -224,6 +227,7 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 - App Architecture chat may need a follow-on session to confirm Provisional Admin and ownership invite flow with the UX chat before Code Interpreter builds the signup and handoff screens.
 - RESOLVED July 19: Staff toggle security rule mechanism built as a rule-time check on a boolean field (staff boolean on the person schema, simplified role-based Firestore rules). Only the UI to set the toggle remains unbuilt — see Section 2.
 - RESOLVED July 23: Both App Architecture briefings addressed. Person access model/check-in was built July 19 directly by Code Interpreter (see Section 6). Messaging/department timelines/task handoff/multi-person assignment was fully specced in the July 23 App Architecture session — data model, Cloud Functions, composite indexes, migration scripts, and a 26-step build sequence produced (see Section 2 and Section 3). Ready for Code Interpreter build.
+- Person class messaging gap: App Architecture decision needed before Code Interpreter touches messaging recipient queries. Person class members are not in the members subcollection, so broadcast and direct-message recipient lists can't reach them (a direct thread start bypasses this for beta, per the July 26 Feature Roadmap session). Two options documented: a personAccounts subcollection, or a personClass flag on the members subcollection.
 
 ---
 
@@ -231,6 +235,7 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 
 > Most recent first. Last 5 significant changes.
 
+- 2026-07-26: Feature Roadmap session — six items specced or decided. Collaborator view: view-only, production status plus people count plus admin-elevated flags, one quick action to flag a note for Admin. Person view: confirmed from UX Dashboard Scope doc, messaging quick action routes to direct DH thread start bypassing broadcast recipient picker. Departments page: task completion and people count on cards, tap routes to filtered timeline. Places page: new build from zero, venue list with place cards, place detail view, Add a Place button, no schedule view for beta. Check-in time window gap identified: CheckInTokenGenerator needs a start time input so validFrom is set by DH not creation timestamp, fix required before mobile test. Timeline Step 8 Part B: kept deferred until Stage 1B when two roles exist to test the flow. Person class messaging gap flagged for App Architecture: Person class members not in members subcollection, direct thread start bypasses issue for beta, full fix needs App Architecture decision on recipient query path (personAccounts subcollection vs. personClass flag on members subcollection).
 - 2026-07-25: UX and User Flow session — onboarding philosophy confirmed and documented from previous handoff (voice and text intake equal, concierge tier confirmed, templates as self-serve fallback, voice intake as day one beta feature). Seven canonical roles confirmed from Project State, no conflict. Logo animation into timeline header locked. Founding philosophy confirmed as onboarding frame. Conversational intake sequence locked with generic example language. Visual org chart confirmation with animated access tiles locked. Four onboarding tasks locked: Tell us about your people, Tell us about your places, What's happening in your places, Tell your people. Scope question and open plus close dates added to first production creation. Four dashboard states locked: Planning, Final Countdown, Live, Postmortem. Live state mapped with morning mode three-column layout (Today's Schedule, People Status, Open Flags) and on-the-go mobile mode. Invite review screen with editable email template locked. Inline role assignment with plain language chips and animated access tiles locked. Stage light timeline visual tentative, routed to Brand and Visual Identity. Personality quiz for non-admin onboarding flagged for Feature Roadmap, version two. Minimum proof of concept confirmed: two dates, timeline generates, assign task, notify person. Admin dashboard spec complete across all four states. Department Head dashboard spec complete (filtered timeline header, three-column layout, people status, department task list, three quick actions, one-tap flag escalation to Admin). Person dashboard spec complete (stripped header, My Tasks, My Schedule, two quick actions). Display name field locked for all seven roles — optional, defaults to signup name, Person class prompt adjusted for show and company names. Two spec documents produced: PP_UX_Master_Spec.md and PP_Dashboard_Scope.md. Open: Live dashboard deep dive (State 3, needs its own session before build), non-admin first experience not yet mapped, Org Collaborator/Venue Manager/Production Collaborator dashboards not yet designed, notification triggers per role not yet specced, concierge tier onboarding not yet designed, smart default timeline content needs a dedicated spec session. On hold: adoption and notification design (revisit in Beta and Onboarding Management once real users are in the app), stage light timeline visual (Brand and Visual Identity), personality quiz (Feature Roadmap, version two), postmortem knowledge capture (Feature Roadmap, tied to trainability pain point).
 - 2026-07-25: Reconciliation pass — repo copy of PROJECT_STATE.md had drifted one day behind Drive since July 24 (Areas 1 through 4 completion note in Section 2, the July 24 SMTP/Cloud Functions blocker note, the July 24 Next build priority bullets, the "or" import cleanup note, the 19+ test account and beta-stable branch notes, the Phase 2 outreach update, and the two new Section 6 blocks for Cloud Functions and broadcast messaging were all Drive-only). Merged into the repo copy with no content discarded from either side; both copies now byte-identical.
 - 2026-07-25: Code Interpreter and App Build session — test user cleanup complete: 15 test accounts deleted from the Firestore users collection and Firebase Auth, only seanphilibin@yahoo.com remains, three orphaned test org documents deleted. orgMembers subcollection migration script written and run: one member document written to organizations/Lx6iBiCdDeHvy2Cy6Kh3/members. Firestore rules updated: organizations/{orgId}/members rule added, isPerson function removed (previously flagged for cleanup July 19), deployed clean with no warnings. All org member queries updated to read from organizations/{orgId}/members instead of client-filtering the users collection: CreateDepartmentForm, CreateTaskForm, MessageView, TimelineView. UserManagement.jsx left untouched as legacy dead code, confirmed not wired into DashboardShell or active navigation. Write paths updated: JoinPage and PersonJoinPage now batch-write to both users/{uid} and organizations/{orgId}/members/{uid} on invite acceptance. Unused "or" import removed from MessagingView.jsx. Broadcast messaging built (previously deferred to next session as of July 24): BroadcastForm with Everyone and Department scope, fan-out to individual threads and messages in batches of 400, Send to Group button added to MessageView. personType scope deferred — members subcollection has no personTypeId field; decision on how to support it (add the field vs. query the people collection separately) sent to Feature Roadmap. New flag: Person class members with accounts are not reachable through messaging — broadcast and direct-message recipient lists only pull from the members subcollection, which is staff-level only; needs a Feature Roadmap and App Architecture decision. Open: Person class messaging gap (new); three Cloud Functions still not written (email on new message, readCount on broadcasts, task count denormalization), still blocked on Firebase SMTP configuration; PlacesView, staff toggle UI, and CollaboratorView still not built; Calendar and Gantt detail panels still read-only with no handoff button; QR self-check-in mobile test still not confirmed; checkins composite indexes still needed; beta-stable git branch still not created; Phase 0 setup for Tempest still not confirmed complete. On hold: Cloud Functions deferred pending Firebase SMTP configuration; Phase 2 outreach on hold pending beta launch.
