@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs, query, where, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { TASK_LEVELS } from '../../models/timeline';
+import { TASK_LEVELS, TASK_PHASES } from '../../models/timeline';
 
 function parseLocalDate(dateStr) {
   if (!dateStr) return null;
@@ -19,6 +19,7 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
   const [dueDate, setDueDate]           = useState('');
   const [startDate, setStartDate]       = useState('');
   const [level, setLevel]               = useState(TASK_LEVELS.ORG);
+  const [phase, setPhase]               = useState(TASK_PHASES.PLANNING);
   const [departmentId, setDepartmentId] = useState('');
   const [visibleToAll, setVisibleToAll] = useState(false);
   const [primaryAssigneeUid, setPrimaryAssigneeUid] = useState('');
@@ -80,6 +81,7 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
         currentAssigneeUid: primaryAssigneeUid || null,
         handoffPending:     false,
         contributorUids,
+        phase,
         assignedTo:         primaryAssigneeUid || null,
         production:         null,
         visibleToDepartments: [],
@@ -146,6 +148,28 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
             <button type="button" onClick={() => setLevel(TASK_LEVELS.DEPARTMENT)}
               className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${level === TASK_LEVELS.DEPARTMENT ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
               Department
+            </button>
+          </div>
+        </div>
+
+        {/* Phase */}
+        <div className="flex items-start justify-between gap-6">
+          <div>
+            <p className="text-sm font-medium text-gray-700">Phase</p>
+            <p className="text-xs text-gray-400 mt-0.5">Planning tasks run before the show. Production tasks run during. Wrap tasks close it out.</p>
+          </div>
+          <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1 flex-shrink-0">
+            <button type="button" onClick={() => setPhase(TASK_PHASES.PLANNING)}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${phase === TASK_PHASES.PLANNING ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              Planning
+            </button>
+            <button type="button" onClick={() => setPhase(TASK_PHASES.PRODUCTION)}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${phase === TASK_PHASES.PRODUCTION ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              Production
+            </button>
+            <button type="button" onClick={() => setPhase(TASK_PHASES.WRAP)}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${phase === TASK_PHASES.WRAP ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              Wrap
             </button>
           </div>
         </div>

@@ -26,6 +26,12 @@ export const TASK_LEVELS = {
   DEPARTMENT: 'department',
 };
 
+export const TASK_PHASES = {
+  PLANNING:   'planning',
+  PRODUCTION: 'production',
+  WRAP:       'wrap',
+};
+
 /*
 COLLECTION: timelines/{timelineId}
 {
