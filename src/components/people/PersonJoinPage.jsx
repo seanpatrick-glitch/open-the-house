@@ -90,13 +90,15 @@ export default function PersonJoinPage() {
           {
             uid,
             email,
-            displayName:     email,
-            role:            'person',
+            displayName:      email,
+            role:             'person',
+            personClass:      true,
+            personId:         token.personId,
             provisionalAdmin: false,
-            departmentId:    null,
-            joinedAt:        serverTimestamp(),
-            invitedBy:       null,
-            accountStatus:   'confirmed',
+            departmentId:     null,
+            joinedAt:         serverTimestamp(),
+            invitedBy:        null,
+            accountStatus:    'confirmed',
           }
         );
 
