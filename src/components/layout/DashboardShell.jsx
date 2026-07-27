@@ -12,6 +12,7 @@ import CheckInView from '../checkin/CheckInView'
 import MessageView from '../../views/MessageView'
 import AdminDashboardView from '../../views/AdminDashboardView';
 import DHDashboardView from '../../views/DHDashboardView';
+import PlacesView from '../../views/PlacesView';
 import { useAuth } from '../../contexts/AuthContext';
 
 // Section key → human-readable label for placeholder screens
@@ -53,6 +54,7 @@ function SectionContent({ section, onNavigate, userProfile, navState }) {
   if (section === 'checkin')            return <CheckInView />
   if (section === 'timeline')           return <TimelineView navState={navState} />;
   if (section === 'departments')        return <DepartmentsView onNavigate={onNavigate} />
+  if (section === 'places')              return <PlacesView />;
   if (section === 'invite-collaborator') return <InviteCollaborator />
   if (section === 'invite-volunteer')    return <InviteVolunteer />
   if (section === 'settings')            return <SettingsView />
