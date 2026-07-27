@@ -30,7 +30,7 @@ function formatDate(ts) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export default function TimelineView() {
+export default function TimelineView({ navState }) {
   const { userProfile } = useAuth();
   const [tasks, setTasks]             = useState([]);
   const [departments, setDepartments] = useState({});
@@ -43,6 +43,12 @@ export default function TimelineView() {
   const [selectedTask, setSelectedTask] = useState(null);
 
   const orgId = userProfile?.orgId;
+
+  useEffect(() => {
+    if (navState?.departmentFilter) {
+      setLevelFilter('department');
+    }
+  }, [navState]);
 
   useEffect(() => {
     if (!orgId) return;

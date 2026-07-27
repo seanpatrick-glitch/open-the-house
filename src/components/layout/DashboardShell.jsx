@@ -43,7 +43,7 @@ function PlaceholderSection({ section }) {
   )
 }
 
-function SectionContent({ section, onNavigate, userProfile }) {
+function SectionContent({ section, onNavigate, userProfile, navState }) {
   if (section === 'home') {
     if (userProfile?.role === 'departmentHead') return <DHDashboardView />;
     return <AdminDashboardView />;
@@ -51,7 +51,7 @@ function SectionContent({ section, onNavigate, userProfile }) {
   if (section === 'messages')            return <MessageView />
   if (section === 'productions')        return <ProductionsView />
   if (section === 'checkin')            return <CheckInView />
-  if (section === 'timeline')           return <TimelineView />
+  if (section === 'timeline')           return <TimelineView navState={navState} />;
   if (section === 'departments')        return <DepartmentsView onNavigate={onNavigate} />
   if (section === 'invite-collaborator') return <InviteCollaborator />
   if (section === 'invite-volunteer')    return <InviteVolunteer />
@@ -64,6 +64,7 @@ export default function DashboardShell() {
   const { userProfile } = useAuth();
   const [activeSection, setActiveSection] = useState('home')
   const [sidebarOpen,   setSidebarOpen]   = useState(false)
+  const [navState, setNavState] = useState(null);
 
   useEffect(() => {
     const handler = (e) => {
@@ -73,8 +74,9 @@ export default function DashboardShell() {
     return () => window.removeEventListener('navigate', handler);
   }, []);
 
-  function handleNavigate(section) {
+  function handleNavigate(section, state) {
     setActiveSection(section)
+    setNavState(state ?? null)
     setSidebarOpen(false) // always close mobile sidebar on navigation
   }
 
@@ -125,7 +127,7 @@ export default function DashboardShell() {
 
         {/* Scrollable content area */}
         <main className="flex-1 overflow-y-auto p-6">
-          <SectionContent section={activeSection} onNavigate={handleNavigate} userProfile={userProfile} />
+          <SectionContent section={activeSection} onNavigate={handleNavigate} userProfile={userProfile} navState={navState} />
         </main>
 
       </div>
