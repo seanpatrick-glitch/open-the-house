@@ -2,12 +2,19 @@ import React, { useState } from 'react'
 import { collection, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
+import { PRODUCTION_SCOPE } from '../../models/productions'
 
 const STATUS_OPTIONS = [
   { value: 'planning',    label: 'Planning' },
   { value: 'in-progress', label: 'In Progress' },
   { value: 'open',        label: 'Open' },
   { value: 'closed',      label: 'Closed' },
+]
+
+const SCOPE_OPTIONS = [
+  { value: PRODUCTION_SCOPE.SINGLE,   label: 'Single production' },
+  { value: PRODUCTION_SCOPE.SEASON,   label: 'Season' },
+  { value: PRODUCTION_SCOPE.FESTIVAL, label: 'Festival' },
 ]
 
 function localDateToTimestamp(dateStr) {
@@ -21,6 +28,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
   const [name,         setName]         = useState('')
   const [displayLabel, setDisplayLabel] = useState('')
   const [placeId,      setPlaceId]      = useState(places[0]?.id ?? '')
+  const [scope,        setScope]        = useState('')
   const [startDate,    setStartDate]    = useState('')
   const [endDate,      setEndDate]      = useState('')
   const [status,       setStatus]       = useState('planning')
@@ -30,7 +38,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!name.trim() || !placeId || !startDate || !endDate) return
+    if (!name.trim() || !placeId || !scope || !startDate || !endDate) return
     setLoading(true)
     setError('')
 
@@ -42,6 +50,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
           displayLabel: displayLabel.trim() || 'Production',
           placeId,
           orgId:        userProfile.orgId,
+          scope,
           startDate:    localDateToTimestamp(startDate),
           endDate:      localDateToTimestamp(endDate),
           status,
@@ -65,6 +74,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
       setName('')
       setDisplayLabel('')
       setPlaceId(places[0]?.id ?? '')
+      setScope('')
       setStartDate('')
       setEndDate('')
       setStatus('planning')
@@ -138,6 +148,24 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
           </select>
         </div>
 
+        {/* Scope */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Scope <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={scope}
+            onChange={e => setScope(e.target.value)}
+            required
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+          >
+            <option value="">Select scope...</option>
+            {SCOPE_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+
         {/* Dates */}
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -187,7 +215,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
         <div className="flex items-center gap-3 pt-1">
           <button
             type="submit"
-            disabled={loading || !name.trim() || !placeId || !startDate || !endDate}
+            disabled={loading || !name.trim() || !placeId || !scope || !startDate || !endDate}
             className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
           >
             {loading ? 'Creating…' : 'Create Production'}
