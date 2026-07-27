@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, onSnapshot, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, getDocs, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { getOrCreateDHThread } from '../utils/messaging';
 
 function formatDate(ts) {
   if (!ts) return '';
@@ -19,6 +20,14 @@ export default function VolunteerView() {
   const [personRecord, setPersonRecord] = useState(null);
   const [loading, setLoading]           = useState(true);
   const [showMessages, setShowMessages] = useState(false);
+
+  const [dhThreadId, setDhThreadId]     = useState(null);
+  const [dhThread, setDhThread]         = useState(null);
+  const [dhMessages, setDhMessages]     = useState([]);
+  const [dhNewMessage, setDhNewMessage] = useState('');
+  const [dhLoading, setDhLoading]       = useState(false);
+  const [dhSending, setDhSending]       = useState(false);
+  const [dhError, setDhError]           = useState('');
 
   useEffect(() => {
     if (!orgId || !uid) return;
@@ -95,6 +104,72 @@ export default function VolunteerView() {
     }
   }
 
+  async function handleOpenMessages() {
+    setShowMessages(true);
+    if (dhThreadId) return;
+    setDhError('');
+    setDhLoading(true);
+    try {
+      const threadId = await getOrCreateDHThread(orgId, uid, personRecord?.typeId);
+      setDhThreadId(threadId);
+    } catch (err) {
+      console.error('Open DH thread error:', err);
+      setDhError(err.message || 'Could not open messages.');
+    } finally {
+      setDhLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!dhThreadId || !orgId) return;
+
+    const threadRef = doc(db, 'organizations', orgId, 'threads', dhThreadId);
+    const unsubThread = onSnapshot(threadRef, snap => {
+      if (!snap.exists()) return;
+      const data = { id: snap.id, ...snap.data() };
+      setDhThread(data);
+      const myReadField = data.participantA === uid ? 'participantARead' : 'participantBRead';
+      if (data[myReadField] === false) {
+        updateDoc(threadRef, { [myReadField]: true }).catch(() => {});
+      }
+    });
+
+    const qMessages = query(
+      collection(db, 'organizations', orgId, 'threads', dhThreadId, 'messages'),
+      orderBy('sentAt', 'asc')
+    );
+    const unsubMessages = onSnapshot(qMessages, snap => {
+      setDhMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+
+    return () => { unsubThread(); unsubMessages(); };
+  }, [dhThreadId, orgId, uid]);
+
+  async function handleSendDHMessage() {
+    if (!dhNewMessage.trim() || !dhThreadId || !dhThread) return;
+    setDhSending(true);
+    const body = dhNewMessage.trim();
+    setDhNewMessage('');
+    try {
+      await addDoc(
+        collection(db, 'organizations', orgId, 'threads', dhThreadId, 'messages'),
+        { senderUid: uid, body, sentAt: serverTimestamp(), readAt: null }
+      );
+      const otherRead = dhThread.participantA === uid ? 'participantBRead' : 'participantARead';
+      const myRead    = dhThread.participantA === uid ? 'participantARead' : 'participantBRead';
+      await updateDoc(doc(db, 'organizations', orgId, 'threads', dhThreadId), {
+        lastMessageAt:      serverTimestamp(),
+        lastMessagePreview: body.slice(0, 80),
+        [otherRead]:        false,
+        [myRead]:           true,
+      });
+    } catch (err) {
+      console.error('Send DH message error:', err);
+    } finally {
+      setDhSending(false);
+    }
+  }
+
   const unconfirmedAssignments = assignments.filter(a => !a.confirmed);
   const confirmedAssignments   = assignments.filter(a => a.confirmed);
 
@@ -104,6 +179,66 @@ export default function VolunteerView() {
     return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <p className="text-gray-500 text-sm">Loading...</p>
     </div>;
+  }
+
+  if (showMessages) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="bg-white border-b border-gray-200 px-4 py-4">
+          <div className="max-w-lg mx-auto flex items-center justify-between">
+            <button onClick={() => setShowMessages(false)}
+              className="text-xs text-gray-500 hover:text-gray-700 transition-colors">
+              ← Back
+            </button>
+            <h1 className="text-base font-semibold text-gray-900">Messages</h1>
+            <div className="w-10" />
+          </div>
+        </div>
+
+        <div className="max-w-lg mx-auto w-full flex-1 flex flex-col px-4 py-4 min-h-0">
+          {dhLoading ? (
+            <p className="text-sm text-gray-400 text-center mt-6">Loading...</p>
+          ) : dhError ? (
+            <p className="text-sm text-red-600 text-center mt-6">{dhError}</p>
+          ) : (
+            <>
+              <div className="flex-1 overflow-y-auto space-y-3 pb-4">
+                {dhMessages.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center mt-6">No messages yet. Say hello!</p>
+                ) : (
+                  dhMessages.map(msg => {
+                    const isMine = msg.senderUid === uid;
+                    return (
+                      <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[75%] rounded-xl px-3 py-2 ${
+                          isMine ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-900'
+                        }`}>
+                          <p className="text-sm leading-relaxed">{msg.body}</p>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              <div className="flex gap-2 pt-2 border-t border-gray-200">
+                <input
+                  type="text"
+                  value={dhNewMessage}
+                  onChange={e => setDhNewMessage(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendDHMessage(); }}}
+                  placeholder="Type a message..."
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button onClick={handleSendDHMessage} disabled={dhSending || !dhNewMessage.trim()}
+                  className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+                  Send
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -214,7 +349,7 @@ export default function VolunteerView() {
         {/* Quick actions */}
         <div className="flex gap-3">
           <button
-            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'messages' }))}
+            onClick={handleOpenMessages}
             className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:border-gray-300 transition-colors text-center">
             Messages
           </button>
