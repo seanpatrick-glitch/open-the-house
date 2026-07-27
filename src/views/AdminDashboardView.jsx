@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { DASHBOARD_STATES } from '../models/org';
 import { differenceInDays, startOfDay, endOfDay, addDays } from 'date-fns';
+import { getDisplayName } from '../utils/displayName';
 
 // Install date-fns if not present — check package.json first
 // If missing: npm install date-fns
@@ -345,7 +346,7 @@ function LiveState({ tasks, members, flags, checkinTokens }) {
             {unconfirmed.map(m => (
               <div key={m.uid} className="flex items-center gap-2 text-sm text-amber-700">
                 <div className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
-                {m.displayName || m.email}
+                {getDisplayName(m)}
               </div>
             ))}
           </div>

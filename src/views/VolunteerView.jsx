@@ -3,6 +3,7 @@ import { collection, query, where, orderBy, onSnapshot, getDocs, addDoc, doc, up
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getOrCreateDHThread } from '../utils/messaging';
+import { getDisplayName } from '../utils/displayName';
 
 function formatDate(ts) {
   if (!ts) return '';
@@ -28,6 +29,28 @@ export default function VolunteerView() {
   const [dhLoading, setDhLoading]       = useState(false);
   const [dhSending, setDhSending]       = useState(false);
   const [dhError, setDhError]           = useState('');
+
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput]     = useState('');
+  const [savingName, setSavingName]   = useState(false);
+
+  async function handleSaveName() {
+    if (!uid || !orgId) return;
+    setSavingName(true);
+    const displayName = nameInput.trim() || userProfile.name || userProfile.email;
+    try {
+      await updateDoc(doc(db, 'users', uid), { displayName });
+      await updateDoc(doc(db, 'organizations', orgId, 'members', uid), { displayName });
+      if (personRecord?.id) {
+        await updateDoc(doc(db, 'organizations', orgId, 'people', personRecord.id), { displayName });
+      }
+      setEditingName(false);
+    } catch (err) {
+      console.error('Save display name error:', err);
+    } finally {
+      setSavingName(false);
+    }
+  }
 
   useEffect(() => {
     if (!orgId || !uid) return;
@@ -256,10 +279,40 @@ export default function VolunteerView() {
               <p className="text-xs text-gray-500 mt-0.5">No tasks due</p>
             )}
           </div>
-          <button onClick={logout}
-            className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
-            Sign out
-          </button>
+          <div className="flex items-center gap-3">
+            {editingName ? (
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={nameInput}
+                  onChange={e => setNameInput(e.target.value)}
+                  placeholder={userProfile?.email}
+                  autoFocus
+                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+                <button onClick={handleSaveName} disabled={savingName}
+                  className="text-xs font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50 transition-colors">
+                  {savingName ? 'Saving...' : 'Save'}
+                </button>
+                <button onClick={() => setEditingName(false)}
+                  className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => { setNameInput(userProfile?.displayName || ''); setEditingName(true); }}
+                className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                title="Click to edit display name"
+              >
+                {getDisplayName(userProfile)}
+              </button>
+            )}
+            <button onClick={logout}
+              className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+              Sign out
+            </button>
+          </div>
         </div>
       </div>
 

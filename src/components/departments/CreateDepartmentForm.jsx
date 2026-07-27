@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { collection, addDoc, getDocs, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
+import { getDisplayName } from '../../utils/displayName'
 
 export default function CreateDepartmentForm({ onSuccess, onCancel }) {
   const { userProfile } = useAuth()
@@ -148,7 +149,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
             >
               {orgUsers.map(u => (
-                <option key={u.uid} value={u.uid}>{u.email}</option>
+                <option key={u.uid} value={u.uid}>{getDisplayName(u)}</option>
               ))}
             </select>
           )}

@@ -192,10 +192,16 @@ service cloud.firestore {
       allow create: if request.resource.data.status == 'applied'
         && request.resource.data.createdBy == 'self-signup';
 
-      // Account linking: allow update of accountUid and accountStatus only via token flow
+      // Account linking: allow update of accountUid, accountStatus, and displayName
+      // together via the token flow (join-time display name capture)
       allow update: if isSignedIn()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['accountUid', 'accountStatus'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['accountUid', 'accountStatus', 'displayName'])
         && resource.data.accountUid == null;
+
+      // Linked Person class: self-edit display name only, after account linking
+      allow update: if isActivePerson(orgId)
+        && resource.data.accountUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName']);
     }
 
     match /organizations/{orgId}/people/{personId}/internalData/{docId} {
@@ -381,6 +387,10 @@ service cloud.firestore {
       allow read: if isMember(orgId);
       allow write: if isAdminOrSecondary(orgId);
       allow create: if isSignedIn() && request.auth.uid == memberId;
+
+      // Self-edit display name only, after initial creation
+      allow update: if isMember(orgId) && request.auth.uid == memberId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName']);
     }
 
     // ── flags ─────────────────────────────────────────────────────────────────────

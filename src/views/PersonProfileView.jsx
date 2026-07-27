@@ -3,6 +3,7 @@ import { doc, onSnapshot, getDoc, setDoc, serverTimestamp } from 'firebase/fires
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { PERSON_STATUS } from '../models/people';
+import { getDisplayName } from '../utils/displayName';
 import AssignmentsPanel from '../components/people/AssignmentsPanel';
 import HoursPanel from '../components/people/HoursPanel';
 import PersonInviteForm from '../components/people/PersonInviteForm';
@@ -149,7 +150,7 @@ export default function PersonProfileView({ personId, onBack }) {
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">
-            {person.fieldValues?.name || 'No name'}
+            {getDisplayName(person) || 'No name'}
           </h1>
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-500">{person.typeLabel}</span>

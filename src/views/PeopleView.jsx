@@ -3,6 +3,7 @@ import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestor
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { PERSON_STATUS } from '../models/people';
+import { getDisplayName } from '../utils/displayName';
 import CreatePersonForm from '../components/people/CreatePersonForm';
 import CsvImportForm from '../components/people/CsvImportForm';
 import PersonProfileView from './PersonProfileView';
@@ -201,7 +202,7 @@ export default function PeopleView({ onNavigate }) {
                       onClick={() => setSelectedPersonId(person.id)}
                     >
                       <td className="px-4 py-3 font-medium text-gray-900">
-                        {person.fieldValues?.name || <span className="text-gray-400">No name</span>}
+                        {getDisplayName(person) || <span className="text-gray-400">No name</span>}
                       </td>
                       <td className="px-4 py-3 text-gray-600">{person.typeLabel}</td>
                       <td className="px-4 py-3 text-gray-600">

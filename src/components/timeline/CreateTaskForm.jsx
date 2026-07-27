@@ -3,6 +3,7 @@ import { collection, addDoc, getDocs, query, where, serverTimestamp, Timestamp }
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { TASK_LEVELS, TASK_PHASES } from '../../models/timeline';
+import { getDisplayName } from '../../utils/displayName';
 
 function parseLocalDate(dateStr) {
   if (!dateStr) return null;
@@ -195,7 +196,7 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
               <option value="">Unassigned</option>
               {orgUsers.map(u => (
-                <option key={u.uid} value={u.uid}>{u.email}</option>
+                <option key={u.uid} value={u.uid}>{getDisplayName(u)}</option>
               ))}
             </select>
           </div>
@@ -215,7 +216,7 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
                     onChange={() => toggleContributor(u.uid)}
                     className="rounded border-gray-300"
                   />
-                  {u.email}
+                  {getDisplayName(u)}
                 </label>
               ))}
             </div>

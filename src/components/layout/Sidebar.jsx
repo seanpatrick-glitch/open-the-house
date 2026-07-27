@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { doc, onSnapshot } from 'firebase/firestore'
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
+import { getDisplayName } from '../../utils/displayName'
 
 const NAV_ITEMS = [
   { key: 'home',        label: 'Home',        emoji: '🏠' },
@@ -33,6 +34,24 @@ export default function Sidebar({ activeSection, onNavigate, sidebarOpen }) {
   const { userProfile, logout } = useAuth()
   const orgId = userProfile?.orgId
   const [departmentsEnabled, setDepartmentsEnabled] = useState(false)
+  const [editingName, setEditingName] = useState(false)
+  const [nameInput, setNameInput]     = useState('')
+  const [savingName, setSavingName]   = useState(false)
+
+  async function handleSaveName() {
+    if (!userProfile?.uid || !orgId) return
+    setSavingName(true)
+    const displayName = nameInput.trim() || userProfile.name || userProfile.email
+    try {
+      await updateDoc(doc(db, 'users', userProfile.uid), { displayName })
+      await updateDoc(doc(db, 'organizations', orgId, 'members', userProfile.uid), { displayName })
+      setEditingName(false)
+    } catch (err) {
+      console.error('Save display name error:', err)
+    } finally {
+      setSavingName(false)
+    }
+  }
 
   useEffect(() => {
     if (!orgId) return
@@ -75,7 +94,36 @@ export default function Sidebar({ activeSection, onNavigate, sidebarOpen }) {
         <p className="text-white font-bold text-base leading-tight tracking-tight">
           Places People!
         </p>
-        <p className="text-gray-400 text-xs mt-3 truncate">{userProfile?.email}</p>
+        {editingName ? (
+          <div className="mt-3 space-y-1.5">
+            <input
+              type="text"
+              value={nameInput}
+              onChange={e => setNameInput(e.target.value)}
+              placeholder={userProfile?.email}
+              autoFocus
+              className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+            />
+            <div className="flex gap-2">
+              <button onClick={handleSaveName} disabled={savingName}
+                className="text-xs font-medium text-amber-500 hover:text-amber-400 disabled:opacity-50 transition-colors">
+                {savingName ? 'Saving...' : 'Save'}
+              </button>
+              <button onClick={() => setEditingName(false)}
+                className="text-xs text-gray-400 hover:text-gray-300 transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => { setNameInput(userProfile?.displayName || ''); setEditingName(true) }}
+            className="text-gray-400 text-xs mt-3 truncate hover:text-gray-200 transition-colors text-left"
+            title="Click to edit display name"
+          >
+            {getDisplayName(userProfile)}
+          </button>
+        )}
         <p className="text-amber-500 text-xs capitalize mt-0.5">{userProfile?.role}</p>
       </div>
 
