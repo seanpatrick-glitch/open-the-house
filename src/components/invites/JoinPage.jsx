@@ -116,7 +116,7 @@ export default function JoinPage() {
           displayName,
           role:            invite.role,
           provisionalAdmin: false,
-          departmentId:    null,
+          departmentId:    invite.departmentId ?? null,
           joinedAt:        serverTimestamp(),
           invitedBy:       null,
           accountStatus:   'confirmed',
@@ -124,7 +124,17 @@ export default function JoinPage() {
       )
 
       await batch.commit()
-      await updateDoc(inviteRef, { status: 'accepted' })
+      await updateDoc(inviteRef, { status: 'accepted', acceptedByUid: uid })
+
+      // Department Head invites: complete the department's head assignment now
+      // that the invite doc shows this uid as the accepted acceptor (firestore.rules
+      // scopes this write to that exact pendingInvite record).
+      if (invite.role === 'departmentHead' && invite.departmentId) {
+        await updateDoc(doc(db, 'departments', invite.departmentId), {
+          departmentHeadUid:   uid,
+          departmentHeadEmail: null,
+        })
+      }
 
       navigate('/dashboard')
     } catch (err) {

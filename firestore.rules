@@ -86,6 +86,19 @@ service cloud.firestore {
       allow read:           if isMember(resource.data.orgId);
       allow create:         if isAdmin(request.resource.data.orgId);
       allow update, delete: if isAdmin(resource.data.orgId);
+
+      // Incoming Department Head: on invite acceptance, may write only
+      // departmentHeadUid and departmentHeadEmail. Scoped to an accepted
+      // pendingInvite for this exact org/department accepted by this uid.
+      // (Department Head invites use the department's own id as the
+      // pendingInvites doc id, so this lookup is deterministic.)
+      allow update: if isSignedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['departmentHeadUid', 'departmentHeadEmail'])
+        && exists(/databases/$(database)/documents/organizations/$(resource.data.orgId)/pendingInvites/$(departmentId))
+        && get(/databases/$(database)/documents/organizations/$(resource.data.orgId)/pendingInvites/$(departmentId)).data.role == 'departmentHead'
+        && get(/databases/$(database)/documents/organizations/$(resource.data.orgId)/pendingInvites/$(departmentId)).data.departmentId == departmentId
+        && get(/databases/$(database)/documents/organizations/$(resource.data.orgId)/pendingInvites/$(departmentId)).data.status == 'accepted'
+        && get(/databases/$(database)/documents/organizations/$(resource.data.orgId)/pendingInvites/$(departmentId)).data.acceptedByUid == request.auth.uid;
     }
 
     // ── timelines ─────────────────────────────────────────────────────────────

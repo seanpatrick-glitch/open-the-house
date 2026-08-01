@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { collection, addDoc, getDocs, serverTimestamp } from 'firebase/firestore'
-import { db } from '../../firebase'
+import { collection, doc, getDocs, serverTimestamp, writeBatch, Timestamp, getDoc } from 'firebase/firestore'
+import { sendSignInLinkToEmail } from 'firebase/auth'
+import { db, auth } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { getDisplayName } from '../../utils/displayName'
+import { getInviteActionCodeSettings } from '../../utils/invites'
 
 export default function CreateDepartmentForm({ onSuccess, onCancel }) {
   const { userProfile } = useAuth()
@@ -12,6 +14,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
   const [description,       setDescription]       = useState('')
   const [colorCode,         setColorCode]         = useState('#f59e0b')
   const [departmentHeadUid, setDepartmentHeadUid] = useState('')
+  const [headEmail,         setHeadEmail]         = useState('')
   const [orgUsers,          setOrgUsers]          = useState([])
   const [usersLoading,      setUsersLoading]      = useState(true)
   const [loading,           setLoading]           = useState(false)
@@ -26,7 +29,6 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
         const filtered = snap.docs
           .map(d => ({ uid: d.id, ...d.data() }))
         setOrgUsers(filtered)
-        if (filtered.length > 0) setDepartmentHeadUid(filtered[0].uid)
       } catch (err) {
         console.error('CreateDepartmentForm fetchUsers:', err)
       } finally {
@@ -38,30 +40,68 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!name.trim() || !departmentHeadUid) return
+    if (!name.trim()) return
     setLoading(true)
     setError('')
 
+    const trimmedEmail = headEmail.trim()
+
     try {
-      await addDoc(
-        collection(db, 'departments'),
-        {
-          name:              name.trim(),
-          description:       description.trim(),
-          colorCode,
-          departmentHeadUid,
+      const deptRef = doc(collection(db, 'departments'))
+      const batch = writeBatch(db)
+
+      batch.set(deptRef, {
+        name:                name.trim(),
+        description:         description.trim(),
+        colorCode,
+        // An email invite takes precedence over picking an existing member directly.
+        departmentHeadUid:   trimmedEmail ? null : (departmentHeadUid || null),
+        departmentHeadEmail: trimmedEmail || null,
+        orgId,
+        active:              true,
+        createdAt:           serverTimestamp(),
+        createdBy:           uid,
+      })
+
+      if (trimmedEmail) {
+        const orgSnap = await getDoc(doc(db, 'organizations', orgId))
+        const orgName = orgSnap.exists() ? orgSnap.data().name : ''
+
+        const now       = Timestamp.now()
+        const expiresAt = Timestamp.fromMillis(now.toMillis() + 7 * 24 * 60 * 60 * 1000)
+
+        // Department Head invites use the department's own id as the pendingInvites
+        // doc id, so firestore.rules can look it up deterministically when the
+        // incoming head writes departmentHeadUid back onto the department doc.
+        batch.set(doc(db, 'organizations', orgId, 'pendingInvites', deptRef.id), {
+          inviteId:     deptRef.id,
+          email:        trimmedEmail,
+          role:         'departmentHead',
+          departmentId: deptRef.id,
+          level:        'department',
+          scopeId:      deptRef.id,
           orgId,
-          active:            true,
-          createdAt:         serverTimestamp(),
-          createdBy:         uid,
-        }
-      )
+          orgName,
+          createdBy:    uid,
+          createdAt:    serverTimestamp(),
+          expiresAt,
+          status:       'pending',
+        })
+      }
+
+      await batch.commit()
+
+      if (trimmedEmail) {
+        await sendSignInLinkToEmail(auth, trimmedEmail, getInviteActionCodeSettings(orgId, deptRef.id))
+        window.localStorage.setItem('emailForSignIn', trimmedEmail)
+      }
 
       setSuccess(true)
       setName('')
       setDescription('')
       setColorCode('#f59e0b')
-      setDepartmentHeadUid(orgUsers[0]?.uid ?? '')
+      setDepartmentHeadUid('')
+      setHeadEmail('')
 
       setTimeout(() => {
         setSuccess(false)
@@ -132,22 +172,23 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
           </div>
         </div>
 
-        {/* Department Head */}
+        {/* Department Head — assign an existing member now, or invite someone by email */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Department Head <span className="text-red-500">*</span>
+            Department Head (optional)
           </label>
           {usersLoading ? (
             <p className="text-sm text-gray-400">Loading users…</p>
           ) : orgUsers.length === 0 ? (
-            <p className="text-sm text-gray-400">No users found in this organization.</p>
+            <p className="text-sm text-gray-400">No existing members to assign yet.</p>
           ) : (
             <select
               value={departmentHeadUid}
               onChange={e => setDepartmentHeadUid(e.target.value)}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              disabled={!!headEmail.trim()}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-50"
             >
+              <option value="">— Assign later —</option>
               {orgUsers.map(u => (
                 <option key={u.uid} value={u.uid}>{getDisplayName(u)}</option>
               ))}
@@ -155,12 +196,27 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
           )}
         </div>
 
+        {/* Invite a new Department Head by email */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Department Head email (optional). We'll send them an invite.
+          </label>
+          <input
+            type="email"
+            value={headEmail}
+            onChange={e => setHeadEmail(e.target.value)}
+            placeholder="head@email.com"
+            autoComplete="off"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+          />
+        </div>
+
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <div className="flex items-center gap-3 pt-1">
           <button
             type="submit"
-            disabled={loading || !name.trim() || !departmentHeadUid || usersLoading}
+            disabled={loading || !name.trim() || usersLoading}
             className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
           >
             {loading ? 'Creating…' : 'Create Department'}
