@@ -1,7 +1,7 @@
 # Places People! — Project State
 > Single source of truth for all Claude sessions. Read this first on every sync.
-> Last updated: 2026-07-30
-> Updated by: Claude Code (session sync)
+> Last updated: 2026-08-01
+> Updated by: Claude Code (App Architecture session sync)
 
 ---
 
@@ -245,6 +245,7 @@ Home, Productions, Departments, Volunteers, Lobby, Bar Program, Inventory and Or
 
 > Most recent first. Last 5 significant changes.
 
+- 2026-08-01: App Architecture session — role-based invite flow confirmed as a beta blocker and fully specced: pendingInvites token gets role and departmentId fields, invite form gets a role selector with department picker for DH selection, department creation form gets an optional DH email field that batch-writes the department and pending invite together, JoinPage updated to read role from the token and write the correct role and departmentId to the member document and departmentHeadId to the department document on DH acceptance. Firestore rules update needed: scoped department update rule for the incoming DH's write on acceptance. Settings role promotion UI specced as a secondary path. Department document needs departmentHeadEmail and departmentHeadId fields (confirm departmentHeadId not already present before adding). Five-check end-to-end test sequence defined. Production scope timeline behavior specced for festival (department rows default, date range header, suppressed production task prompts, people status quick count) and season (parentSeasonId and childProductionIds on production document, new composite index productions orgId/parentSeasonId/openDate, season creation form with optional child production step, season detail view with child productions list, child production timeline auto-generation from template, org timeline with season tasks plus collapsed child production rows). Single scope unchanged. Festival scope builds before season scope. Neither scope change is a beta blocker. Full build table produced: B1 through B7 for invite flow, F1 through F4 for festival scope, S1 through S6 for season scope. Messaging routing bug from July 30 expected to resolve once DH members have correct roles written via the new invite flow.
 - 2026-07-30: Reconciliation pass — Drive copy of PROJECT_STATE.md had not been updated since July 19 (11 days stale) while the repo copy had continued forward through July 30. Full line-by-line comparison found no unique Drive content missing from the repo copy: the repo copy already contained every entry Drive had (including full Section 8 history back to May 2026) plus everything from July 23 onward that Drive lacked. Remaining differences were cosmetic only (bullet character style, footer line-wrapping, backslash-escaping artifacts from a prior Docs export) rather than lost content. Both copies now written identically, repo copy as the source.
 - 2026-07-30: New bug found — messaging incorrectly routes to the Collaborator dashboard for some accounts. Surfaced during live testing of emailOnNewMessage, not yet diagnosed, flagged for its own session.
 - 2026-07-30: Hosting redeployed to bring the live site current with three previously-undeployed commits (display name field, production creation scope question, person class messaging routed to DH thread).
