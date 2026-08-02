@@ -2,7 +2,18 @@
   "projects": {
     "default": "open-the-house"
   },
-  "targets": {},
+  "targets": {
+    "open-the-house": {
+      "hosting": {
+        "main": [
+          "open-the-house"
+        ],
+        "beta": [
+          "placespeople-beta-testing"
+        ]
+      }
+    }
+  },
   "etags": {
     "open-the-house": {
       "extensionInstances": {
