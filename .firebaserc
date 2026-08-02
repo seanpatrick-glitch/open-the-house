@@ -1,5 +1,24 @@
 {
   "projects": {
     "default": "open-the-house"
+  },
+  "targets": {
+    "open-the-house": {
+      "hosting": {
+        "main": [
+          "open-the-house"
+        ],
+        "beta": [
+          "placespeople-beta-testing"
+        ]
+      }
+    }
+  },
+  "etags": {
+    "open-the-house": {
+      "extensionInstances": {
+        "firestore-send-email": "fa81d69c3163c019a4f40dfab3e8975f9378049b1a5d728b3156ad7977649b15"
+      }
+    }
   }
 }
