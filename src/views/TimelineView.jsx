@@ -10,6 +10,7 @@ import TemplatesPanel from '../components/timeline/TemplatesPanel';
 import NotificationBanner from '../components/timeline/NotificationBanner';
 import CreateTaskForm from '../components/timeline/CreateTaskForm';
 import TaskDetailPanel from '../components/timeline/TaskDetailPanel';
+import toast from 'react-hot-toast';
 
 const STATUS_STYLES = {
   [TIMELINE_STATUS.NOT_STARTED]: 'bg-gray-100 text-gray-600',
@@ -131,6 +132,7 @@ export default function TimelineView({ navState }) {
       });
     } catch (err) {
       console.error('Error saving view preference:', err);
+      toast.error('Could not save your view preference.');
     }
   }
 

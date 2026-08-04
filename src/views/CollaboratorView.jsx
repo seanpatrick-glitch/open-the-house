@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { DASHBOARD_STATES } from '../models/org';
 import { differenceInDays } from 'date-fns';
 import { getDisplayName } from '../utils/displayName';
+import toast from 'react-hot-toast';
 
 function getDashboardState(openDate, closeDate, override) {
   if (override) return override;
@@ -60,6 +61,7 @@ export default function CollaboratorView() {
       setEditingName(false);
     } catch (err) {
       console.error('Save display name error:', err);
+      toast.error('Could not save your name. Please try again.');
     } finally {
       setSavingName(false);
     }
@@ -108,6 +110,7 @@ export default function CollaboratorView() {
         setPeopleCount(peopleSnap.size);
       } catch (err) {
         console.error('CollaboratorView load error:', err);
+        toast.error('Could not load your dashboard. Please refresh and try again.');
       } finally {
         setLoading(false);
       }
@@ -160,6 +163,7 @@ export default function CollaboratorView() {
       setShowFlagForm(false);
     } catch (err) {
       console.error('Flag submit error:', err);
+      toast.error('Could not send your flag. Please try again.');
     } finally {
       setSubmitting(false);
     }

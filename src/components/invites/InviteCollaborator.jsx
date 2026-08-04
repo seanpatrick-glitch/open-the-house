@@ -91,6 +91,7 @@ export default function InviteCollaborator() {
         setDepartments(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
       } catch (err) {
         console.error('InviteCollaborator fetchDepartments:', err)
+        toast.error('Could not load departments. Please refresh and try again.')
       } finally {
         setDeptsLoading(false)
       }

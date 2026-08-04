@@ -3,6 +3,7 @@ import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import CreatePlaceForm from '../components/productions/CreatePlaceForm';
+import toast from 'react-hot-toast';
 
 export default function PlacesView() {
   const { userProfile } = useAuth();
@@ -36,6 +37,7 @@ export default function PlacesView() {
         setProdCounts(counts);
       } catch (err) {
         console.error('PlacesView load error:', err);
+        toast.error('Could not load places. Please refresh and try again.');
       } finally {
         setLoading(false);
       }
@@ -52,6 +54,7 @@ export default function PlacesView() {
       setProductions(prodsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (err) {
       console.error('PlacesView load productions error:', err);
+      toast.error('Could not load productions for this place.');
     }
   }
 

@@ -5,9 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { DASHBOARD_STATES } from '../models/org';
 import { differenceInDays, startOfDay, endOfDay, addDays } from 'date-fns';
 import { getDisplayName } from '../utils/displayName';
-
-// Install date-fns if not present — check package.json first
-// If missing: npm install date-fns
+import toast from 'react-hot-toast';
 
 function getDashboardState(openDate, closeDate, override) {
   if (override) return override;
@@ -83,6 +81,7 @@ export default function AdminDashboardView() {
         setDaysToOpen(differenceInDays(open, new Date()));
       } catch (err) {
         console.error('AdminDashboardView load error:', err);
+        toast.error('Could not load your dashboard. Please refresh and try again.');
       } finally {
         setLoading(false);
       }

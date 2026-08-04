@@ -3,6 +3,7 @@ import { doc, collection, addDoc, updateDoc, writeBatch, onSnapshot, serverTimes
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDisplayName } from '../../utils/displayName';
+import toast from 'react-hot-toast';
 
 function formatDate(ts) {
   if (!ts) return '';
@@ -113,6 +114,7 @@ export default function TaskDetailPanel({ task, orgUsers, departments, onClose }
       await batch.commit();
     } catch (err) {
       console.error('Handoff response error:', err);
+      toast.error('Could not respond to handoff. Please try again.');
     } finally {
       setSubmitting(false);
     }

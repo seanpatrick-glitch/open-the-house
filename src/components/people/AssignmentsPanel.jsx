@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { doc, updateDoc, collection, getDocs, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 export default function AssignmentsPanel({ person }) {
   const { userProfile } = useAuth();
@@ -91,6 +92,7 @@ export default function AssignmentsPanel({ person }) {
       );
     } catch (err) {
       console.error('Error removing assignment:', err);
+      toast.error('Could not remove assignment. Please try again.');
     }
   }
 

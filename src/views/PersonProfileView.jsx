@@ -7,6 +7,7 @@ import { getDisplayName } from '../utils/displayName';
 import AssignmentsPanel from '../components/people/AssignmentsPanel';
 import HoursPanel from '../components/people/HoursPanel';
 import PersonInviteForm from '../components/people/PersonInviteForm';
+import toast from 'react-hot-toast';
 
 const TOGGLEABLE_LABELS = {
   address:             'Address',
@@ -110,6 +111,7 @@ export default function PersonProfileView({ personId, onBack }) {
       setTimeout(() => setInternalSaved(false), 2000);
     } catch (err) {
       console.error('Error saving internal data:', err);
+      toast.error('Could not save. Please try again.');
     } finally {
       setSavingInternal(false);
     }
