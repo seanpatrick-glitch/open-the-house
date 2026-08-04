@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   isSignInWithEmailLink,
   signInWithEmailLink,
+  updatePassword,
 } from 'firebase/auth'
 import {
   doc,
@@ -19,6 +20,9 @@ export default function JoinPage() {
   const [error,  setError]  = useState('')
   const [pending, setPending] = useState(null) // { uid, email, invite, inviteRef }
   const [displayNameInput, setDisplayNameInput] = useState('')
+  const [passwordInput, setPasswordInput] = useState('')
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState('')
+  const [formError, setFormError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -86,11 +90,24 @@ export default function JoinPage() {
 
   async function handleContinue() {
     if (!pending) return
+
+    if (!passwordInput || passwordInput.length < 6) {
+      setFormError('Password must be at least 6 characters.')
+      return
+    }
+    if (passwordInput !== confirmPasswordInput) {
+      setFormError('Passwords do not match.')
+      return
+    }
+
+    setFormError('')
     setSubmitting(true)
     const { uid, email, invite, inviteRef } = pending
     const displayName = displayNameInput.trim() || email
 
     try {
+      await updatePassword(auth.currentUser, passwordInput)
+
       const batch = writeBatch(db)
 
       batch.set(doc(db, 'users', uid), {
@@ -139,6 +156,11 @@ export default function JoinPage() {
       navigate('/dashboard')
     } catch (err) {
       console.error('JoinPage submit error:', err)
+      if (err.code === 'auth/weak-password') {
+        setFormError('That password is too weak. Please choose a stronger one.')
+        setSubmitting(false)
+        return
+      }
       setError('Something went wrong. Please try again or contact your admin.')
       setStatus('error')
       setSubmitting(false)
@@ -163,7 +185,7 @@ export default function JoinPage() {
             <p className="text-gray-500 mt-2 text-sm">You're joining as {pending.email}.</p>
           </div>
 
-          <div className="space-y-1 mb-6">
+          <div className="space-y-1 mb-4">
             <label className="block text-sm font-medium text-gray-700">
               Display name (optional — defaults to your name)
             </label>
@@ -176,6 +198,36 @@ export default function JoinPage() {
               autoFocus
             />
           </div>
+
+          <div className="space-y-1 mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Set a password
+            </label>
+            <input
+              type="password"
+              value={passwordInput}
+              onChange={e => setPasswordInput(e.target.value)}
+              placeholder="At least 6 characters"
+              autoComplete="new-password"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-base"
+            />
+          </div>
+
+          <div className="space-y-1 mb-6">
+            <label className="block text-sm font-medium text-gray-700">
+              Confirm password
+            </label>
+            <input
+              type="password"
+              value={confirmPasswordInput}
+              onChange={e => setConfirmPasswordInput(e.target.value)}
+              placeholder="Re-enter your password"
+              autoComplete="new-password"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-base"
+            />
+          </div>
+
+          {formError && <p className="text-sm text-red-600 mb-4">{formError}</p>}
 
           <button
             onClick={handleContinue}
