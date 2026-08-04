@@ -13,6 +13,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { auth, db } from '../../firebase'
+import ConfirmEmailScreen from './ConfirmEmailScreen'
 
 export default function JoinPage() {
   const navigate = useNavigate()
@@ -24,69 +25,80 @@ export default function JoinPage() {
   const [confirmPasswordInput, setConfirmPasswordInput] = useState('')
   const [formError, setFormError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [emailError, setEmailError] = useState('')
+  const [confirmingEmail, setConfirmingEmail] = useState(false)
+
+  async function completeSignIn(email) {
+    const params   = new URLSearchParams(window.location.search)
+    const orgId    = params.get('orgId')    || window.localStorage.getItem('orgIdForSignIn')
+    const inviteId = params.get('inviteId') || window.localStorage.getItem('inviteIdForSignIn')
+
+    try {
+      const credential = await signInWithEmailLink(auth, email, window.location.href)
+      window.localStorage.removeItem('emailForSignIn')
+      const uid = credential.user.uid
+
+      let inviteDoc  = null
+      let invite     = null
+
+      if (orgId && inviteId) {
+        const ref  = doc(db, 'organizations', orgId, 'pendingInvites', inviteId)
+        const snap = await getDoc(ref)
+        if (snap.exists() && snap.data().status === 'pending') {
+          inviteDoc = snap
+          invite    = snap.data()
+        }
+      }
+
+      if (!invite) {
+        setError('No pending invite found for this email.')
+        setStatus('error')
+        return
+      }
+
+      const now       = Date.now()
+      const expiresAt = invite.expiresAt?.toMillis?.() ?? 0
+      if (now > expiresAt) {
+        setError('This invite has expired. Ask your admin to send a new one.')
+        setStatus('error')
+        return
+      }
+
+      setPending({ uid, email, invite, inviteRef: inviteDoc.ref })
+      setStatus('form')
+    } catch (err) {
+      console.error('JoinPage error:', err)
+      if (status === 'needs-email') {
+        // Wrong email typed on the confirm-email screen — let them retry
+        // instead of dropping them on the dead-end error screen.
+        setEmailError('That email did not match this invite link. Please double-check and try again.')
+        return
+      }
+      setError('Something went wrong. Please try again or contact your admin.')
+      setStatus('error')
+    }
+  }
 
   useEffect(() => {
-    async function completeSignIn() {
-      if (!isSignInWithEmailLink(auth, window.location.href)) {
-        setStatus('invalid')
-        return
-      }
-
-      let email = window.localStorage.getItem('emailForSignIn')
-      if (!email) {
-        email = window.prompt('Please enter your email to confirm your identity.')
-      }
-      if (!email) {
-        setStatus('invalid')
-        return
-      }
-
-      const params   = new URLSearchParams(window.location.search)
-      const orgId    = params.get('orgId')    || window.localStorage.getItem('orgIdForSignIn')
-      const inviteId = params.get('inviteId') || window.localStorage.getItem('inviteIdForSignIn')
-
-      try {
-        const credential = await signInWithEmailLink(auth, email, window.location.href)
-        window.localStorage.removeItem('emailForSignIn')
-        const uid = credential.user.uid
-
-        let inviteDoc  = null
-        let invite     = null
-
-        if (orgId && inviteId) {
-          const ref  = doc(db, 'organizations', orgId, 'pendingInvites', inviteId)
-          const snap = await getDoc(ref)
-          if (snap.exists() && snap.data().status === 'pending') {
-            inviteDoc = snap
-            invite    = snap.data()
-          }
-        }
-
-        if (!invite) {
-          setError('No pending invite found for this email.')
-          setStatus('error')
-          return
-        }
-
-        const now       = Date.now()
-        const expiresAt = invite.expiresAt?.toMillis?.() ?? 0
-        if (now > expiresAt) {
-          setError('This invite has expired. Ask your admin to send a new one.')
-          setStatus('error')
-          return
-        }
-
-        setPending({ uid, email, invite, inviteRef: inviteDoc.ref })
-        setStatus('form')
-      } catch (err) {
-        console.error('JoinPage error:', err)
-        setError('Something went wrong. Please try again or contact your admin.')
-        setStatus('error')
-      }
+    if (!isSignInWithEmailLink(auth, window.location.href)) {
+      setStatus('invalid')
+      return
     }
 
-    completeSignIn()
+    const cachedEmail = window.localStorage.getItem('emailForSignIn')
+    if (cachedEmail) {
+      completeSignIn(cachedEmail)
+    } else {
+      setStatus('needs-email')
+    }
   }, [navigate])
+
+  async function handleConfirmEmail(email) {
+    setEmailError('')
+    setConfirmingEmail(true)
+    await completeSignIn(email)
+    setConfirmingEmail(false)
+  }
 
   async function handleContinue() {
     if (!pending) return
@@ -172,6 +184,20 @@ export default function JoinPage() {
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <p className="text-white text-base">Setting up your account…</p>
       </div>
+    )
+  }
+
+  if (status === 'needs-email') {
+    return (
+      <ConfirmEmailScreen
+        onConfirm={handleConfirmEmail}
+        submitting={confirmingEmail}
+        error={emailError}
+        theme="amber"
+        showEmoji
+        containerClassName="min-h-screen bg-gray-900 flex items-center justify-center px-4"
+        cardClassName="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md"
+      />
     )
   }
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { isSignInWithEmailLink, signInWithEmailLink, updatePassword } from 'firebase/auth';
 import { doc, getDoc, updateDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
+import ConfirmEmailScreen from '../invites/ConfirmEmailScreen';
 
 export default function PersonJoinPage() {
   const navigate  = useNavigate();
@@ -14,71 +15,82 @@ export default function PersonJoinPage() {
   const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [confirmingEmail, setConfirmingEmail] = useState(false);
 
-  useEffect(() => {
-    async function completeSignIn() {
-      if (!isSignInWithEmailLink(auth, window.location.href)) {
-        setStatus('invalid');
-        return;
-      }
+  async function completeSignIn(email) {
+    const params  = new URLSearchParams(window.location.search);
+    const orgId   = params.get('orgId')   || window.localStorage.getItem('personInviteOrgId');
+    const tokenId = params.get('tokenId') || window.localStorage.getItem('personInviteTokenId');
 
-      const params  = new URLSearchParams(window.location.search);
-      const orgId   = params.get('orgId')   || window.localStorage.getItem('personInviteOrgId');
-      const tokenId = params.get('tokenId') || window.localStorage.getItem('personInviteTokenId');
-
-      let email = window.localStorage.getItem('personInviteEmail');
-      if (!email) {
-        email = window.prompt('Please enter your email address to confirm your identity.');
-      }
-      if (!email) {
-        setStatus('invalid');
-        return;
-      }
-
-      if (!orgId || !tokenId) {
-        setStatus('invalid');
-        return;
-      }
-
-      try {
-        // Validate token
-        const tokenSnap = await getDoc(
-          doc(db, 'organizations', orgId, 'personInviteTokens', tokenId)
-        );
-
-        if (!tokenSnap.exists() || tokenSnap.data().accepted) {
-          setStatus('invalid');
-          return;
-        }
-
-        const token     = tokenSnap.data();
-        const now       = Date.now();
-        const expiresAt = token.expiresAt?.toMillis?.() ?? 0;
-        if (now > expiresAt) {
-          setError('This invite has expired. Ask your coordinator to send a new one.');
-          setStatus('error');
-          return;
-        }
-
-        // Sign in with email link
-        const credential = await signInWithEmailLink(auth, email, window.location.href);
-        const uid        = credential.user.uid;
-
-        window.localStorage.removeItem('personInviteEmail');
-        window.localStorage.removeItem('personInviteOrgId');
-        window.localStorage.removeItem('personInviteTokenId');
-
-        setPending({ uid, email, orgId, tokenId, personId: token.personId });
-        setStatus('form');
-      } catch (err) {
-        console.error('PersonJoinPage error:', err);
-        setError('Something went wrong. Please try again or contact your coordinator.');
-        setStatus('error');
-      }
+    if (!orgId || !tokenId) {
+      setStatus('invalid');
+      return;
     }
 
-    completeSignIn();
+    try {
+      // Validate token
+      const tokenSnap = await getDoc(
+        doc(db, 'organizations', orgId, 'personInviteTokens', tokenId)
+      );
+
+      if (!tokenSnap.exists() || tokenSnap.data().accepted) {
+        setStatus('invalid');
+        return;
+      }
+
+      const token     = tokenSnap.data();
+      const now       = Date.now();
+      const expiresAt = token.expiresAt?.toMillis?.() ?? 0;
+      if (now > expiresAt) {
+        setError('This invite has expired. Ask your coordinator to send a new one.');
+        setStatus('error');
+        return;
+      }
+
+      // Sign in with email link
+      const credential = await signInWithEmailLink(auth, email, window.location.href);
+      const uid        = credential.user.uid;
+
+      window.localStorage.removeItem('personInviteEmail');
+      window.localStorage.removeItem('personInviteOrgId');
+      window.localStorage.removeItem('personInviteTokenId');
+
+      setPending({ uid, email, orgId, tokenId, personId: token.personId });
+      setStatus('form');
+    } catch (err) {
+      console.error('PersonJoinPage error:', err);
+      if (status === 'needs-email') {
+        // Wrong email typed on the confirm-email screen — let them retry
+        // instead of dropping them on the dead-end error screen.
+        setEmailError('That email did not match this invite link. Please double-check and try again.');
+        return;
+      }
+      setError('Something went wrong. Please try again or contact your coordinator.');
+      setStatus('error');
+    }
+  }
+
+  useEffect(() => {
+    if (!isSignInWithEmailLink(auth, window.location.href)) {
+      setStatus('invalid');
+      return;
+    }
+
+    const cachedEmail = window.localStorage.getItem('personInviteEmail');
+    if (cachedEmail) {
+      completeSignIn(cachedEmail);
+    } else {
+      setStatus('needs-email');
+    }
   }, [navigate]);
+
+  async function handleConfirmEmail(email) {
+    setEmailError('');
+    setConfirmingEmail(true);
+    await completeSignIn(email);
+    setConfirmingEmail(false);
+  }
 
   async function handleContinue() {
     if (!pending) return;
@@ -172,6 +184,20 @@ export default function PersonJoinPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <p className="text-gray-500 text-sm">Setting up your account...</p>
       </div>
+    );
+  }
+
+  if (status === 'needs-email') {
+    return (
+      <ConfirmEmailScreen
+        onConfirm={handleConfirmEmail}
+        submitting={confirmingEmail}
+        error={emailError}
+        theme="indigo"
+        showEmoji={false}
+        containerClassName="min-h-screen bg-gray-50 flex items-center justify-center px-4"
+        cardClassName="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 w-full max-w-md"
+      />
     );
   }
 
