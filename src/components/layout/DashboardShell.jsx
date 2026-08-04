@@ -47,7 +47,7 @@ function SectionContent({ section, onNavigate, userProfile, navState }) {
     if (userProfile?.role === 'departmentHead') return <DHDashboardView />;
     return <AdminDashboardView />;
   }
-  if (section === 'messages')            return <MessageView />
+  if (section === 'messages')            return <MessageView navState={navState} />
   if (section === 'productions')        return <ProductionsView />
   if (section === 'checkin')            return <CheckInView />
   if (section === 'timeline')           return <TimelineView navState={navState} />;
@@ -56,7 +56,7 @@ function SectionContent({ section, onNavigate, userProfile, navState }) {
   if (section === 'invite-collaborator') return <InviteCollaborator />
   if (section === 'collaborator-list')   return <InviteCollaborator />
   if (section === 'settings')            return <SettingsView />
-  if (section === 'people')              return <PeopleView onNavigate={onNavigate} />
+  if (section === 'people')              return <PeopleView onNavigate={onNavigate} navState={navState} />
   return <PlaceholderSection section={section} />
 }
 
@@ -67,8 +67,11 @@ export default function DashboardShell() {
   const [navState, setNavState] = useState(null);
 
   useEffect(() => {
+    // Quick-action buttons dispatch { section, state } so they can carry a
+    // target-form flag through the same navState mechanism department-filter
+    // navigation already uses (see TimelineView's departmentFilter).
     const handler = (e) => {
-      handleNavigate(e.detail);
+      handleNavigate(e.detail.section, e.detail.state);
     };
     window.addEventListener('navigate', handler);
     return () => window.removeEventListener('navigate', handler);

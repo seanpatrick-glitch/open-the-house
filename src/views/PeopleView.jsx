@@ -22,7 +22,7 @@ const STATUS_LABELS = {
   [PERSON_STATUS.INACTIVE]:   'Inactive',
 };
 
-export default function PeopleView({ onNavigate }) {
+export default function PeopleView({ onNavigate, navState }) {
   const { userProfile } = useAuth();
   const [people, setPeople]           = useState([]);
   const [personTypes, setPersonTypes] = useState([]);
@@ -34,6 +34,12 @@ export default function PeopleView({ onNavigate }) {
   const [selectedPersonId, setSelectedPersonId] = useState(null);
 
   const orgId = userProfile?.orgId;
+
+  useEffect(() => {
+    if (navState?.action === 'addPerson') {
+      setShowForm(true);
+    }
+  }, [navState]);
 
   useEffect(() => {
     if (!orgId) return;

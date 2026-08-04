@@ -226,7 +226,7 @@ export default function DHDashboardView() {
       </div>
 
       {dashState === DASHBOARD_STATES.PLANNING && (
-        <DHPlanningState tasks={tasks} />
+        <DHPlanningState tasks={tasks} departmentId={departmentId} />
       )}
       {dashState === DASHBOARD_STATES.FINAL_COUNTDOWN && (
         <DHFinalCountdownState tasksToday={tasksToday} tasksTomorrow={tasksTomorrow} members={members} />
@@ -241,7 +241,7 @@ export default function DHDashboardView() {
   );
 }
 
-function DHPlanningState({ tasks }) {
+function DHPlanningState({ tasks, departmentId }) {
   const overdue  = tasks.filter(t => t.status === 'overdue');
   const upcoming = tasks.filter(t => t.status !== 'overdue');
 
@@ -265,17 +265,17 @@ function DHPlanningState({ tasks }) {
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Quick Actions</h2>
         <div className="flex flex-wrap gap-3">
           <button
-            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'timeline' }))}
+            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { section: 'timeline', state: { action: 'addTask' } } }))}
             className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-300 transition-colors">
             Add a department task
           </button>
           <button
-            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'people' }))}
+            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { section: 'people', state: { action: 'addPerson' } } }))}
             className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-300 transition-colors">
             Add people
           </button>
           <button
-            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'messages' }))}
+            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { section: 'messages', state: { action: 'broadcast', scope: 'department', departmentId } } } ))}
             className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-300 transition-colors">
             Message the department
           </button>

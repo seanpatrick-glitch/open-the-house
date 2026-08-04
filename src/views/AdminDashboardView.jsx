@@ -269,17 +269,17 @@ function PlanningState({ tasks, orgId }) {
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Quick Actions</h2>
         <div className="flex flex-wrap gap-3">
           <a href="#timeline"
-            onClick={e => { e.preventDefault(); window.dispatchEvent(new CustomEvent('navigate', { detail: 'timeline' })); }}
+            onClick={e => { e.preventDefault(); window.dispatchEvent(new CustomEvent('navigate', { detail: { section: 'timeline', state: { action: 'addTask' } } })); }}
             className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-300 transition-colors">
             Add a timeline task
           </a>
           <a href="#collaborators"
-            onClick={e => { e.preventDefault(); window.dispatchEvent(new CustomEvent('navigate', { detail: 'invite-collaborator' })); }}
+            onClick={e => { e.preventDefault(); window.dispatchEvent(new CustomEvent('navigate', { detail: { section: 'invite-collaborator' } })); }}
             className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-300 transition-colors">
             Invite a team member
           </a>
           <a href="#messages"
-            onClick={e => { e.preventDefault(); window.dispatchEvent(new CustomEvent('navigate', { detail: 'messages' })); }}
+            onClick={e => { e.preventDefault(); window.dispatchEvent(new CustomEvent('navigate', { detail: { section: 'messages', state: { action: 'broadcast', scope: 'all' } } })); }}
             className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-300 transition-colors">
             Message the org
           </a>

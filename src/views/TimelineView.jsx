@@ -40,6 +40,7 @@ export default function TimelineView({ navState }) {
   const [showTemplates, setShowTemplates] = useState(false);
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [levelFilter, setLevelFilter] = useState('all');
+  const [departmentIdFilter, setDepartmentIdFilter] = useState(null);
   const [orgUsers, setOrgUsers] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
 
@@ -48,6 +49,10 @@ export default function TimelineView({ navState }) {
   useEffect(() => {
     if (navState?.departmentFilter) {
       setLevelFilter('department');
+      setDepartmentIdFilter(navState.departmentFilter);
+    }
+    if (navState?.action === 'addTask') {
+      setShowCreateTask(true);
     }
   }, [navState]);
 
@@ -111,6 +116,7 @@ export default function TimelineView({ navState }) {
   }, [orgId]);
 
   const filteredTasks = tasks.filter(task => {
+    if (departmentIdFilter) return task.departmentId === departmentIdFilter;
     if (levelFilter === 'all') return true;
     if (levelFilter === 'org') return (task.level ?? 'org') === 'org' || task.promotedToOrg === true;
     if (levelFilter === 'department') return task.level === 'department' && !task.promotedToOrg;
@@ -179,7 +185,7 @@ export default function TimelineView({ navState }) {
       </div>
 
       {!showTemplates && !showCreateTask && Object.keys(departments).length > 0 && (
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
           {[
             { key: 'all',        label: 'All Tasks' },
             { key: 'org',        label: 'Org Timeline' },
@@ -187,9 +193,9 @@ export default function TimelineView({ navState }) {
           ].map(opt => (
             <button
               key={opt.key}
-              onClick={() => setLevelFilter(opt.key)}
+              onClick={() => { setLevelFilter(opt.key); setDepartmentIdFilter(null); }}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                levelFilter === opt.key
+                levelFilter === opt.key && !departmentIdFilter
                   ? 'bg-indigo-600 text-white'
                   : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
               }`}
@@ -197,6 +203,18 @@ export default function TimelineView({ navState }) {
               {opt.label}
             </button>
           ))}
+          {departmentIdFilter && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+              {departments[departmentIdFilter]?.name || 'Department'}
+              <button
+                onClick={() => setDepartmentIdFilter(null)}
+                className="text-indigo-500 hover:text-indigo-800 transition-colors"
+                aria-label="Clear department filter"
+              >
+                ×
+              </button>
+            </span>
+          )}
         </div>
       )}
 
