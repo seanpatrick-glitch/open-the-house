@@ -7,11 +7,6 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import Login from './components/Login'
 import SignupFlow from './components/auth/SignupFlow'
 import AuthRouter from './auth/AuthRouter'
-import Dashboard from './components/Dashboard'
-import ShowTracker from './components/ShowTracker'
-import UserManagement from './components/UserManagement'
-import InviteManager from './components/invites/InviteManager'
-import AcceptInvite from './components/invites/AcceptInvite'
 import JoinPage from './components/invites/JoinPage'
 import SelfSignupPage from './components/people/SelfSignupPage'
 import PersonJoinPage from './components/people/PersonJoinPage'
@@ -21,14 +16,6 @@ import SelfCheckInPage from './components/checkin/SelfCheckInPage'
 function ProtectedRoute({ children }) {
   const { currentUser } = useAuth()
   return currentUser ? children : <Navigate to="/" replace />
-}
-
-// AdminRoute: only admin users can see this screen
-function AdminRoute({ children }) {
-  const { currentUser, isAdmin } = useAuth()
-  if (!currentUser) return <Navigate to="/" replace />
-  if (!isAdmin())   return <Navigate to="/dashboard" replace />
-  return children
 }
 
 // PublicRoute: only redirect to dashboard if the user is fully set up
@@ -48,13 +35,8 @@ export default function App() {
         <Routes>
           <Route path="/"                  element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/signup"            element={<PublicRoute><SignupFlow /></PublicRoute>} />
-          <Route path="/invite/:orgId/:token" element={<AcceptInvite />} />
           <Route path="/signup/:orgId/:tokenId" element={<SelfSignupPage />} />
           <Route path="/dashboard"         element={<ProtectedRoute><AuthRouter /></ProtectedRoute>} />
-          <Route path="/dashboard-legacy"  element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/show/:showId"      element={<ProtectedRoute><ShowTracker /></ProtectedRoute>} />
-          <Route path="/invites"           element={<AdminRoute><InviteManager /></AdminRoute>} />
-          <Route path="/users"             element={<AdminRoute><UserManagement /></AdminRoute>} />
           <Route path="/join"              element={<JoinPage />} />
           <Route path="/person-join"       element={<PersonJoinPage />} />
           <Route path="/self-checkin"      element={<SelfCheckInPage />} />
