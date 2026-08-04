@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getOrCreateDHThread } from '../utils/messaging';
 import { getDisplayName } from '../utils/displayName';
+import toast from 'react-hot-toast';
 
 function formatDate(ts) {
   if (!ts) return '';
@@ -47,6 +48,7 @@ export default function VolunteerView() {
       setEditingName(false);
     } catch (err) {
       console.error('Save display name error:', err);
+      toast.error('Could not save your name. Please try again.');
     } finally {
       setSavingName(false);
     }
@@ -71,6 +73,7 @@ export default function VolunteerView() {
         }
       } catch (err) {
         console.error('VolunteerView loadPersonRecord error:', err);
+        toast.error('Could not load your profile. Please refresh and try again.');
       }
     };
     loadPersonRecord();
@@ -124,6 +127,7 @@ export default function VolunteerView() {
       setAssignments(updated);
     } catch (err) {
       console.error('Confirm assignment error:', err);
+      toast.error('Could not confirm assignment. Please try again.');
     }
   }
 
@@ -153,7 +157,10 @@ export default function VolunteerView() {
       setDhThread(data);
       const myReadField = data.participantA === uid ? 'participantARead' : 'participantBRead';
       if (data[myReadField] === false) {
-        updateDoc(threadRef, { [myReadField]: true }).catch(() => {});
+        updateDoc(threadRef, { [myReadField]: true }).catch(err => {
+          console.error('Mark thread read error:', err);
+          toast.error('Could not update message read status.');
+        });
       }
     });
 
@@ -188,6 +195,7 @@ export default function VolunteerView() {
       });
     } catch (err) {
       console.error('Send DH message error:', err);
+      toast.error('Could not send your message. Please try again.');
     } finally {
       setDhSending(false);
     }

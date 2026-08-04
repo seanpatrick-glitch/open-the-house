@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
+import toast from 'react-hot-toast'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -92,6 +93,7 @@ export default function ProductionDashboard({ production, places, onBack }) {
       )
     } catch (err) {
       console.error('ProductionDashboard toggleModule error:', err)
+      toast.error('Could not update that module. Please try again.')
       // Revert the optimistic update if the write failed
       setActiveModules(prev => ({ ...prev, [key]: !newValue }))
     } finally {

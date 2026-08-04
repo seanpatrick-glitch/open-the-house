@@ -7,6 +7,7 @@ import { getDisplayName } from '../utils/displayName';
 import AssignmentsPanel from '../components/people/AssignmentsPanel';
 import HoursPanel from '../components/people/HoursPanel';
 import PersonInviteForm from '../components/people/PersonInviteForm';
+import toast from 'react-hot-toast';
 
 const TOGGLEABLE_LABELS = {
   address:             'Address',
@@ -110,6 +111,7 @@ export default function PersonProfileView({ personId, onBack }) {
       setTimeout(() => setInternalSaved(false), 2000);
     } catch (err) {
       console.error('Error saving internal data:', err);
+      toast.error('Could not save. Please try again.');
     } finally {
       setSavingInternal(false);
     }
@@ -194,8 +196,8 @@ export default function PersonProfileView({ personId, onBack }) {
         <h2 className="text-sm font-semibold text-gray-700 mb-4">Contact Information</h2>
         <div className="space-y-3">
           {universalKeys.map(key => (
-            <div key={key} className="flex gap-4">
-              <span className="text-sm text-gray-400 w-36 flex-shrink-0">{universalLabels[key]}</span>
+            <div key={key} className="flex flex-col sm:flex-row gap-1 sm:gap-4">
+              <span className="text-sm text-gray-400 sm:w-36 flex-shrink-0">{universalLabels[key]}</span>
               <span className="text-sm text-gray-900">{person.fieldValues?.[key] || <span className="text-gray-300">—</span>}</span>
             </div>
           ))}
@@ -208,8 +210,8 @@ export default function PersonProfileView({ personId, onBack }) {
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Additional Information</h2>
           <div className="space-y-3">
             {activeToggleable.map(([key]) => (
-              <div key={key} className="flex gap-4">
-                <span className="text-sm text-gray-400 w-36 flex-shrink-0">{TOGGLEABLE_LABELS[key] || key}</span>
+              <div key={key} className="flex flex-col sm:flex-row gap-1 sm:gap-4">
+                <span className="text-sm text-gray-400 sm:w-36 flex-shrink-0">{TOGGLEABLE_LABELS[key] || key}</span>
                 <span className="text-sm text-gray-900">{person.fieldValues?.[key] || <span className="text-gray-300">—</span>}</span>
               </div>
             ))}
@@ -225,8 +227,8 @@ export default function PersonProfileView({ personId, onBack }) {
             {customFields.sort((a, b) => a.order - b.order).map(field => {
               const val = person.fieldValues?.[field.fieldId];
               return (
-                <div key={field.fieldId} className="flex gap-4">
-                  <span className="text-sm text-gray-400 w-36 flex-shrink-0">{field.label}</span>
+                <div key={field.fieldId} className="flex flex-col sm:flex-row gap-1 sm:gap-4">
+                  <span className="text-sm text-gray-400 sm:w-36 flex-shrink-0">{field.label}</span>
                   <span className="text-sm text-gray-900">
                     {Array.isArray(val) ? val.join(', ') : val || <span className="text-gray-300">—</span>}
                   </span>

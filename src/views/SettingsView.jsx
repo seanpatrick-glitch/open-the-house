@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getDisplayName } from '../utils/displayName';
 import CreatePersonTypeForm from '../components/people/CreatePersonTypeForm';
 import CreateSignupTokenForm from '../components/people/CreateSignupTokenForm';
+import toast from 'react-hot-toast';
 
 export default function SettingsView() {
   const { userProfile } = useAuth();
@@ -41,6 +42,7 @@ export default function SettingsView() {
         }
       } catch (err) {
         console.error('Error fetching org settings:', err);
+        toast.error('Could not load settings. Please refresh and try again.');
       } finally {
         setLoading(false);
       }
@@ -57,6 +59,7 @@ export default function SettingsView() {
         );
       } catch (err) {
         console.error('Error loading department heads:', err);
+        toast.error('Could not load department heads.');
       }
     };
 
@@ -81,6 +84,7 @@ export default function SettingsView() {
         setProductions(allProds);
       } catch (err) {
         console.error('Error loading productions:', err);
+        toast.error('Could not load productions.');
       }
     };
 
@@ -116,6 +120,7 @@ export default function SettingsView() {
       setDepartmentsEnabled(newValue);
     } catch (err) {
       console.error('Error updating settings:', err);
+      toast.error('Could not update settings. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -130,6 +135,7 @@ export default function SettingsView() {
       setActiveProdId(compositeId);
     } catch (err) {
       console.error('Error setting active production:', err);
+      toast.error('Could not set active production. Please try again.');
     } finally {
       setSavingProd(false);
     }
@@ -143,6 +149,7 @@ export default function SettingsView() {
       });
     } catch (err) {
       console.error('Error assigning person type department head:', err);
+      toast.error('Could not assign department head. Please try again.');
     } finally {
       setSavingTypeHead(null);
     }
@@ -157,6 +164,7 @@ export default function SettingsView() {
       setDashboardOverride(value);
     } catch (err) {
       console.error('Error setting dashboard override:', err);
+      toast.error('Could not set dashboard override. Please try again.');
     } finally {
       setSavingOverride(false);
     }

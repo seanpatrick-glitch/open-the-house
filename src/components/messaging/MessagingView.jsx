@@ -6,6 +6,7 @@ import {
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDisplayName } from '../../utils/displayName';
+import toast from 'react-hot-toast';
 
 function formatTime(ts) {
   if (!ts) return '';
@@ -87,7 +88,10 @@ export default function MessagingView({ orgUsers }) {
     const readField = selectedThread.participantA === uid ? 'participantARead' : 'participantBRead';
     updateDoc(doc(db, 'organizations', orgId, 'threads', selectedThread.id), {
       [readField]: true,
-    }).catch(() => {});
+    }).catch(err => {
+      console.error('Mark thread read error:', err);
+      toast.error('Could not update message read status.');
+    });
 
     return () => unsub();
   }, [selectedThread, orgId, uid]);
@@ -112,6 +116,7 @@ export default function MessagingView({ orgUsers }) {
       });
     } catch (err) {
       console.error('Send message error:', err);
+      toast.error('Could not send your message. Please try again.');
     } finally {
       setSending(false);
     }
@@ -143,6 +148,7 @@ export default function MessagingView({ orgUsers }) {
       setSelectedThread({ id: threadRef.id, participantA: uid, participantB: newRecipientUid, subject: newSubject.trim() });
     } catch (err) {
       console.error('Create thread error:', err);
+      toast.error('Could not start the conversation. Please try again.');
     } finally {
       setSending(false);
     }

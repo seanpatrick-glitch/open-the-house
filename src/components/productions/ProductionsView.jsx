@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import CreatePlaceForm from './CreatePlaceForm'
 import CreateProductionForm from './CreateProductionForm'
 import ProductionDashboard from './ProductionDashboard'
+import toast from 'react-hot-toast'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -139,6 +140,7 @@ export default function ProductionsView() {
       },
       (err) => {
         console.error('ProductionsView places listener:', err)
+        toast.error('Could not load places. Please refresh and try again.')
         setPlacesLoading(false)
       }
     )
@@ -162,6 +164,7 @@ export default function ProductionsView() {
       },
       (err) => {
         console.error('ProductionsView productions listener:', err)
+        toast.error('Could not load productions. Please refresh and try again.')
         setProductionsLoading(false)
       }
     )

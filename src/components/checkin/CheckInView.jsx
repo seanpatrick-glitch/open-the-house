@@ -4,6 +4,7 @@ import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import CheckInTokenGenerator from './CheckInTokenGenerator';
 import { getDisplayName } from '../../utils/displayName';
+import toast from 'react-hot-toast';
 
 function parseLocalDate(dateStr) {
   if (!dateStr) return null;
@@ -51,6 +52,7 @@ export default function CheckInView() {
         setProductions(allProds);
       } catch (err) {
         console.error('CheckInView load productions error:', err);
+        toast.error('Could not load productions. Please refresh and try again.');
       } finally {
         setLoadingProds(false);
       }
@@ -98,6 +100,7 @@ export default function CheckInView() {
         setCheckins(map);
       } catch (err) {
         console.error('CheckInView load roster error:', err);
+        toast.error('Could not load the roster. Please refresh and try again.');
       } finally {
         setLoading(false);
       }
@@ -131,6 +134,7 @@ export default function CheckInView() {
       }));
     } catch (err) {
       console.error('CheckInView toggle error:', err);
+      toast.error('Could not save check-in. Please try again.');
     } finally {
       setSaving(prev => ({ ...prev, [person.id]: false }));
     }

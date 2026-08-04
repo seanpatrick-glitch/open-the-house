@@ -3,6 +3,7 @@ import { doc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { getDisplayName } from '../../utils/displayName'
+import toast from 'react-hot-toast'
 
 const NAV_ITEMS = [
   { key: 'home',        label: 'Home',        emoji: '🏠' },
@@ -48,6 +49,7 @@ export default function Sidebar({ activeSection, onNavigate, sidebarOpen }) {
       setEditingName(false)
     } catch (err) {
       console.error('Save display name error:', err)
+      toast.error('Could not save your name. Please try again.')
     } finally {
       setSavingName(false)
     }

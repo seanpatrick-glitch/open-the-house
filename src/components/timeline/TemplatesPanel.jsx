@@ -3,6 +3,7 @@ import { collection, query, where, onSnapshot, getDocs, addDoc, serverTimestamp,
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import CreateTemplateForm from './CreateTemplateForm';
+import toast from 'react-hot-toast';
 
 function offsetLabel(offsetDays, anchor) {
   const label = anchor || 'anchor date';
@@ -59,7 +60,10 @@ export default function TemplatesPanel({ departments, onClose, onTasksCreated })
         tasks.sort((a, b) => a.offsetDays - b.offsetDays);
         setTemplateTasks(tasks);
       })
-      .catch(err => console.error('Error fetching template tasks:', err))
+      .catch(err => {
+        console.error('Error fetching template tasks:', err);
+        toast.error('Could not load template tasks.');
+      })
       .finally(() => setTasksLoading(false));
   }, [selectedTemplate]);
 
@@ -100,6 +104,7 @@ export default function TemplatesPanel({ departments, onClose, onTasksCreated })
       if (onTasksCreated) onTasksCreated();
     } catch (err) {
       console.error('Error creating tasks from template:', err);
+      toast.error('Could not create tasks from this template. Please try again.');
     } finally {
       setCreating(false);
     }

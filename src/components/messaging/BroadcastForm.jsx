@@ -3,15 +3,15 @@ import { collection, addDoc, getDocs, updateDoc, serverTimestamp, writeBatch, do
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 
-export default function BroadcastForm({ onClose }) {
+export default function BroadcastForm({ onClose, initialScope, initialDepartmentId }) {
   const { userProfile } = useAuth();
   const uid   = userProfile?.uid;
   const orgId = userProfile?.orgId;
 
   const [subject, setSubject]           = useState('');
   const [body, setBody]                 = useState('');
-  const [scopeType, setScopeType]       = useState('all');
-  const [departmentId, setDepartmentId] = useState('');
+  const [scopeType, setScopeType]       = useState(initialScope || 'all');
+  const [departmentId, setDepartmentId] = useState(initialDepartmentId || '');
   const [departments, setDepartments]   = useState([]);
   const [members, setMembers]           = useState([]);
   const [sending, setSending]           = useState(false);

@@ -5,6 +5,7 @@ import { db, auth } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { getDisplayName } from '../../utils/displayName'
 import { getInviteActionCodeSettings } from '../../utils/invites'
+import toast from 'react-hot-toast'
 
 export default function CreateDepartmentForm({ onSuccess, onCancel }) {
   const { userProfile } = useAuth()
@@ -31,6 +32,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
         setOrgUsers(filtered)
       } catch (err) {
         console.error('CreateDepartmentForm fetchUsers:', err)
+        toast.error('Could not load members. Please refresh and try again.')
       } finally {
         setUsersLoading(false)
       }
