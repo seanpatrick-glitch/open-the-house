@@ -32,6 +32,7 @@ export default function PeopleView({ onNavigate, navState }) {
   const [showCsvImport, setShowCsvImport]       = useState(false);
   const [csvImportTypeId, setCsvImportTypeId]   = useState(null);
   const [selectedPersonId, setSelectedPersonId] = useState(null);
+  const [showCsvDropdown, setShowCsvDropdown]   = useState(false);
 
   const orgId = userProfile?.orgId;
 
@@ -96,21 +97,30 @@ export default function PeopleView({ onNavigate, navState }) {
         </div>
         <div className="flex items-center gap-2">
           {personTypes.length > 0 && !showForm && !showCsvImport && (
-            <div className="relative group">
-              <button className="border border-gray-200 text-gray-600 hover:border-gray-300 text-sm font-medium px-4 py-2 rounded-lg transition-colors bg-white">
+            <div className="relative">
+              <button
+                onClick={() => setShowCsvDropdown(v => !v)}
+                className="border border-gray-200 text-gray-600 hover:border-gray-300 text-sm font-medium px-4 py-2 rounded-lg transition-colors bg-white"
+              >
                 Import CSV
               </button>
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-10 hidden group-hover:block">
-                {personTypes.map(type => (
-                  <button
-                    key={type.id}
-                    onClick={() => { setCsvImportTypeId(type.id); setShowCsvImport(true); }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-xl last:rounded-b-xl transition-colors"
-                  >
-                    {type.label}
-                  </button>
-                ))}
-              </div>
+              {showCsvDropdown && (
+                <>
+                  {/* Tap-outside-to-close backdrop */}
+                  <div className="fixed inset-0 z-0" onClick={() => setShowCsvDropdown(false)} />
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-10">
+                    {personTypes.map(type => (
+                      <button
+                        key={type.id}
+                        onClick={() => { setCsvImportTypeId(type.id); setShowCsvImport(true); setShowCsvDropdown(false); }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-xl last:rounded-b-xl transition-colors"
+                      >
+                        {type.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
           {!showForm && !showCsvImport && (
@@ -190,7 +200,8 @@ export default function PeopleView({ onNavigate, navState }) {
             </div>
           ) : (
             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-              <table className="w-full text-sm">
+              {/* Table — sm and up */}
+              <table className="w-full text-sm hidden sm:table">
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50">
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
@@ -232,6 +243,39 @@ export default function PeopleView({ onNavigate, navState }) {
                   ))}
                 </tbody>
               </table>
+
+              {/* Card list — below sm */}
+              <div className="sm:hidden divide-y divide-gray-100">
+                {filtered.map(person => (
+                  <button
+                    key={person.id}
+                    onClick={() => setSelectedPersonId(person.id)}
+                    className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-medium text-gray-900 truncate">
+                        {getDisplayName(person) || <span className="text-gray-400">No name</span>}
+                      </p>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${STATUS_STYLES[person.status] || STATUS_STYLES[PERSON_STATUS.APPLIED]}`}>
+                        {STATUS_LABELS[person.status] || 'Applied'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">{person.typeLabel}</p>
+                    <p className="text-xs text-gray-500 mt-0.5 truncate">
+                      {person.fieldValues?.email || '—'}
+                    </p>
+                    <div className="mt-1.5">
+                      {person.accountStatus === 'active' ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Account active</span>
+                      ) : person.accountStatus === 'invited' ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Invited</span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">No account</span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </>
