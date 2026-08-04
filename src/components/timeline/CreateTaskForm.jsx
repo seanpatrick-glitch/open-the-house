@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs, query, where, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { TASK_LEVELS } from '../../models/timeline';
+import { TASK_LEVELS, TASK_PHASES } from '../../models/timeline';
+import { getDisplayName } from '../../utils/displayName';
 
 function parseLocalDate(dateStr) {
   if (!dateStr) return null;
@@ -14,11 +15,14 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
   const { userProfile } = useAuth();
   const { orgId, uid } = userProfile;
 
+  const isDepartmentHead = userProfile.role === 'departmentHead';
+
   const [title, setTitle]               = useState('');
   const [description, setDescription]   = useState('');
   const [dueDate, setDueDate]           = useState('');
   const [startDate, setStartDate]       = useState('');
-  const [level, setLevel]               = useState(TASK_LEVELS.ORG);
+  const [level, setLevel]               = useState(isDepartmentHead ? TASK_LEVELS.DEPARTMENT : TASK_LEVELS.ORG);
+  const [phase, setPhase]               = useState(TASK_PHASES.PLANNING);
   const [departmentId, setDepartmentId] = useState('');
   const [visibleToAll, setVisibleToAll] = useState(false);
   const [primaryAssigneeUid, setPrimaryAssigneeUid] = useState('');
@@ -80,6 +84,7 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
         currentAssigneeUid: primaryAssigneeUid || null,
         handoffPending:     false,
         contributorUids,
+        phase,
         assignedTo:         primaryAssigneeUid || null,
         production:         null,
         visibleToDepartments: [],
@@ -136,16 +141,44 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
         <div className="flex items-start justify-between gap-6">
           <div>
             <p className="text-sm font-medium text-gray-700">Task Level</p>
-            <p className="text-xs text-gray-400 mt-0.5">Org tasks appear in the master timeline. Department tasks are owned by a department.</p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {isDepartmentHead
+                ? 'Department tasks are owned by your department.'
+                : 'Org tasks appear in the master timeline. Department tasks are owned by a department.'}
+            </p>
+          </div>
+          {!isDepartmentHead && (
+            <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1 flex-shrink-0">
+              <button type="button" onClick={() => setLevel(TASK_LEVELS.ORG)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${level === TASK_LEVELS.ORG ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                Org
+              </button>
+              <button type="button" onClick={() => setLevel(TASK_LEVELS.DEPARTMENT)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${level === TASK_LEVELS.DEPARTMENT ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                Department
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Phase */}
+        <div className="flex items-start justify-between gap-6">
+          <div>
+            <p className="text-sm font-medium text-gray-700">Phase</p>
+            <p className="text-xs text-gray-400 mt-0.5">Planning tasks run before the show. Production tasks run during. Wrap tasks close it out.</p>
           </div>
           <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1 flex-shrink-0">
-            <button type="button" onClick={() => setLevel(TASK_LEVELS.ORG)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${level === TASK_LEVELS.ORG ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-              Org
+            <button type="button" onClick={() => setPhase(TASK_PHASES.PLANNING)}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${phase === TASK_PHASES.PLANNING ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              Planning
             </button>
-            <button type="button" onClick={() => setLevel(TASK_LEVELS.DEPARTMENT)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${level === TASK_LEVELS.DEPARTMENT ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-              Department
+            <button type="button" onClick={() => setPhase(TASK_PHASES.PRODUCTION)}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${phase === TASK_PHASES.PRODUCTION ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              Production
+            </button>
+            <button type="button" onClick={() => setPhase(TASK_PHASES.WRAP)}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${phase === TASK_PHASES.WRAP ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              Wrap
             </button>
           </div>
         </div>
@@ -171,7 +204,7 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
               <option value="">Unassigned</option>
               {orgUsers.map(u => (
-                <option key={u.uid} value={u.uid}>{u.email}</option>
+                <option key={u.uid} value={u.uid}>{getDisplayName(u)}</option>
               ))}
             </select>
           </div>
@@ -191,7 +224,7 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
                     onChange={() => toggleContributor(u.uid)}
                     className="rounded border-gray-300"
                   />
-                  {u.email}
+                  {getDisplayName(u)}
                 </label>
               ))}
             </div>

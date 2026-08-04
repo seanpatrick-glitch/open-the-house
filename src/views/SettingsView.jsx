@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, updateDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { getDisplayName } from '../utils/displayName';
 import CreatePersonTypeForm from '../components/people/CreatePersonTypeForm';
 import CreateSignupTokenForm from '../components/people/CreateSignupTokenForm';
 
@@ -9,12 +10,19 @@ export default function SettingsView() {
   const { userProfile } = useAuth();
   const [departmentsEnabled, setDepartmentsEnabled] = useState(false);
   const [personTypes, setPersonTypes]               = useState([]);
+  const [departmentHeads, setDepartmentHeads]        = useState([]);
+  const [savingTypeHead, setSavingTypeHead]           = useState(null);
   const [loading, setLoading]                       = useState(true);
   const [saving, setSaving]                         = useState(false);
   const [showForm, setShowForm]                     = useState(false);
   const [signupTokens, setSignupTokens]   = useState([]);
   const [showTokenForm, setShowTokenForm] = useState(false);
   const [newToken, setNewToken]           = useState(null);
+  const [productions, setProductions]         = useState([]);
+  const [activeProdId, setActiveProdId]       = useState('');
+  const [dashboardOverride, setDashboardOverride] = useState('');
+  const [savingProd, setSavingProd]           = useState(false);
+  const [savingOverride, setSavingOverride]   = useState(false);
 
   const orgId = userProfile?.orgId;
 
@@ -26,7 +34,10 @@ export default function SettingsView() {
         const orgRef  = doc(db, 'organizations', orgId);
         const orgSnap = await getDoc(orgRef);
         if (orgSnap.exists()) {
-          setDepartmentsEnabled(orgSnap.data().departmentsEnabled ?? false);
+          const data = orgSnap.data();
+          setDepartmentsEnabled(data.departmentsEnabled ?? false);
+          setActiveProdId(data.activeProdId ?? '');
+          setDashboardOverride(data.dashboardStateOverride ?? '');
         }
       } catch (err) {
         console.error('Error fetching org settings:', err);
@@ -34,7 +45,48 @@ export default function SettingsView() {
         setLoading(false);
       }
     };
+
+    // Load org members with the Department Head role, for the Person Types assignment control
+    const loadDepartmentHeads = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'organizations', orgId, 'members'));
+        setDepartmentHeads(
+          snap.docs
+            .map(d => ({ uid: d.id, ...d.data() }))
+            .filter(m => m.role === 'departmentHead')
+        );
+      } catch (err) {
+        console.error('Error loading department heads:', err);
+      }
+    };
+
+    // Load all productions for active production selector
+    const loadProductions = async () => {
+      try {
+        const placesSnap = await getDocs(collection(db, 'organizations', orgId, 'places'));
+        const allProds = [];
+        for (const place of placesSnap.docs) {
+          const prodsSnap = await getDocs(
+            collection(db, 'organizations', orgId, 'places', place.id, 'productions')
+          );
+          prodsSnap.docs.forEach(d => {
+            allProds.push({
+              id:        d.id,
+              placeId:   place.id,
+              placeName: place.data().name,
+              ...d.data(),
+            });
+          });
+        }
+        setProductions(allProds);
+      } catch (err) {
+        console.error('Error loading productions:', err);
+      }
+    };
+
     fetchSettings();
+    loadProductions();
+    loadDepartmentHeads();
 
     const q = query(
       collection(db, 'organizations', orgId, 'personTypes'),
@@ -68,6 +120,47 @@ export default function SettingsView() {
       setSaving(false);
     }
   };
+
+  async function handleSetActiveProd(compositeId) {
+    setSavingProd(true);
+    try {
+      await updateDoc(doc(db, 'organizations', orgId), {
+        activeProdId: compositeId || null,
+      });
+      setActiveProdId(compositeId);
+    } catch (err) {
+      console.error('Error setting active production:', err);
+    } finally {
+      setSavingProd(false);
+    }
+  }
+
+  async function handleAssignTypeHead(typeId, headUid) {
+    setSavingTypeHead(typeId);
+    try {
+      await updateDoc(doc(db, 'organizations', orgId, 'personTypes', typeId), {
+        departmentHeadId: headUid || null,
+      });
+    } catch (err) {
+      console.error('Error assigning person type department head:', err);
+    } finally {
+      setSavingTypeHead(null);
+    }
+  }
+
+  async function handleSetOverride(value) {
+    setSavingOverride(true);
+    try {
+      await updateDoc(doc(db, 'organizations', orgId), {
+        dashboardStateOverride: value || null,
+      });
+      setDashboardOverride(value);
+    } catch (err) {
+      console.error('Error setting dashboard override:', err);
+    } finally {
+      setSavingOverride(false);
+    }
+  }
 
   if (loading) {
     return <div className="p-6 text-gray-500 text-sm">Loading settings...</div>;
@@ -168,10 +261,71 @@ export default function SettingsView() {
                       }
                     </div>
                   </div>
+                  <div className="flex-shrink-0 text-right">
+                    <p className="text-xs font-medium text-gray-500 mb-1">Department Head</p>
+                    {departmentHeads.length === 0 ? (
+                      <p className="text-xs text-gray-400 max-w-[180px]">
+                        Invite a Department Head first before assigning one here.
+                      </p>
+                    ) : (
+                      <select
+                        value={type.departmentHeadId || ''}
+                        onChange={e => handleAssignTypeHead(type.id, e.target.value)}
+                        disabled={savingTypeHead === type.id}
+                        className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                      >
+                        <option value="">Unassigned</option>
+                        {departmentHeads.map(dh => (
+                          <option key={dh.uid} value={dh.uid}>{getDisplayName(dh)}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
           )}
+        </div>
+
+        {/* Active Production */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
+          <h2 className="text-base font-semibold text-gray-800 mb-1">Active Production</h2>
+          <p className="text-sm text-gray-500 mb-4">
+            The active production drives the dashboard state for all staff. Set it when a production enters its final countdown.
+          </p>
+          <select
+            value={activeProdId}
+            onChange={e => handleSetActiveProd(e.target.value)}
+            disabled={savingProd}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+          >
+            <option value="">No active production</option>
+            {productions.map(p => (
+              <option key={`${p.placeId}/${p.id}`} value={`${p.placeId}/${p.id}`}>
+                {p.name} — {p.placeName}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Dashboard State Override */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
+          <h2 className="text-base font-semibold text-gray-800 mb-1">Dashboard State Override</h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Force the dashboard to a specific state regardless of production dates. Leave blank to auto-calculate.
+          </p>
+          <select
+            value={dashboardOverride}
+            onChange={e => handleSetOverride(e.target.value)}
+            disabled={savingOverride}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+          >
+            <option value="">Auto (based on production dates)</option>
+            <option value="planning">Planning</option>
+            <option value="finalCountdown">Final Countdown</option>
+            <option value="live">Live</option>
+            <option value="postmortem">Postmortem</option>
+          </select>
         </div>
 
         {/* Signup Links */}

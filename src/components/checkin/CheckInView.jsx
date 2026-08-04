@@ -3,6 +3,7 @@ import { collection, query, where, getDocs, addDoc, serverTimestamp, Timestamp }
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import CheckInTokenGenerator from './CheckInTokenGenerator';
+import { getDisplayName } from '../../utils/displayName';
 
 function parseLocalDate(dateStr) {
   if (!dateStr) return null;
@@ -222,7 +223,7 @@ export default function CheckInView() {
                 <div key={person.id} className="flex items-center justify-between px-4 py-3 gap-4">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {person.fieldValues?.name || 'No name'}
+                      {getDisplayName(person) || 'No name'}
                     </p>
                     <p className="text-xs text-gray-400">{person.typeLabel}</p>
                   </div>

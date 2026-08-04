@@ -65,6 +65,7 @@ COLLECTION: organizations/{orgId}/people/{personId}
   orgId: string,
   typeId: string,                 // reference to personTypes/{typeId}
   typeLabel: string,              // denormalized for display
+  displayName: string | null,     // optional, defaults to fieldValues.name if unset
   status: 'applied' | 'waitlisted' | 'active' | 'inactive',
   staff: boolean,                 // default false. Active persons only. Set by admin or DH.
   accountUid: string | null,      // Firebase Auth uid, written on invite acceptance

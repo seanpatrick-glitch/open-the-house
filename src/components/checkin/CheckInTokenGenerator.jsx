@@ -7,7 +7,14 @@ import { QRCodeSVG } from 'qrcode.react';
 function parseLocalDate(dateStr) {
   if (!dateStr) return null;
   const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day, 12, 0, 0);
+  return new Date(year, month - 1, day);
+}
+
+function buildDateTime(dateStr, timeStr) {
+  if (!dateStr || !timeStr) return null;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const [hours, minutes]   = timeStr.split(':').map(Number);
+  return new Date(year, month - 1, day, hours, minutes, 0);
 }
 
 export default function CheckInTokenGenerator({ production, onClose }) {
@@ -15,25 +22,44 @@ export default function CheckInTokenGenerator({ production, onClose }) {
   const orgId = userProfile?.orgId;
   const uid   = userProfile?.uid;
 
-  const [date, setDate]         = useState(() => new Date().toISOString().split('T')[0]);
-  const [windowMins, setWindowMins] = useState(30);
-  const [token, setToken]       = useState(null);
+  const [date, setDate]           = useState(() => new Date().toISOString().split('T')[0]);
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime]     = useState('');
+  const [token, setToken]         = useState(null);
   const [generating, setGenerating] = useState(false);
-  const [error, setError]       = useState('');
+  const [error, setError]         = useState('');
 
   async function handleGenerate() {
-    if (!date) {
-      setError('Select a date first.');
+    setError('');
+
+    if (!date || !startTime || !endTime) {
+      setError('Date, start time, and end time are all required.');
       return;
     }
+
+    const validFromDate  = buildDateTime(date, startTime);
+    const validUntilDate = buildDateTime(date, endTime);
+    const now            = new Date();
+
+    if (validFromDate >= validUntilDate) {
+      setError('Start time must be before end time.');
+      return;
+    }
+    if (validUntilDate <= now) {
+      setError('End time must be in the future.');
+      return;
+    }
+    const windowMs = validUntilDate.getTime() - validFromDate.getTime();
+    if (windowMs > 24 * 60 * 60 * 1000) {
+      setError('Check-in window cannot exceed 24 hours.');
+      return;
+    }
+
     setGenerating(true);
-    setError('');
     try {
-      const baseDate  = parseLocalDate(date);
-      const validFrom = Timestamp.fromDate(baseDate);
-      const validUntil = Timestamp.fromMillis(
-        baseDate.getTime() + windowMins * 60 * 1000
-      );
+      const baseDate   = parseLocalDate(date);
+      const validFrom  = Timestamp.fromDate(validFromDate);
+      const validUntil = Timestamp.fromDate(validUntilDate);
 
       const tokenRef = await addDoc(
         collection(db, 'organizations', orgId, 'checkinTokens'),
@@ -50,7 +76,8 @@ export default function CheckInTokenGenerator({ production, onClose }) {
       );
 
       setToken({
-        id:          tokenRef.id,
+        id:         tokenRef.id,
+        validFrom,
         validUntil,
         url: `${window.location.origin}/self-checkin?orgId=${orgId}&tokenId=${tokenRef.id}&assignmentId=${production.id}`,
       });
@@ -84,24 +111,31 @@ export default function CheckInTokenGenerator({ production, onClose }) {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Check-in window</label>
-            <select
-              value={windowMins}
-              onChange={e => setWindowMins(Number(e.target.value))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value={15}>15 minutes</option>
-              <option value={30}>30 minutes</option>
-              <option value={60}>1 hour</option>
-              <option value={120}>2 hours</option>
-            </select>
-            <p className="text-xs text-gray-400 mt-1">QR code stops working after this window closes.</p>
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Check-in opens <span className="text-red-500">*</span></label>
+              <input
+                type="time"
+                value={startTime}
+                onChange={e => setStartTime(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Check-in closes <span className="text-red-500">*</span></label>
+              <input
+                type="time"
+                value={endTime}
+                onChange={e => setEndTime(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
           </div>
+          <p className="text-xs text-gray-400">QR code only works between these times. Set them to match your call window.</p>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <button
             onClick={handleGenerate}
-            disabled={generating}
+            disabled={generating || !date || !startTime || !endTime}
             className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium py-2 rounded-lg transition-colors"
           >
             {generating ? 'Generating...' : 'Generate QR Code'}
@@ -113,8 +147,11 @@ export default function CheckInTokenGenerator({ production, onClose }) {
             <QRCodeSVG value={token.url} size={200} />
           </div>
           <p className="text-xs text-gray-500 mb-1">Have people scan this to check themselves in.</p>
+          <p className="text-xs text-gray-400 mb-1">
+            Opens {token.validFrom.toDate().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+          </p>
           <p className="text-xs text-gray-400 mb-4">
-            Expires {token.validUntil.toDate().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+            Closes {token.validUntil.toDate().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
           </p>
           <button
             onClick={() => setToken(null)}

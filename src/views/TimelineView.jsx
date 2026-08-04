@@ -3,6 +3,7 @@ import { collection, query, where, orderBy, onSnapshot, getDocs, doc, getDoc, up
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { TIMELINE_STATUS, TASK_LEVELS } from '../models/timeline';
+import { getDisplayName } from '../utils/displayName';
 import CalendarGrid from '../components/timeline/CalendarGrid';
 import GanttView from '../components/timeline/GanttView';
 import TemplatesPanel from '../components/timeline/TemplatesPanel';
@@ -30,7 +31,7 @@ function formatDate(ts) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export default function TimelineView() {
+export default function TimelineView({ navState }) {
   const { userProfile } = useAuth();
   const [tasks, setTasks]             = useState([]);
   const [departments, setDepartments] = useState({});
@@ -43,6 +44,12 @@ export default function TimelineView() {
   const [selectedTask, setSelectedTask] = useState(null);
 
   const orgId = userProfile?.orgId;
+
+  useEffect(() => {
+    if (navState?.departmentFilter) {
+      setLevelFilter('department');
+    }
+  }, [navState]);
 
   useEffect(() => {
     if (!orgId) return;
@@ -261,7 +268,7 @@ export default function TimelineView() {
                           <td className="px-4 py-3 text-sm">
                             {task.primaryAssigneeUid ? (
                               <span className="text-gray-700">
-                                {orgUsers.find(u => u.uid === task.primaryAssigneeUid)?.email || 'Assigned'}
+                                {getDisplayName(orgUsers.find(u => u.uid === task.primaryAssigneeUid)) || 'Assigned'}
                               </span>
                             ) : <span className="text-gray-400">Unassigned</span>}
                             {task.contributorUids?.length > 0 && (

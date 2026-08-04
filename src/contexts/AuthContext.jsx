@@ -67,8 +67,10 @@ export function AuthProvider({ children }) {
           const membership = orgs[orgId]
 
           setUserProfile({
-            uid:     user.uid,
-            email:   data.email,
+            uid:         user.uid,
+            email:       data.email,
+            name:        data.name,
+            displayName: data.displayName,
             orgId,
             role:    membership.role,
             level:   membership.level,

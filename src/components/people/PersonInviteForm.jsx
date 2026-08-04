@@ -4,6 +4,7 @@ import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { sendSignInLinkToEmail } from 'firebase/auth';
 import { auth } from '../../firebase';
+import { getDisplayName } from '../../utils/displayName';
 
 const ACTION_CODE_SETTINGS = (orgId, tokenId) => ({
   url: `${window.location.origin}/person-join?orgId=${orgId}&tokenId=${tokenId}`,
@@ -70,7 +71,7 @@ export default function PersonInviteForm({ person, onSuccess, onCancel }) {
     <div className="bg-white border border-gray-200 rounded-xl p-5 max-w-md">
       <h3 className="text-sm font-semibold text-gray-900 mb-1">Invite to Platform</h3>
       <p className="text-sm text-gray-500 mb-4">
-        Send {person.fieldValues?.name || 'this person'} a secure sign-in link at <span className="font-medium text-gray-700">{email || 'no email on file'}</span>.
+        Send {getDisplayName(person) || 'this person'} a secure sign-in link at <span className="font-medium text-gray-700">{email || 'no email on file'}</span>.
         They will create an account and their profile will be linked automatically.
       </p>
 

@@ -1,8 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Sidebar from './Sidebar'
-import HomeView from '../dashboard/HomeView'
 import InviteCollaborator from '../invites/InviteCollaborator'
-import InviteVolunteer from '../invites/InviteVolunteer'
 import ProductionsView from '../productions/ProductionsView'
 import DepartmentsView from '../../views/DepartmentsView'
 import TimelineView from '../../views/TimelineView'
@@ -10,6 +8,10 @@ import SettingsView from '../../views/SettingsView'
 import PeopleView from '../../views/PeopleView'
 import CheckInView from '../checkin/CheckInView'
 import MessageView from '../../views/MessageView'
+import AdminDashboardView from '../../views/AdminDashboardView';
+import DHDashboardView from '../../views/DHDashboardView';
+import PlacesView from '../../views/PlacesView';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Section key → human-readable label for placeholder screens
 const SECTION_LABELS = {
@@ -40,26 +42,41 @@ function PlaceholderSection({ section }) {
   )
 }
 
-function SectionContent({ section, onNavigate }) {
-  if (section === 'home')               return <HomeView onNavigate={onNavigate} />
+function SectionContent({ section, onNavigate, userProfile, navState }) {
+  if (section === 'home') {
+    if (userProfile?.role === 'departmentHead') return <DHDashboardView />;
+    return <AdminDashboardView />;
+  }
   if (section === 'messages')            return <MessageView />
   if (section === 'productions')        return <ProductionsView />
   if (section === 'checkin')            return <CheckInView />
-  if (section === 'timeline')           return <TimelineView />
+  if (section === 'timeline')           return <TimelineView navState={navState} />;
   if (section === 'departments')        return <DepartmentsView onNavigate={onNavigate} />
+  if (section === 'places')              return <PlacesView />;
   if (section === 'invite-collaborator') return <InviteCollaborator />
-  if (section === 'invite-volunteer')    return <InviteVolunteer />
+  if (section === 'collaborator-list')   return <InviteCollaborator />
   if (section === 'settings')            return <SettingsView />
   if (section === 'people')              return <PeopleView onNavigate={onNavigate} />
   return <PlaceholderSection section={section} />
 }
 
 export default function DashboardShell() {
+  const { userProfile } = useAuth();
   const [activeSection, setActiveSection] = useState('home')
   const [sidebarOpen,   setSidebarOpen]   = useState(false)
+  const [navState, setNavState] = useState(null);
 
-  function handleNavigate(section) {
+  useEffect(() => {
+    const handler = (e) => {
+      handleNavigate(e.detail);
+    };
+    window.addEventListener('navigate', handler);
+    return () => window.removeEventListener('navigate', handler);
+  }, []);
+
+  function handleNavigate(section, state) {
     setActiveSection(section)
+    setNavState(state ?? null)
     setSidebarOpen(false) // always close mobile sidebar on navigation
   }
 
@@ -110,7 +127,7 @@ export default function DashboardShell() {
 
         {/* Scrollable content area */}
         <main className="flex-1 overflow-y-auto p-6">
-          <SectionContent section={activeSection} onNavigate={handleNavigate} />
+          <SectionContent section={activeSection} onNavigate={handleNavigate} userProfile={userProfile} navState={navState} />
         </main>
 
       </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { doc, collection, addDoc, updateDoc, writeBatch, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
+import { getDisplayName } from '../../utils/displayName';
 
 function formatDate(ts) {
   if (!ts) return '';
@@ -157,7 +158,7 @@ export default function TaskDetailPanel({ task, orgUsers, departments, onClose }
 
         <div>
           <p className="text-xs text-gray-400 mb-0.5">Assigned to</p>
-          <p className="text-gray-700">{assigneeUser?.email || 'Unassigned'}</p>
+          <p className="text-gray-700">{getDisplayName(assigneeUser) || 'Unassigned'}</p>
         </div>
 
         {task.contributorUids?.length > 0 && (
@@ -166,7 +167,7 @@ export default function TaskDetailPanel({ task, orgUsers, departments, onClose }
             <div className="space-y-0.5">
               {task.contributorUids.map(cuid => {
                 const u = orgUsers.find(u => u.uid === cuid);
-                return <p key={cuid} className="text-gray-600 text-xs">{u?.email || cuid}</p>;
+                return <p key={cuid} className="text-gray-600 text-xs">{getDisplayName(u) || cuid}</p>;
               })}
             </div>
           </div>
@@ -185,7 +186,7 @@ export default function TaskDetailPanel({ task, orgUsers, departments, onClose }
         <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
           <p className="text-xs font-medium text-amber-800 mb-2">Handoff request</p>
           <p className="text-xs text-amber-700 mb-3">
-            {orgUsers.find(u => u.uid === pendingHandoff.fromUid)?.email || 'Someone'} is handing this task to you.
+            {getDisplayName(orgUsers.find(u => u.uid === pendingHandoff.fromUid)) || 'Someone'} is handing this task to you.
           </p>
           <div className="flex gap-2">
             <button onClick={() => handleRespondToHandoff(pendingHandoff, true)} disabled={submitting}
@@ -215,7 +216,7 @@ export default function TaskDetailPanel({ task, orgUsers, departments, onClose }
                 className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 <option value="">Select someone...</option>
                 {handoffCandidates.map(u => (
-                  <option key={u.uid} value={u.uid}>{u.email}</option>
+                  <option key={u.uid} value={u.uid}>{getDisplayName(u)}</option>
                 ))}
               </select>
               <textarea value={handoffNote} onChange={e => setHandoffNote(e.target.value)}

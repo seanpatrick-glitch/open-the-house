@@ -49,6 +49,10 @@ service cloud.firestore {
         && userDoc().organizations[orgId].role == 'person';
     }
 
+    function isOrgCollaborator(orgId) {
+      return isMember(orgId) && userDoc().organizations[orgId].role == 'orgCollaborator';
+    }
+
     // Is the requesting user an active staff-toggled Person class member?
     function isActiveStaff(orgId) {
       return isSignedIn() && isMember(orgId)
@@ -82,6 +86,19 @@ service cloud.firestore {
       allow read:           if isMember(resource.data.orgId);
       allow create:         if isAdmin(request.resource.data.orgId);
       allow update, delete: if isAdmin(resource.data.orgId);
+
+      // Incoming Department Head: on invite acceptance, may write only
+      // departmentHeadUid and departmentHeadEmail. Scoped to an accepted
+      // pendingInvite for this exact org/department accepted by this uid.
+      // (Department Head invites use the department's own id as the
+      // pendingInvites doc id, so this lookup is deterministic.)
+      allow update: if isSignedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['departmentHeadUid', 'departmentHeadEmail'])
+        && exists(/databases/$(database)/documents/organizations/$(resource.data.orgId)/pendingInvites/$(departmentId))
+        && get(/databases/$(database)/documents/organizations/$(resource.data.orgId)/pendingInvites/$(departmentId)).data.role == 'departmentHead'
+        && get(/databases/$(database)/documents/organizations/$(resource.data.orgId)/pendingInvites/$(departmentId)).data.departmentId == departmentId
+        && get(/databases/$(database)/documents/organizations/$(resource.data.orgId)/pendingInvites/$(departmentId)).data.status == 'accepted'
+        && get(/databases/$(database)/documents/organizations/$(resource.data.orgId)/pendingInvites/$(departmentId)).data.acceptedByUid == request.auth.uid;
     }
 
     // ── timelines ─────────────────────────────────────────────────────────────
@@ -176,8 +193,12 @@ service cloud.firestore {
       allow read, write: if isAdminOrSecondary(orgId);
 
       // Department Head: read all, write only their assigned type
-      allow read:  if isDepartmentHead(orgId);
-      allow write: if isDepartmentHead(orgId)
+      allow read: if isDepartmentHead(orgId);
+
+      allow create: if isDepartmentHead(orgId)
+        && get(/databases/$(database)/documents/organizations/$(orgId)/personTypes/$(request.resource.data.typeId)).data.departmentHeadId == request.auth.uid;
+
+      allow update, delete: if isDepartmentHead(orgId)
         && get(/databases/$(database)/documents/organizations/$(orgId)/personTypes/$(resource.data.typeId)).data.departmentHeadId == request.auth.uid;
 
       // Applied, waitlisted, active Person class: read own record only
@@ -188,10 +209,16 @@ service cloud.firestore {
       allow create: if request.resource.data.status == 'applied'
         && request.resource.data.createdBy == 'self-signup';
 
-      // Account linking: allow update of accountUid and accountStatus only via token flow
+      // Account linking: allow update of accountUid, accountStatus, and displayName
+      // together via the token flow (join-time display name capture)
       allow update: if isSignedIn()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['accountUid', 'accountStatus'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['accountUid', 'accountStatus', 'displayName'])
         && resource.data.accountUid == null;
+
+      // Linked Person class: self-edit display name only, after account linking
+      allow update: if isActivePerson(orgId)
+        && resource.data.accountUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName']);
     }
 
     match /organizations/{orgId}/people/{personId}/internalData/{docId} {
@@ -282,6 +309,7 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/organizations/$(orgId)/checkinTokens/$(request.resource.data.tokenId))
         && get(/databases/$(database)/documents/organizations/$(orgId)/checkinTokens/$(request.resource.data.tokenId)).data.active == true
         && get(/databases/$(database)/documents/organizations/$(orgId)/checkinTokens/$(request.resource.data.tokenId)).data.assignmentId == request.resource.data.assignmentId
+        && request.time >= get(/databases/$(database)/documents/organizations/$(orgId)/checkinTokens/$(request.resource.data.tokenId)).data.validFrom
         && request.time < get(/databases/$(database)/documents/organizations/$(orgId)/checkinTokens/$(request.resource.data.tokenId)).data.validUntil;
 
       // Active Person class: read own check-in history
@@ -376,6 +404,29 @@ service cloud.firestore {
       allow read: if isMember(orgId);
       allow write: if isAdminOrSecondary(orgId);
       allow create: if isSignedIn() && request.auth.uid == memberId;
+
+      // Self-edit display name only, after initial creation
+      allow update: if isMember(orgId) && request.auth.uid == memberId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName']);
+    }
+
+    // ── flags ─────────────────────────────────────────────────────────────────────
+    match /organizations/{orgId}/flags/{flagId} {
+      allow read, write: if isAdminOrSecondary(orgId);
+
+      allow create: if isOrgCollaborator(orgId)
+        && request.resource.data.flaggedBy == request.auth.uid;
+      allow read: if isOrgCollaborator(orgId)
+        && resource.data.flaggedBy == request.auth.uid;
+
+      allow create: if isDepartmentHead(orgId)
+        && request.resource.data.flaggedBy == request.auth.uid;
+      allow read: if isDepartmentHead(orgId)
+        && (resource.data.targetUid == request.auth.uid
+            || resource.data.departmentId == null);
+
+      allow create: if isActivePerson(orgId)
+        && request.resource.data.flaggedBy == request.auth.uid;
     }
 
   }

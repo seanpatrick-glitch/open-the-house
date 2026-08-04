@@ -3,6 +3,7 @@ import {
   collection,
   doc,
   getDoc,
+  getDocs,
   setDoc,
   deleteDoc,
   query,
@@ -14,15 +15,29 @@ import {
 import { sendSignInLinkToEmail } from 'firebase/auth'
 import { db, auth } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
+import { getInviteActionCodeSettings } from '../../utils/invites'
 import toast from 'react-hot-toast'
 
-const HARDCODED_ROLE = 'collaborator'
+const ROLE_OPTIONS = [
+  { value: 'admin',                label: 'Admin' },
+  { value: 'secondaryAdmin',       label: 'Secondary Admin' },
+  { value: 'departmentHead',       label: 'Department Head' },
+  { value: 'orgCollaborator',      label: 'Org Collaborator' },
+  { value: 'venueManager',         label: 'Venue Manager' },
+  { value: 'productionCollaborator', label: 'Production Collaborator' },
+]
 
-function getActionCodeSettings(orgId, inviteId) {
-  return {
-    url: `${window.location.origin}/join?orgId=${orgId}&inviteId=${inviteId}`,
-    handleCodeInApp: true,
-  }
+const ROLE_LABELS = ROLE_OPTIONS.reduce((acc, r) => {
+  acc[r.value] = r.label
+  return acc
+}, {})
+
+function roleBadge(role) {
+  return (
+    <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700">
+      {ROLE_LABELS[role] || role}
+    </span>
+  )
 }
 
 function formatDate(timestamp) {
@@ -34,17 +49,20 @@ function formatDate(timestamp) {
 export default function InviteCollaborator() {
   const { userProfile } = useAuth()
 
-  const [email,       setEmail]       = useState('')
-  const [submitting,  setSubmitting]  = useState(false)
-  const [invites,     setInvites]     = useState([])
-  const [loadingList, setLoadingList] = useState(true)
+  const [email,        setEmail]        = useState('')
+  const [role,         setRole]         = useState('orgCollaborator')
+  const [departmentId, setDepartmentId] = useState('')
+  const [departments,  setDepartments]  = useState([])
+  const [deptsLoading, setDeptsLoading] = useState(true)
+  const [submitting,   setSubmitting]   = useState(false)
+  const [invites,      setInvites]      = useState([])
+  const [loadingList,  setLoadingList]  = useState(true)
 
   useEffect(() => {
     if (!userProfile?.orgId) return
 
     const q = query(
-      collection(db, 'organizations', userProfile.orgId, 'pendingInvites'),
-      where('role', '==', HARDCODED_ROLE)
+      collection(db, 'organizations', userProfile.orgId, 'pendingInvites')
     )
 
     const unsubscribe = onSnapshot(q, (snap) => {
@@ -61,11 +79,35 @@ export default function InviteCollaborator() {
     return unsubscribe
   }, [userProfile?.orgId])
 
+  // Departments for the Department Head picker (top-level collection, filtered by orgId)
+  useEffect(() => {
+    if (!userProfile?.orgId) return
+
+    async function fetchDepartments() {
+      try {
+        const snap = await getDocs(
+          query(collection(db, 'departments'), where('orgId', '==', userProfile.orgId))
+        )
+        setDepartments(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+      } catch (err) {
+        console.error('InviteCollaborator fetchDepartments:', err)
+      } finally {
+        setDeptsLoading(false)
+      }
+    }
+    fetchDepartments()
+  }, [userProfile?.orgId])
+
   async function handleCreateInvite(e) {
     e.preventDefault()
 
     if (!email.trim()) {
       toast.error('Please enter an email address.')
+      return
+    }
+
+    if (role === 'departmentHead' && !departmentId) {
+      toast.error('Please select a department.')
       return
     }
 
@@ -80,7 +122,10 @@ export default function InviteCollaborator() {
       }
       const orgName = orgSnap.data().name
 
-      const inviteId  = crypto.randomUUID()
+      // Department Head invites use the department's own id as the pendingInvites
+      // doc id, so firestore.rules can look it up deterministically when the
+      // incoming head writes departmentHeadUid back onto the department doc.
+      const inviteId  = role === 'departmentHead' ? departmentId : crypto.randomUUID()
       const now       = Timestamp.now()
       const expiresAt = Timestamp.fromMillis(now.toMillis() + 7 * 24 * 60 * 60 * 1000)
 
@@ -88,23 +133,26 @@ export default function InviteCollaborator() {
         doc(db, 'organizations', userProfile.orgId, 'pendingInvites', inviteId),
         {
           inviteId,
-          email:     email.trim(),
-          role:      HARDCODED_ROLE,
-          level:     'organization',
-          scopeId:   userProfile.orgId,
-          orgId:     userProfile.orgId,
+          email:        email.trim(),
+          role,
+          departmentId: role === 'departmentHead' ? departmentId : null,
+          level:        'organization',
+          scopeId:      userProfile.orgId,
+          orgId:        userProfile.orgId,
           orgName,
-          createdBy: userProfile.uid,
-          createdAt: serverTimestamp(),
+          createdBy:    userProfile.uid,
+          createdAt:    serverTimestamp(),
           expiresAt,
-          status:    'pending',
+          status:       'pending',
         }
       )
 
-      await sendSignInLinkToEmail(auth, email.trim(), getActionCodeSettings(userProfile.orgId, inviteId))
+      await sendSignInLinkToEmail(auth, email.trim(), getInviteActionCodeSettings(userProfile.orgId, inviteId))
       window.localStorage.setItem('emailForSignIn', email.trim())
 
       setEmail('')
+      setRole('orgCollaborator')
+      setDepartmentId('')
       toast.success('Invite sent to ' + email.trim())
     } catch (err) {
       toast.error('Could not send invite. Please try again.')
@@ -127,7 +175,7 @@ export default function InviteCollaborator() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Invite a collaborator</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Invite someone</h1>
         <p className="text-gray-500 text-sm mt-1">
           Send an email invite. The person will receive a secure sign-in link.
         </p>
@@ -145,10 +193,55 @@ export default function InviteCollaborator() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-base"
-              placeholder="collaborator@email.com"
+              placeholder="name@email.com"
               autoComplete="off"
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Role
+            </label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-base bg-white"
+            >
+              {ROLE_OPTIONS.map((r) => (
+                <option
+                  key={r.value}
+                  value={r.value}
+                  disabled={r.value === 'departmentHead' && !deptsLoading && departments.length === 0}
+                >
+                  {r.label}
+                </option>
+              ))}
+            </select>
+            {role === 'departmentHead' && !deptsLoading && departments.length === 0 && (
+              <p className="text-xs text-red-600 mt-1">
+                Create a department first before inviting a Department Head.
+              </p>
+            )}
+          </div>
+
+          {role === 'departmentHead' && departments.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Department
+              </label>
+              <select
+                value={departmentId}
+                onChange={(e) => setDepartmentId(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-base bg-white"
+              >
+                <option value="">Select a department…</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={submitting}
@@ -173,9 +266,7 @@ export default function InviteCollaborator() {
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-gray-900">{invite.email}</p>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700">
-                      Collaborator
-                    </span>
+                    {roleBadge(invite.role)}
                     <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
                       invite.status === 'accepted'
                         ? 'bg-gray-100 text-gray-500'

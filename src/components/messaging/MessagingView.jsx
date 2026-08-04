@@ -5,6 +5,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
+import { getDisplayName } from '../../utils/displayName';
 
 function formatTime(ts) {
   if (!ts) return '';
@@ -178,7 +179,7 @@ export default function MessagingView({ orgUsers }) {
               className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
               <option value="">Select recipient...</option>
               {orgUsers.filter(u => u.uid !== uid).map(u => (
-                <option key={u.uid} value={u.uid}>{u.email}</option>
+                <option key={u.uid} value={u.uid}>{getDisplayName(u)}</option>
               ))}
             </select>
             <input type="text" value={newSubject} onChange={e => setNewSubject(e.target.value)}
@@ -212,7 +213,7 @@ export default function MessagingView({ orgUsers }) {
                   className={`w-full text-left p-4 transition-colors ${selected ? 'bg-indigo-50' : 'hover:bg-gray-50'}`}>
                   <div className="flex items-start justify-between gap-2">
                     <p className={`text-xs truncate ${unread ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
-                      {other?.email || 'Unknown'}
+                      {getDisplayName(other) || 'Unknown'}
                     </p>
                     <p className="text-xs text-gray-400 flex-shrink-0">{formatTime(thread.lastMessageAt)}</p>
                   </div>
@@ -236,7 +237,7 @@ export default function MessagingView({ orgUsers }) {
           <div className="p-4 border-b border-gray-200">
             <p className="text-sm font-semibold text-gray-900">{selectedThread.subject}</p>
             <p className="text-xs text-gray-400">
-              {getOtherParticipant(selectedThread)?.email || 'Unknown'}
+              {getDisplayName(getOtherParticipant(selectedThread)) || 'Unknown'}
             </p>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
