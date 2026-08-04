@@ -193,8 +193,12 @@ service cloud.firestore {
       allow read, write: if isAdminOrSecondary(orgId);
 
       // Department Head: read all, write only their assigned type
-      allow read:  if isDepartmentHead(orgId);
-      allow write: if isDepartmentHead(orgId)
+      allow read: if isDepartmentHead(orgId);
+
+      allow create: if isDepartmentHead(orgId)
+        && get(/databases/$(database)/documents/organizations/$(orgId)/personTypes/$(request.resource.data.typeId)).data.departmentHeadId == request.auth.uid;
+
+      allow update, delete: if isDepartmentHead(orgId)
         && get(/databases/$(database)/documents/organizations/$(orgId)/personTypes/$(resource.data.typeId)).data.departmentHeadId == request.auth.uid;
 
       // Applied, waitlisted, active Person class: read own record only

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc, updateDoc, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { getDisplayName } from '../utils/displayName';
 import CreatePersonTypeForm from '../components/people/CreatePersonTypeForm';
 import CreateSignupTokenForm from '../components/people/CreateSignupTokenForm';
 
@@ -9,6 +10,8 @@ export default function SettingsView() {
   const { userProfile } = useAuth();
   const [departmentsEnabled, setDepartmentsEnabled] = useState(false);
   const [personTypes, setPersonTypes]               = useState([]);
+  const [departmentHeads, setDepartmentHeads]        = useState([]);
+  const [savingTypeHead, setSavingTypeHead]           = useState(null);
   const [loading, setLoading]                       = useState(true);
   const [saving, setSaving]                         = useState(false);
   const [showForm, setShowForm]                     = useState(false);
@@ -43,6 +46,20 @@ export default function SettingsView() {
       }
     };
 
+    // Load org members with the Department Head role, for the Person Types assignment control
+    const loadDepartmentHeads = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'organizations', orgId, 'members'));
+        setDepartmentHeads(
+          snap.docs
+            .map(d => ({ uid: d.id, ...d.data() }))
+            .filter(m => m.role === 'departmentHead')
+        );
+      } catch (err) {
+        console.error('Error loading department heads:', err);
+      }
+    };
+
     // Load all productions for active production selector
     const loadProductions = async () => {
       try {
@@ -69,6 +86,7 @@ export default function SettingsView() {
 
     fetchSettings();
     loadProductions();
+    loadDepartmentHeads();
 
     const q = query(
       collection(db, 'organizations', orgId, 'personTypes'),
@@ -114,6 +132,19 @@ export default function SettingsView() {
       console.error('Error setting active production:', err);
     } finally {
       setSavingProd(false);
+    }
+  }
+
+  async function handleAssignTypeHead(typeId, headUid) {
+    setSavingTypeHead(typeId);
+    try {
+      await updateDoc(doc(db, 'organizations', orgId, 'personTypes', typeId), {
+        departmentHeadId: headUid || null,
+      });
+    } catch (err) {
+      console.error('Error assigning person type department head:', err);
+    } finally {
+      setSavingTypeHead(null);
     }
   }
 
@@ -229,6 +260,26 @@ export default function SettingsView() {
                         ))
                       }
                     </div>
+                  </div>
+                  <div className="flex-shrink-0 text-right">
+                    <p className="text-xs font-medium text-gray-500 mb-1">Department Head</p>
+                    {departmentHeads.length === 0 ? (
+                      <p className="text-xs text-gray-400 max-w-[180px]">
+                        Invite a Department Head first before assigning one here.
+                      </p>
+                    ) : (
+                      <select
+                        value={type.departmentHeadId || ''}
+                        onChange={e => handleAssignTypeHead(type.id, e.target.value)}
+                        disabled={savingTypeHead === type.id}
+                        className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                      >
+                        <option value="">Unassigned</option>
+                        {departmentHeads.map(dh => (
+                          <option key={dh.uid} value={dh.uid}>{getDisplayName(dh)}</option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                 </div>
               ))}

@@ -15,11 +15,13 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
   const { userProfile } = useAuth();
   const { orgId, uid } = userProfile;
 
+  const isDepartmentHead = userProfile.role === 'departmentHead';
+
   const [title, setTitle]               = useState('');
   const [description, setDescription]   = useState('');
   const [dueDate, setDueDate]           = useState('');
   const [startDate, setStartDate]       = useState('');
-  const [level, setLevel]               = useState(TASK_LEVELS.ORG);
+  const [level, setLevel]               = useState(isDepartmentHead ? TASK_LEVELS.DEPARTMENT : TASK_LEVELS.ORG);
   const [phase, setPhase]               = useState(TASK_PHASES.PLANNING);
   const [departmentId, setDepartmentId] = useState('');
   const [visibleToAll, setVisibleToAll] = useState(false);
@@ -139,18 +141,24 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
         <div className="flex items-start justify-between gap-6">
           <div>
             <p className="text-sm font-medium text-gray-700">Task Level</p>
-            <p className="text-xs text-gray-400 mt-0.5">Org tasks appear in the master timeline. Department tasks are owned by a department.</p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {isDepartmentHead
+                ? 'Department tasks are owned by your department.'
+                : 'Org tasks appear in the master timeline. Department tasks are owned by a department.'}
+            </p>
           </div>
-          <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1 flex-shrink-0">
-            <button type="button" onClick={() => setLevel(TASK_LEVELS.ORG)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${level === TASK_LEVELS.ORG ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-              Org
-            </button>
-            <button type="button" onClick={() => setLevel(TASK_LEVELS.DEPARTMENT)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${level === TASK_LEVELS.DEPARTMENT ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-              Department
-            </button>
-          </div>
+          {!isDepartmentHead && (
+            <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1 flex-shrink-0">
+              <button type="button" onClick={() => setLevel(TASK_LEVELS.ORG)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${level === TASK_LEVELS.ORG ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                Org
+              </button>
+              <button type="button" onClick={() => setLevel(TASK_LEVELS.DEPARTMENT)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${level === TASK_LEVELS.DEPARTMENT ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                Department
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Phase */}
