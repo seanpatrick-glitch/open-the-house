@@ -270,6 +270,11 @@ function DHPlanningState({ tasks }) {
             Add a department task
           </button>
           <button
+            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'people' }))}
+            className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-300 transition-colors">
+            Add people
+          </button>
+          <button
             onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'messages' }))}
             className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-300 transition-colors">
             Message the department

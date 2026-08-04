@@ -56,6 +56,7 @@ function SectionContent({ section, onNavigate, userProfile, navState }) {
   if (section === 'departments')        return <DepartmentsView onNavigate={onNavigate} />
   if (section === 'places')              return <PlacesView />;
   if (section === 'invite-collaborator') return <InviteCollaborator />
+  if (section === 'collaborator-list')   return <InviteCollaborator />
   if (section === 'invite-volunteer')    return <InviteVolunteer />
   if (section === 'settings')            return <SettingsView />
   if (section === 'people')              return <PeopleView onNavigate={onNavigate} />
