@@ -200,9 +200,9 @@ export default function DHDashboardView() {
   const deptName   = department?.name || 'your department';
 
   const headers = {
-    [DASHBOARD_STATES.PLANNING]:        `${daysToOpen !== null ? `${daysToOpen} days` : 'Planning ahead'} — ${deptName}`,
+    [DASHBOARD_STATES.PLANNING]:        `${daysToOpen !== null ? `${daysToOpen} days` : 'Planning ahead'} to ${deptName}`,
     [DASHBOARD_STATES.FINAL_COUNTDOWN]: `${daysToOpen !== null ? `${daysToOpen} day${daysToOpen === 1 ? '' : 's'}` : 'Almost there'} to ${prodName}`,
-    [DASHBOARD_STATES.LIVE]:            `Tonight — ${prodName}`,
+    [DASHBOARD_STATES.LIVE]:            `Tonight: ${prodName}`,
     [DASHBOARD_STATES.POSTMORTEM]:      `Wrapping ${prodName}`,
   };
 

@@ -198,7 +198,7 @@ export default function PersonProfileView({ personId, onBack }) {
           {universalKeys.map(key => (
             <div key={key} className="flex flex-col sm:flex-row gap-1 sm:gap-4">
               <span className="text-sm text-gray-400 sm:w-36 flex-shrink-0">{universalLabels[key]}</span>
-              <span className="text-sm text-gray-900">{person.fieldValues?.[key] || <span className="text-gray-300">—</span>}</span>
+              <span className="text-sm text-gray-900">{person.fieldValues?.[key] || <span className="text-gray-300">Not set</span>}</span>
             </div>
           ))}
         </div>
@@ -212,7 +212,7 @@ export default function PersonProfileView({ personId, onBack }) {
             {activeToggleable.map(([key]) => (
               <div key={key} className="flex flex-col sm:flex-row gap-1 sm:gap-4">
                 <span className="text-sm text-gray-400 sm:w-36 flex-shrink-0">{TOGGLEABLE_LABELS[key] || key}</span>
-                <span className="text-sm text-gray-900">{person.fieldValues?.[key] || <span className="text-gray-300">—</span>}</span>
+                <span className="text-sm text-gray-900">{person.fieldValues?.[key] || <span className="text-gray-300">Not set</span>}</span>
               </div>
             ))}
           </div>
@@ -230,7 +230,7 @@ export default function PersonProfileView({ personId, onBack }) {
                 <div key={field.fieldId} className="flex flex-col sm:flex-row gap-1 sm:gap-4">
                   <span className="text-sm text-gray-400 sm:w-36 flex-shrink-0">{field.label}</span>
                   <span className="text-sm text-gray-900">
-                    {Array.isArray(val) ? val.join(', ') : val || <span className="text-gray-300">—</span>}
+                    {Array.isArray(val) ? val.join(', ') : val || <span className="text-gray-300">Not set</span>}
                   </span>
                 </div>
               );

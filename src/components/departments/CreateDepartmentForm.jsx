@@ -180,7 +180,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
             Department Head (optional)
           </label>
           {usersLoading ? (
-            <p className="text-sm text-gray-400">Loading users…</p>
+            <p className="text-sm text-gray-400">Loading members…</p>
           ) : orgUsers.length === 0 ? (
             <p className="text-sm text-gray-400">No existing members to assign yet.</p>
           ) : (
@@ -190,7 +190,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
               disabled={!!headEmail.trim()}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-50"
             >
-              <option value="">— Assign later —</option>
+              <option value="">Assign later</option>
               {orgUsers.map(u => (
                 <option key={u.uid} value={u.uid}>{getDisplayName(u)}</option>
               ))}

@@ -204,7 +204,7 @@ export default function TemplatesPanel({ departments, onClose, onTasksCreated })
                             {offsetLabel(task.offsetDays, selectedTemplate.anchorLabel)}
                           </td>
                           <td className="px-4 py-2.5 text-sm text-gray-700 whitespace-nowrap">
-                            {due ? formatPreviewDate(due) : '—'}
+                            {due ? formatPreviewDate(due) : 'No date'}
                           </td>
                         </tr>
                       );

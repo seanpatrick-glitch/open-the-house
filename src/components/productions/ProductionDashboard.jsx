@@ -43,7 +43,7 @@ const MODULE_LABELS = {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatDate(ts) {
-  if (!ts) return '—'
+  if (!ts) return 'No date'
   const date = ts.toDate ? ts.toDate() : new Date(ts)
   return date.toLocaleDateString('en-US', {
     month: 'long',
@@ -58,7 +58,7 @@ export default function ProductionDashboard({ production, places, onBack }) {
   const { userProfile } = useAuth()
 
   const placeMap  = Object.fromEntries(places.map(p => [p.id, p.name]))
-  const placeName = placeMap[production.placeId] ?? '—'
+  const placeName = placeMap[production.placeId] ?? 'No place set'
 
   // Local copy of activeModules so the UI updates immediately on toggle
   // without waiting for the Firestore listener to propagate back through
@@ -139,7 +139,7 @@ export default function ProductionDashboard({ production, places, onBack }) {
         </span>
         <span className="flex items-center gap-1.5">
           <span>📅</span>
-          <span>{formatDate(production.startDate)} – {formatDate(production.endDate)}</span>
+          <span>{formatDate(production.startDate)} to {formatDate(production.endDate)}</span>
         </span>
       </div>
 

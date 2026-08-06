@@ -35,7 +35,7 @@ const MODULE_LABELS = {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatDate(ts) {
-  if (!ts) return '—'
+  if (!ts) return 'No date'
   const date = ts.toDate ? ts.toDate() : new Date(ts)
   return date.toLocaleDateString('en-US', {
     month: 'long',
@@ -83,7 +83,7 @@ function ProductionCard({ prod, placeName, onOpen }) {
             </span>
             <span className="flex items-center gap-1">
               <span>📅</span>
-              <span>{formatDate(prod.startDate)} – {formatDate(prod.endDate)}</span>
+              <span>{formatDate(prod.startDate)} to {formatDate(prod.endDate)}</span>
             </span>
           </div>
 
@@ -274,7 +274,7 @@ export default function ProductionsView() {
             <ProductionCard
               key={prod.id}
               prod={prod}
-              placeName={placeMap[prod.placeId] ?? '—'}
+              placeName={placeMap[prod.placeId] ?? 'No place set'}
               onOpen={() => setSelectedProduction(prod)}
             />
           ))}

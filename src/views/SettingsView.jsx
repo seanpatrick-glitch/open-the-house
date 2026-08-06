@@ -310,7 +310,7 @@ export default function SettingsView() {
             <option value="">No active production</option>
             {productions.map(p => (
               <option key={`${p.placeId}/${p.id}`} value={`${p.placeId}/${p.id}`}>
-                {p.name} — {p.placeName}
+                {p.name} at {p.placeName}
               </option>
             ))}
           </select>

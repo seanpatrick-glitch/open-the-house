@@ -213,7 +213,7 @@ export default function JoinPage() {
 
           <div className="space-y-1 mb-4">
             <label className="block text-sm font-medium text-gray-700">
-              Display name (optional — defaults to your name)
+              Display name (optional, defaults to your name)
             </label>
             <input
               type="text"

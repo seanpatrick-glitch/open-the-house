@@ -90,7 +90,7 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
           <textarea
             value={description}
             onChange={e => setDescription(e.target.value)}
-            placeholder="Optional — what is this type of person?"
+            placeholder="Optional. What is this type of person?"
             rows={2}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
           />
