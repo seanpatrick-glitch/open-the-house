@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import { collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -21,6 +21,27 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
   const [saving, setSaving]           = useState(false);
   const [error, setError]             = useState('');
 
+  const [departmentsEnabled, setDepartmentsEnabled] = useState(false);
+  const [departments, setDepartments]               = useState([]);
+  const [departmentId, setDepartmentId]              = useState('');
+
+  useEffect(() => {
+    if (!orgId) return;
+    (async () => {
+      try {
+        const orgSnap = await getDoc(doc(db, 'organizations', orgId));
+        const enabled = orgSnap.exists() ? (orgSnap.data().departmentsEnabled ?? false) : false;
+        setDepartmentsEnabled(enabled);
+        if (enabled) {
+          const snap = await getDocs(query(collection(db, 'departments'), where('orgId', '==', orgId)));
+          setDepartments(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        }
+      } catch (err) {
+        console.error('CreatePersonTypeForm loadDepartments error:', err);
+      }
+    })();
+  }, [orgId]);
+
   function toggleField(key) {
     setToggledFields(prev => ({ ...prev, [key]: !prev[key] }));
   }
@@ -28,6 +49,10 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
   async function handleSave() {
     if (!label.trim()) {
       setError('A label is required.');
+      return;
+    }
+    if (departmentsEnabled && !departmentId) {
+      setError('A department is required.');
       return;
     }
     setSaving(true);
@@ -45,7 +70,7 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
           description:     description.trim(),
           orgId,
           departmentHeadId: null,
-          departmentId:    null,
+          departmentId:    departmentsEnabled ? departmentId : null,
           createdBy:       uid,
           createdAt:       serverTimestamp(),
           active:          true,
@@ -84,6 +109,24 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
+
+        {departmentsEnabled && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Department <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={departmentId}
+              onChange={e => setDepartmentId(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">Select a department</option>
+              {departments.map(dept => (
+                <option key={dept.id} value={dept.id}>{dept.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
@@ -139,7 +182,7 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
       <div className="flex items-center gap-3 mt-6">
         <button
           onClick={handleSave}
-          disabled={saving || !label.trim()}
+          disabled={saving || !label.trim() || (departmentsEnabled && !departmentId)}
           className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors"
         >
           {saving ? 'Saving...' : 'Save Person Type'}
