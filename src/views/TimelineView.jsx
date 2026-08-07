@@ -44,6 +44,7 @@ export default function TimelineView({ navState }) {
   const [departmentIdFilter, setDepartmentIdFilter] = useState(null);
   const [orgUsers, setOrgUsers] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [activeProdId, setActiveProdId] = useState(null);
 
   const orgId = userProfile?.orgId;
 
@@ -62,6 +63,7 @@ export default function TimelineView({ navState }) {
 
     const loadDepartments = async () => {
       const orgSnap = await getDoc(doc(db, 'organizations', orgId));
+      setActiveProdId(orgSnap.exists() ? (orgSnap.data().activeProdId ?? null) : null);
       if (!orgSnap.exists() || !orgSnap.data().departmentsEnabled) {
         setDepartments({});
         return;
@@ -231,6 +233,7 @@ export default function TimelineView({ navState }) {
           <CreateTaskForm
             onSuccess={() => setShowCreateTask(false)}
             onCancel={() => setShowCreateTask(false)}
+            activeProdId={activeProdId}
           />
         </div>
       )}

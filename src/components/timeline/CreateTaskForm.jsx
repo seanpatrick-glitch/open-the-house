@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, addDoc, getDocs, query, where, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, collectionGroup, addDoc, getDocs, query, where, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { TASK_LEVELS, TASK_PHASES } from '../../models/timeline';
@@ -11,11 +11,15 @@ function parseLocalDate(dateStr) {
   return Timestamp.fromDate(new Date(year, month - 1, day));
 }
 
-export default function CreateTaskForm({ onSuccess, onCancel }) {
+export default function CreateTaskForm({ onSuccess, onCancel, activeProdId }) {
   const { userProfile } = useAuth();
   const { orgId, uid } = userProfile;
 
   const isDepartmentHead = userProfile.role === 'departmentHead';
+
+  // activeProdId is a composite "{placeId}/{productionId}" string; only the
+  // productionId half is used to match against the flat productions list.
+  const defaultProductionId = activeProdId ? activeProdId.split('/')[1] : null;
 
   const [title, setTitle]               = useState('');
   const [description, setDescription]   = useState('');
@@ -29,6 +33,9 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
   const [contributorUids, setContributorUids]       = useState([]);
   const [departments, setDepartments]   = useState([]);
   const [orgUsers, setOrgUsers]         = useState([]);
+  const [productions, setProductions]   = useState([]);
+  const [productionId, setProductionId] = useState(defaultProductionId);
+  const [productionName, setProductionName] = useState(null);
   const [saving, setSaving]             = useState(false);
   const [error, setError]               = useState('');
 
@@ -46,6 +53,21 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
           .map(d => ({ uid: d.id, ...d.data() }));
         setOrgUsers(filtered);
       });
+
+    // Load productions for the production dropdown. Productions store their
+    // own orgId, so this is scoped directly without enumerating places first.
+    getDocs(query(
+      collectionGroup(db, 'productions'),
+      where('orgId', '==', orgId),
+      orderBy('openDate', 'asc')
+    )).then(snap => {
+      const loaded = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setProductions(loaded);
+      if (defaultProductionId) {
+        const match = loaded.find(p => p.id === defaultProductionId);
+        if (match) setProductionName(match.name || null);
+      }
+    });
   }, [orgId]);
 
   function toggleContributor(userUid) {
@@ -86,7 +108,8 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
         contributorUids,
         phase,
         assignedTo:         primaryAssigneeUid || null,
-        production:         null,
+        production:         productionId || null,
+        productionName:     productionId ? (productionName || null) : null,
         visibleToDepartments: [],
         dependsOn:          [],
         notifyOnComplete:   [],
@@ -182,6 +205,26 @@ export default function CreateTaskForm({ onSuccess, onCancel }) {
             </button>
           </div>
         </div>
+
+        {productions.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Production (optional)</label>
+            <select
+              value={productionId || ''}
+              onChange={e => {
+                const id = e.target.value || null;
+                setProductionId(id);
+                const match = productions.find(p => p.id === id);
+                setProductionName(match?.name || null);
+              }}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">No production linked</option>
+              {productions.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {level === TASK_LEVELS.DEPARTMENT && departments.length > 0 && (
           <div>

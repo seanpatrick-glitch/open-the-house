@@ -65,6 +65,7 @@ COLLECTION: tasks/{taskId}
   contributorUids: string[],        // array of uids, default []
   department: string | null,            // departmentId
   production: string | null,            // productionId
+  productionName: string | null,        // denormalized production name, set alongside production
   visibleToAll: boolean,                // default false
   visibleToDepartments: string[],       // array of departmentIds
   dependsOn: string[],                  // array of taskIds
