@@ -65,6 +65,21 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
         createdBy:           uid,
       })
 
+      // Assigning an existing member directly promotes them to Department Head —
+      // update their member doc and their canonical role (users/{uid}, what
+      // AuthRouter and firestore.rules actually key routing/permissions off of)
+      // in the same batch, so the assignment takes effect immediately rather
+      // than leaving the member doc looking right while routing stays broken.
+      if (!trimmedEmail && departmentHeadUid) {
+        batch.update(doc(db, 'organizations', orgId, 'members', departmentHeadUid), {
+          role:         'departmentHead',
+          departmentId: deptRef.id,
+        })
+        batch.update(doc(db, 'users', departmentHeadUid), {
+          [`organizations.${orgId}.role`]: 'departmentHead',
+        })
+      }
+
       if (trimmedEmail) {
         const orgSnap = await getDoc(doc(db, 'organizations', orgId))
         const orgName = orgSnap.exists() ? orgSnap.data().name : ''
