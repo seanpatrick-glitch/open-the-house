@@ -195,6 +195,11 @@ service cloud.firestore {
       // Department Head: read all, write only their assigned type
       allow read: if isDepartmentHead(orgId);
 
+      // Any org member: read access (needed for CollaboratorView's active-people
+      // count and similar org-wide read-only views; matches the broad isMember()
+      // grant already used for organizations/{orgId} and .../members).
+      allow read: if isMember(orgId);
+
       allow create: if isDepartmentHead(orgId)
         && get(/databases/$(database)/documents/organizations/$(orgId)/personTypes/$(request.resource.data.typeId)).data.departmentHeadId == request.auth.uid;
 
