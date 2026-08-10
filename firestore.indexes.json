@@ -103,14 +103,6 @@
       "queryScope": "COLLECTION_GROUP",
       "fields": [
         { "fieldPath": "participantB", "order": "ASCENDING" },
-        { "fieldPath": "lastMessageAt", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "threads",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "participantB", "order": "ASCENDING" },
         { "fieldPath": "lastMessageAt", "order": "DESCENDING" }
       ]
     }
