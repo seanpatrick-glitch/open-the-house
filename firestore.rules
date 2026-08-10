@@ -449,6 +449,12 @@ service cloud.firestore {
 
       allow create: if isActivePerson(orgId)
         && request.resource.data.flaggedBy == request.auth.uid;
+
+      // Any org member: read access, matching the isMember() grant already
+      // used for organizations/{orgId}/people. CollaboratorView's
+      // admin-elevated flags query isn't scoped to flaggedBy, so the
+      // per-role grants above can't satisfy it on their own.
+      allow read: if isMember(orgId);
     }
 
   }
