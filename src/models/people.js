@@ -76,7 +76,7 @@ COLLECTION: organizations/{orgId}/people/{personId}
   approvedAt: Timestamp | null,
   assignments: [                  // array of objects
     {
-      type: 'production' | 'venue',
+      type: 'production' | 'place',
       refId: string,
       label: string,              // denormalized name
       assignedBy: string,         // uid

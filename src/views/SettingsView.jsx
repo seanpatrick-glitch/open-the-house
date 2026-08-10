@@ -12,7 +12,9 @@ export default function SettingsView() {
   const [departmentsEnabled, setDepartmentsEnabled] = useState(false);
   const [personTypes, setPersonTypes]               = useState([]);
   const [departmentHeads, setDepartmentHeads]        = useState([]);
+  const [departments, setDepartments]                 = useState([]);
   const [savingTypeHead, setSavingTypeHead]           = useState(null);
+  const [savingTypeDept, setSavingTypeDept]           = useState(null);
   const [loading, setLoading]                       = useState(true);
   const [saving, setSaving]                         = useState(false);
   const [showForm, setShowForm]                     = useState(false);
@@ -63,6 +65,17 @@ export default function SettingsView() {
       }
     };
 
+    // Load org departments, for the Person Types department assignment control
+    const loadDepartments = async () => {
+      try {
+        const snap = await getDocs(query(collection(db, 'departments'), where('orgId', '==', orgId)));
+        setDepartments(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (err) {
+        console.error('Error loading departments:', err);
+        toast.error('Could not load departments.');
+      }
+    };
+
     // Load all productions for active production selector
     const loadProductions = async () => {
       try {
@@ -91,6 +104,7 @@ export default function SettingsView() {
     fetchSettings();
     loadProductions();
     loadDepartmentHeads();
+    loadDepartments();
 
     const q = query(
       collection(db, 'organizations', orgId, 'personTypes'),
@@ -152,6 +166,20 @@ export default function SettingsView() {
       toast.error('Could not assign department head. Please try again.');
     } finally {
       setSavingTypeHead(null);
+    }
+  }
+
+  async function handleAssignTypeDepartment(typeId, deptId) {
+    setSavingTypeDept(typeId);
+    try {
+      await updateDoc(doc(db, 'organizations', orgId, 'personTypes', typeId), {
+        departmentId: deptId || null,
+      });
+    } catch (err) {
+      console.error('Error assigning person type department:', err);
+      toast.error('Could not assign department. Please try again.');
+    } finally {
+      setSavingTypeDept(null);
     }
   }
 
@@ -269,25 +297,49 @@ export default function SettingsView() {
                       }
                     </div>
                   </div>
-                  <div className="flex-shrink-0 text-right">
-                    <p className="text-xs font-medium text-gray-500 mb-1">Department Head</p>
-                    {departmentHeads.length === 0 ? (
-                      <p className="text-xs text-gray-400 max-w-[180px]">
-                        Invite a Department Head first before assigning one here.
-                      </p>
-                    ) : (
-                      <select
-                        value={type.departmentHeadId || ''}
-                        onChange={e => handleAssignTypeHead(type.id, e.target.value)}
-                        disabled={savingTypeHead === type.id}
-                        className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-                      >
-                        <option value="">Unassigned</option>
-                        {departmentHeads.map(dh => (
-                          <option key={dh.uid} value={dh.uid}>{getDisplayName(dh)}</option>
-                        ))}
-                      </select>
+                  <div className="flex-shrink-0 text-right space-y-2">
+                    {departmentsEnabled && (
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 mb-1">Department</p>
+                        {departments.length === 0 ? (
+                          <p className="text-xs text-gray-400 max-w-[180px]">
+                            Add a department first before assigning one here.
+                          </p>
+                        ) : (
+                          <select
+                            value={type.departmentId || ''}
+                            onChange={e => handleAssignTypeDepartment(type.id, e.target.value)}
+                            disabled={savingTypeDept === type.id}
+                            className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                          >
+                            <option value="">Unassigned</option>
+                            {departments.map(dept => (
+                              <option key={dept.id} value={dept.id}>{dept.name}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
                     )}
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1">Department Head</p>
+                      {departmentHeads.length === 0 ? (
+                        <p className="text-xs text-gray-400 max-w-[180px]">
+                          Invite a Department Head first before assigning one here.
+                        </p>
+                      ) : (
+                        <select
+                          value={type.departmentHeadId || ''}
+                          onChange={e => handleAssignTypeHead(type.id, e.target.value)}
+                          disabled={savingTypeHead === type.id}
+                          className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                        >
+                          <option value="">Unassigned</option>
+                          {departmentHeads.map(dh => (
+                            <option key={dh.uid} value={dh.uid}>{getDisplayName(dh)}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -310,7 +362,7 @@ export default function SettingsView() {
             <option value="">No active production</option>
             {productions.map(p => (
               <option key={`${p.placeId}/${p.id}`} value={`${p.placeId}/${p.id}`}>
-                {p.name} — {p.placeName}
+                {p.name} at {p.placeName}
               </option>
             ))}
           </select>

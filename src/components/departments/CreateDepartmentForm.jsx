@@ -21,6 +21,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
   const [loading,           setLoading]           = useState(false)
   const [error,             setError]             = useState('')
   const [success,           setSuccess]           = useState(false)
+  const [showHeadConfirm,   setShowHeadConfirm]   = useState(false)
 
   // Fetch all users that belong to this org (client-side filter on organizations map)
   useEffect(() => {
@@ -40,9 +41,23 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
     fetchUsers()
   }, [orgId])
 
-  async function handleSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault()
     if (!name.trim()) return
+
+    // Assigning an existing member directly is a real promotion, not just a
+    // label — confirm before it fires rather than firing on the same click
+    // that also creates the department.
+    if (!headEmail.trim() && departmentHeadUid) {
+      setShowHeadConfirm(true)
+      return
+    }
+
+    createDepartment()
+  }
+
+  async function createDepartment() {
+    setShowHeadConfirm(false)
     setLoading(true)
     setError('')
 
@@ -64,6 +79,21 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
         createdAt:           serverTimestamp(),
         createdBy:           uid,
       })
+
+      // Assigning an existing member directly promotes them to Department Head —
+      // update their member doc and their canonical role (users/{uid}, what
+      // AuthRouter and firestore.rules actually key routing/permissions off of)
+      // in the same batch, so the assignment takes effect immediately rather
+      // than leaving the member doc looking right while routing stays broken.
+      if (!trimmedEmail && departmentHeadUid) {
+        batch.update(doc(db, 'organizations', orgId, 'members', departmentHeadUid), {
+          role:         'departmentHead',
+          departmentId: deptRef.id,
+        })
+        batch.update(doc(db, 'users', departmentHeadUid), {
+          [`organizations.${orgId}.role`]: 'departmentHead',
+        })
+      }
 
       if (trimmedEmail) {
         const orgSnap = await getDoc(doc(db, 'organizations', orgId))
@@ -116,9 +146,38 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
     }
   }
 
+  const selectedHead = orgUsers.find(u => u.uid === departmentHeadUid)
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 max-w-lg">
       <h2 className="text-base font-semibold text-gray-900 mb-5">Create Department</h2>
+
+      {showHeadConfirm && selectedHead && (
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+            <p className="text-sm text-gray-900 mb-6">
+              Make {getDisplayName(selectedHead)} the Department Head for {name.trim()}? This changes their access and dashboard.
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={createDepartment}
+                disabled={loading}
+                className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+              >
+                Confirm
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowHeadConfirm(false)}
+                className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {success && (
         <div className="mb-4 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
@@ -180,7 +239,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
             Department Head (optional)
           </label>
           {usersLoading ? (
-            <p className="text-sm text-gray-400">Loading users…</p>
+            <p className="text-sm text-gray-400">Loading members…</p>
           ) : orgUsers.length === 0 ? (
             <p className="text-sm text-gray-400">No existing members to assign yet.</p>
           ) : (
@@ -190,7 +249,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
               disabled={!!headEmail.trim()}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-50"
             >
-              <option value="">— Assign later —</option>
+              <option value="">Assign later</option>
               {orgUsers.map(u => (
                 <option key={u.uid} value={u.uid}>{getDisplayName(u)}</option>
               ))}

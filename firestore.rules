@@ -68,11 +68,28 @@ service cloud.firestore {
     // ── users ─────────────────────────────────────────────────────────────────
     // Any signed-in user can read any user doc (required for org member lookups
     // in CreateDepartmentForm and similar screens).
-    // A user may write only their own doc; admins may write any user doc.
+    // A user may write only their own doc.
     match /users/{userId} {
       allow read:   if isSignedIn();
       allow create: if isSignedIn() && uid() == userId;
       allow update: if isSignedIn() && uid() == userId;
+
+      // Admin/secondaryAdmin department-head promotion: an org admin may set
+      // organizations[orgId].role to 'departmentHead' on another member's own
+      // users doc — nothing else. Scoped to exactly that one field and that
+      // one value so this can't be used to grant any other role or touch any
+      // other field. Needed because CreateDepartmentForm's "assign an existing
+      // member as DH" dropdown promotes someone other than the requester,
+      // which the self-write rule above can't cover.
+      allow update: if isSignedIn()
+        && resource.data.organizations.keys().size() == 1
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['organizations'])
+        && request.resource.data.organizations.keys() == resource.data.organizations.keys()
+        && request.resource.data.organizations[resource.data.organizations.keys()[0]]
+             .diff(resource.data.organizations[resource.data.organizations.keys()[0]])
+             .affectedKeys().hasOnly(['role'])
+        && request.resource.data.organizations[resource.data.organizations.keys()[0]].role == 'departmentHead'
+        && isAdminOrSecondary(resource.data.organizations.keys()[0]);
     }
 
     // ── organizations ─────────────────────────────────────────────────────────
@@ -194,6 +211,11 @@ service cloud.firestore {
 
       // Department Head: read all, write only their assigned type
       allow read: if isDepartmentHead(orgId);
+
+      // Any org member: read access (needed for CollaboratorView's active-people
+      // count and similar org-wide read-only views; matches the broad isMember()
+      // grant already used for organizations/{orgId} and .../members).
+      allow read: if isMember(orgId);
 
       allow create: if isDepartmentHead(orgId)
         && get(/databases/$(database)/documents/organizations/$(orgId)/personTypes/$(request.resource.data.typeId)).data.departmentHeadId == request.auth.uid;
@@ -427,6 +449,12 @@ service cloud.firestore {
 
       allow create: if isActivePerson(orgId)
         && request.resource.data.flaggedBy == request.auth.uid;
+
+      // Any org member: read access, matching the isMember() grant already
+      // used for organizations/{orgId}/people. CollaboratorView's
+      // admin-elevated flags query isn't scoped to flaggedBy, so the
+      // per-role grants above can't satisfy it on their own.
+      allow read: if isMember(orgId);
     }
 
   }

@@ -12,7 +12,7 @@ function formatDate(ts) {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-export default function VolunteerView() {
+export default function PersonView() {
   const { userProfile, logout } = useAuth();
   const uid   = userProfile?.uid;
   const orgId = userProfile?.orgId;
@@ -72,7 +72,7 @@ export default function VolunteerView() {
           setAssignments(record.assignments || []);
         }
       } catch (err) {
-        console.error('VolunteerView loadPersonRecord error:', err);
+        console.error('PersonView loadPersonRecord error:', err);
         toast.error('Could not load your profile. Please refresh and try again.');
       }
     };
@@ -281,7 +281,7 @@ export default function VolunteerView() {
             <h1 className="text-base font-semibold text-gray-900">Places People!</h1>
             {nextTask ? (
               <p className="text-xs text-gray-500 mt-0.5">
-                Next up: {nextTask.title} — {formatDate(nextTask.dueDate)}
+                Next up: {nextTask.title}, due {formatDate(nextTask.dueDate)}
               </p>
             ) : (
               <p className="text-xs text-gray-500 mt-0.5">No tasks due</p>

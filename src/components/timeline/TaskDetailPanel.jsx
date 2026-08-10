@@ -242,7 +242,7 @@ export default function TaskDetailPanel({ task, orgUsers, departments, onClose }
 
       {task.handoffPending && !pendingHandoff && (
         <div className="mt-4 border-t border-gray-100 pt-4">
-          <p className="text-xs text-amber-600">Handoff pending — waiting for response.</p>
+          <p className="text-xs text-amber-600">Handoff pending. Waiting for response.</p>
         </div>
       )}
     </div>

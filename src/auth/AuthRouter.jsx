@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import AdminView from '../views/AdminView'
 import CollaboratorView from '../views/CollaboratorView'
-import VolunteerView from '../views/VolunteerView'
+import PersonView from '../views/PersonView'
 
 export default function AuthRouter() {
   const { userProfile, loading } = useAuth()
@@ -27,8 +27,8 @@ export default function AuthRouter() {
   if (userProfile.role === 'collaborator')      return <CollaboratorView />
   if (userProfile.role === 'venueManager')      return <AdminView />
   if (userProfile.role === 'productionCollaborator') return <CollaboratorView />
-  if (userProfile.role === 'volunteer')         return <VolunteerView />
-  if (userProfile.role === 'person')            return <VolunteerView />
+  if (userProfile.role === 'volunteer')         return <PersonView />
+  if (userProfile.role === 'person')            return <PersonView />
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">

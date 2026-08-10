@@ -7,6 +7,18 @@ import { differenceInDays, startOfDay, endOfDay, addDays } from 'date-fns';
 import { getDisplayName } from '../utils/displayName';
 import toast from 'react-hot-toast';
 
+// One retry after a short delay before giving up — cheap insurance against a
+// single dropped request on a slow/unreliable connection (seen on mobile)
+// collapsing the whole load into the generic error state.
+async function getDocWithRetry(ref, delayMs = 800) {
+  try {
+    return await getDoc(ref);
+  } catch (err) {
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+    return getDoc(ref);
+  }
+}
+
 function getDashboardState(openDate, closeDate, override) {
   if (override) return override;
   const today          = new Date();
@@ -45,18 +57,18 @@ export default function DHDashboardView() {
     const loadState = async () => {
       try {
         // Get DH's departmentId from members subcollection
-        const memberSnap = await getDoc(doc(db, 'organizations', orgId, 'members', uid));
+        const memberSnap = await getDocWithRetry(doc(db, 'organizations', orgId, 'members', uid));
         const deptId = memberSnap.exists() ? memberSnap.data().departmentId : null;
         setDepartmentId(deptId);
 
         // Load department document for display
         if (deptId) {
-          const deptSnap = await getDoc(doc(db, 'departments', deptId));
+          const deptSnap = await getDocWithRetry(doc(db, 'departments', deptId));
           if (deptSnap.exists()) setDepartment({ id: deptSnap.id, ...deptSnap.data() });
         }
 
         // Load org and active production for state determination
-        const orgSnap = await getDoc(doc(db, 'organizations', orgId));
+        const orgSnap = await getDocWithRetry(doc(db, 'organizations', orgId));
         if (!orgSnap.exists()) { setLoading(false); return; }
 
         const orgData     = orgSnap.data();
@@ -70,7 +82,7 @@ export default function DHDashboardView() {
         }
 
         const [placeId, productionId] = compositeId.split('/');
-        const prodSnap = await getDoc(
+        const prodSnap = await getDocWithRetry(
           doc(db, 'organizations', orgId, 'places', placeId, 'productions', productionId)
         );
 
@@ -200,9 +212,9 @@ export default function DHDashboardView() {
   const deptName   = department?.name || 'your department';
 
   const headers = {
-    [DASHBOARD_STATES.PLANNING]:        `${daysToOpen !== null ? `${daysToOpen} days` : 'Planning ahead'} — ${deptName}`,
+    [DASHBOARD_STATES.PLANNING]:        `${daysToOpen !== null ? `${daysToOpen} days` : 'Planning ahead'} to ${deptName}`,
     [DASHBOARD_STATES.FINAL_COUNTDOWN]: `${daysToOpen !== null ? `${daysToOpen} day${daysToOpen === 1 ? '' : 's'}` : 'Almost there'} to ${prodName}`,
-    [DASHBOARD_STATES.LIVE]:            `Tonight — ${prodName}`,
+    [DASHBOARD_STATES.LIVE]:            `Tonight: ${prodName}`,
     [DASHBOARD_STATES.POSTMORTEM]:      `Wrapping ${prodName}`,
   };
 

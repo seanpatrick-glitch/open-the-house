@@ -57,6 +57,15 @@
       ]
     },
     {
+      "collectionGroup": "flags",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "elevatedToAdmin", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "productions",
       "queryScope": "COLLECTION_GROUP",
       "fields": [

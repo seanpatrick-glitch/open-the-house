@@ -27,15 +27,15 @@ export default function DepartmentsView({ onNavigate }) {
       // Load stats for each department
       const stats = {};
       await Promise.all(data.map(async dept => {
-        const [tasksSnap, peopleSnap] = await Promise.all([
+        const [tasksSnap, typesSnap] = await Promise.all([
           getDocs(query(
             collection(db, 'tasks'),
             where('orgId', '==', orgId),
             where('departmentId', '==', dept.id)
           )),
           getDocs(query(
-            collection(db, 'organizations', orgId, 'people'),
-            where('status', '==', 'active')
+            collection(db, 'organizations', orgId, 'personTypes'),
+            where('departmentId', '==', dept.id)
           )),
         ]);
 
@@ -43,16 +43,25 @@ export default function DepartmentsView({ onNavigate }) {
         const total     = tasks.length;
         const complete  = tasks.filter(t => t.status === 'complete').length;
 
-        // People count: filter assignments client-side
-        const allPeople = peopleSnap.docs.map(d => d.data());
-        const deptPeople = allPeople.filter(p =>
-          (p.assignments || []).some(a => a.type === 'department' && a.refId === dept.id)
-        );
+        // People count: person types assigned to this department, then active people in those types
+        const typeIds = typesSnap.docs.map(d => d.id);
+        let peopleCount = 0;
+        if (typeIds.length > 0) {
+          const peopleSnaps = await Promise.all(typeIds.map(typeId =>
+            getDocs(query(
+              collection(db, 'organizations', orgId, 'people'),
+              where('typeId', '==', typeId),
+              where('status', '==', 'active')
+            ))
+          ));
+          peopleCount = peopleSnaps.reduce((sum, snap) => sum + snap.size, 0);
+        }
 
         stats[dept.id] = {
           totalTasks:    total,
           completeTasks: complete,
-          peopleCount:   deptPeople.length,
+          peopleCount,
+          hasTypes:      typeIds.length > 0,
         };
       }));
       setDeptStats(stats);
@@ -108,6 +117,7 @@ export default function DepartmentsView({ onNavigate }) {
             const total    = stats?.totalTasks    ?? 0;
             const complete = stats?.completeTasks ?? 0;
             const people   = stats?.peopleCount   ?? 0;
+            const hasTypes = stats?.hasTypes      ?? false;
             const pct      = total > 0 ? Math.round((complete / total) * 100) : 0;
 
             return (
@@ -130,7 +140,9 @@ export default function DepartmentsView({ onNavigate }) {
                 </div>
 
                 <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
-                  <span>{people} {people === 1 ? 'person' : 'people'}</span>
+                  {hasTypes && (
+                    <span>{people} {people === 1 ? 'person' : 'people'}</span>
+                  )}
                   {total > 0 && (
                     <span>{complete} of {total} tasks complete</span>
                   )}

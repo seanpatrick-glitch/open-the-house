@@ -223,7 +223,7 @@ export default function PeopleView({ onNavigate, navState }) {
                       </td>
                       <td className="px-4 py-3 text-gray-600">{person.typeLabel}</td>
                       <td className="px-4 py-3 text-gray-600">
-                        {person.fieldValues?.email || <span className="text-gray-400">—</span>}
+                        {person.fieldValues?.email || <span className="text-gray-400">No email</span>}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[person.status] || STATUS_STYLES[PERSON_STATUS.APPLIED]}`}>
@@ -262,7 +262,7 @@ export default function PeopleView({ onNavigate, navState }) {
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5">{person.typeLabel}</p>
                     <p className="text-xs text-gray-500 mt-0.5 truncate">
-                      {person.fieldValues?.email || '—'}
+                      {person.fieldValues?.email || 'No email'}
                     </p>
                     <div className="mt-1.5">
                       {person.accountStatus === 'active' ? (

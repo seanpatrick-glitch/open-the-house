@@ -207,9 +207,9 @@ function DashboardHeader({ state, activeProd, daysToOpen }) {
   const prodName = activeProd?.name || 'your next production';
 
   const headers = {
-    [DASHBOARD_STATES.PLANNING]:        `${daysToOpen !== null ? `${daysToOpen} days` : 'Planning ahead'} — ${prodName}`,
+    [DASHBOARD_STATES.PLANNING]:        `${daysToOpen !== null ? `${daysToOpen} days` : 'Planning ahead'} to ${prodName}`,
     [DASHBOARD_STATES.FINAL_COUNTDOWN]: `${daysToOpen !== null ? `${daysToOpen} day${daysToOpen === 1 ? '' : 's'}` : 'Almost there'} to ${prodName}`,
-    [DASHBOARD_STATES.LIVE]:            `Tonight — ${prodName}`,
+    [DASHBOARD_STATES.LIVE]:            `Tonight: ${prodName}`,
     [DASHBOARD_STATES.POSTMORTEM]:      `Wrapping ${prodName}`,
   };
 
@@ -302,7 +302,7 @@ function FinalCountdownState({ tasksToday, tasksTomorrow, members }) {
         {tasksToday.length === 0 ? <EmptyState message="Nothing due today." /> : <TaskList tasks={tasksToday} />}
       </div>
       <div>
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Tomorrow — overdue or not started</h2>
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">Tomorrow: overdue or not started</h2>
         {tasksTomorrow.length === 0 ? <EmptyState message="Nothing due tomorrow." /> : <TaskList tasks={tasksTomorrow} />}
       </div>
     </div>

@@ -128,7 +128,14 @@ export default function CollaboratorView() {
       where('elevatedToAdmin', '==', true),
       orderBy('createdAt', 'asc')
     );
-    return onSnapshot(q, snap => setFlags(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    return onSnapshot(
+      q,
+      snap => setFlags(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      err => {
+        console.error('CollaboratorView flags subscription error:', err);
+        toast.error('Could not load flags. Please refresh and try again.');
+      }
+    );
   }, [orgId, loading]);
 
   // Tasks — org-level, not started or overdue

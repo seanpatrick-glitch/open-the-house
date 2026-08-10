@@ -195,7 +195,7 @@ export default function CsvImportForm({ personType, onSuccess, onCancel }) {
                 onChange={e => updateMapping(field.key, e.target.value)}
                 className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                <option value="">— skip —</option>
+                <option value="">Skip this column</option>
                 {headers.map(h => (
                   <option key={h} value={h}>{h}</option>
                 ))}
@@ -260,7 +260,7 @@ export default function CsvImportForm({ personType, onSuccess, onCancel }) {
               {preview.map((row, i) => (
                 <tr key={i}>
                   {Object.values(row).map((val, j) => (
-                    <td key={j} className="px-3 py-2 text-gray-700 whitespace-nowrap">{val || <span className="text-gray-300">—</span>}</td>
+                    <td key={j} className="px-3 py-2 text-gray-700 whitespace-nowrap">{val || <span className="text-gray-300">Empty</span>}</td>
                   ))}
                 </tr>
               ))}

@@ -126,7 +126,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
             type="text"
             value={displayLabel}
             onChange={e => setDisplayLabel(e.target.value)}
-            placeholder="e.g. Show, Event, Festival — defaults to Production if left blank"
+            placeholder="e.g. Show, Event, Festival. Defaults to Production if left blank"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
           />
         </div>
