@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { doc, onSnapshot, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { PERSON_STATUS } from '../models/people';
@@ -49,6 +49,7 @@ export default function PersonProfileView({ personId, onBack }) {
   const [savingInternal, setSavingInternal] = useState(false);
   const [internalSaved, setInternalSaved]   = useState(false);
   const [showInviteForm, setShowInviteForm] = useState(false);
+  const [savingStaff, setSavingStaff]       = useState(false);
 
   useEffect(() => {
     if (!orgId || !personId) return;
@@ -114,6 +115,21 @@ export default function PersonProfileView({ personId, onBack }) {
       toast.error('Could not save. Please try again.');
     } finally {
       setSavingInternal(false);
+    }
+  }
+
+  async function toggleStaff() {
+    if (!orgId || !personId || savingStaff) return;
+    setSavingStaff(true);
+    try {
+      await updateDoc(doc(db, 'organizations', orgId, 'people', personId), {
+        staff: !person.staff,
+      });
+    } catch (err) {
+      console.error('Error updating staff status:', err);
+      toast.error('Could not update staff status. Please try again.');
+    } finally {
+      setSavingStaff(false);
     }
   }
 
@@ -248,6 +264,30 @@ export default function PersonProfileView({ personId, onBack }) {
               Staff only
             </span>
           </div>
+
+          {person.status === PERSON_STATUS.ACTIVE && (
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-900">Staff</p>
+                <p className="text-xs text-gray-500">Grants staff-level access to this person.</p>
+              </div>
+              <button
+                onClick={toggleStaff}
+                disabled={savingStaff}
+                role="switch"
+                aria-checked={!!person.staff}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+                  person.staff ? 'bg-indigo-600' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    person.staff ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          )}
 
           <div className="mb-4">
             <p className="text-xs text-gray-500 mb-2">Tags</p>
