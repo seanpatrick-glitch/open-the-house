@@ -186,7 +186,14 @@ export default function DHDashboardView() {
       );
 
       subs.push(onSnapshot(qTasks,   snap => setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() })))));
-      subs.push(onSnapshot(qFlags,   snap => setFlags(snap.docs.map(d => ({ id: d.id, ...d.data() })))));
+      subs.push(onSnapshot(
+        qFlags,
+        snap => setFlags(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+        err => {
+          console.error('DHDashboardView flags subscription error:', err);
+          toast.error('Could not load flags. Please refresh and try again.');
+        }
+      ));
       subs.push(onSnapshot(qMembers, snap => setMembers(snap.docs.map(d => ({ id: d.id, ...d.data() })))));
     }
 
