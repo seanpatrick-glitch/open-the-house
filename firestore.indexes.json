@@ -48,6 +48,14 @@
       ]
     },
     {
+      "collectionGroup": "checkins",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "assignmentId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "flags",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
