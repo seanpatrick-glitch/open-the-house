@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, onSnapshot, getDocs, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useUnreadCount } from '../hooks/useUnreadCount';
 import { getOrCreateDHThread } from '../utils/messaging';
 import { getDisplayName } from '../utils/displayName';
+import UnreadCallout from '../components/messaging/UnreadCallout';
 import toast from 'react-hot-toast';
 
 function formatDate(ts) {
@@ -16,6 +18,7 @@ export default function PersonView() {
   const { userProfile, logout } = useAuth();
   const uid   = userProfile?.uid;
   const orgId = userProfile?.orgId;
+  const unreadCount = useUnreadCount(uid, orgId);
 
   const [tasks, setTasks]               = useState([]);
   const [assignments, setAssignments]   = useState([]);
@@ -326,6 +329,9 @@ export default function PersonView() {
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
 
+        {/* Unread messages */}
+        <UnreadCallout count={unreadCount} onClick={handleOpenMessages} />
+
         {/* Unconfirmed assignments */}
         {unconfirmedAssignments.length > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
@@ -411,8 +417,13 @@ export default function PersonView() {
         <div className="flex gap-3">
           <button
             onClick={handleOpenMessages}
-            className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:border-gray-300 transition-colors text-center">
+            className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:border-gray-300 transition-colors text-center flex items-center justify-center gap-2">
             Messages
+            {unreadCount > 0 && (
+              <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-amber-500 text-white text-xs font-semibold flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
           </button>
           <button
             onClick={logout}

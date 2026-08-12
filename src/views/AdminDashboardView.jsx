@@ -2,10 +2,16 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useUnread } from '../contexts/UnreadContext';
 import { DASHBOARD_STATES } from '../models/org';
 import { differenceInDays, startOfDay, endOfDay, addDays } from 'date-fns';
 import { getDisplayName } from '../utils/displayName';
+import UnreadCallout from '../components/messaging/UnreadCallout';
 import toast from 'react-hot-toast';
+
+function goToMessages() {
+  window.dispatchEvent(new CustomEvent('navigate', { detail: { section: 'messages' } }));
+}
 
 function getDashboardState(openDate, closeDate, override) {
   if (override) return override;
@@ -29,6 +35,7 @@ function formatDate(ts) {
 export default function AdminDashboardView() {
   const { userProfile } = useAuth();
   const orgId = userProfile?.orgId;
+  const unreadCount = useUnread();
 
   const [dashState, setDashState]         = useState(DASHBOARD_STATES.PLANNING);
   const [activeProd, setActiveProd]       = useState(null);
@@ -188,6 +195,11 @@ export default function AdminDashboardView() {
         activeProd={activeProd}
         daysToOpen={daysToOpen}
       />
+      {unreadCount > 0 && (
+        <div className="mb-6">
+          <UnreadCallout count={unreadCount} onClick={goToMessages} />
+        </div>
+      )}
       <DashboardContent
         state={dashState}
         tasks={tasks}

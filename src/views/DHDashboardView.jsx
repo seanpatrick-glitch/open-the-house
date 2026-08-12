@@ -2,10 +2,16 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useUnread } from '../contexts/UnreadContext';
 import { DASHBOARD_STATES } from '../models/org';
 import { differenceInDays, startOfDay, endOfDay, addDays } from 'date-fns';
 import { getDisplayName } from '../utils/displayName';
+import UnreadCallout from '../components/messaging/UnreadCallout';
 import toast from 'react-hot-toast';
+
+function goToMessages() {
+  window.dispatchEvent(new CustomEvent('navigate', { detail: { section: 'messages' } }));
+}
 
 // One retry after a short delay before giving up — cheap insurance against a
 // single dropped request on a slow/unreliable connection (seen on mobile)
@@ -36,6 +42,7 @@ export default function DHDashboardView() {
   const { userProfile } = useAuth();
   const orgId = userProfile?.orgId;
   const uid   = userProfile?.uid;
+  const unreadCount = useUnread();
 
   const [departmentId, setDepartmentId]   = useState(null);
   const [department, setDepartment]       = useState(null);
@@ -245,6 +252,12 @@ export default function DHDashboardView() {
         </div>
         {deptName && <p className="text-sm text-gray-500">{deptName}</p>}
       </div>
+
+      {unreadCount > 0 && (
+        <div className="mb-6">
+          <UnreadCallout count={unreadCount} onClick={goToMessages} />
+        </div>
+      )}
 
       {dashState === DASHBOARD_STATES.PLANNING && (
         <DHPlanningState tasks={tasks} departmentId={departmentId} />
