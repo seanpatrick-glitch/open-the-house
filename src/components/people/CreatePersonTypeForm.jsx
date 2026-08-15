@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
+import { FIELD_TYPES } from '../../models/people';
 
 const TOGGLEABLE_FIELDS = [
   { key: 'address',              label: 'Address' },
@@ -10,6 +11,17 @@ const TOGGLEABLE_FIELDS = [
   { key: 'dietaryRestrictions',  label: 'Dietary Restrictions' },
   { key: 'accessibilityNeeds',   label: 'Accessibility Needs' },
 ];
+
+const CUSTOM_FIELD_TYPES = [
+  { value: FIELD_TYPES.TEXT,           label: 'Text' },
+  { value: FIELD_TYPES.DATE,           label: 'Date' },
+  { value: FIELD_TYPES.SELECT,         label: 'Select' },
+  { value: FIELD_TYPES.MULTISELECT,    label: 'Multiselect' },
+  { value: FIELD_TYPES.CHECKBOX_GROUP, label: 'Checkbox group' },
+];
+
+const OPTION_TYPES = [FIELD_TYPES.SELECT, FIELD_TYPES.MULTISELECT, FIELD_TYPES.CHECKBOX_GROUP];
+const needsOptions = type => OPTION_TYPES.includes(type);
 
 export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
   const { userProfile } = useAuth();
@@ -24,6 +36,10 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
   const [departmentsEnabled, setDepartmentsEnabled] = useState(false);
   const [departments, setDepartments]               = useState([]);
   const [departmentId, setDepartmentId]              = useState('');
+
+  const [customFields, setCustomFields] = useState([]);
+  const [optionInputs, setOptionInputs] = useState({});
+  const nextOrderRef = useRef(0);
 
   useEffect(() => {
     if (!orgId) return;
@@ -46,6 +62,50 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
     setToggledFields(prev => ({ ...prev, [key]: !prev[key] }));
   }
 
+  function addCustomField() {
+    setCustomFields(prev => [...prev, {
+      fieldId:  crypto.randomUUID(),
+      label:    '',
+      type:     FIELD_TYPES.TEXT,
+      options:  [],
+      required: false,
+      order:    nextOrderRef.current++,
+    }]);
+  }
+
+  function removeCustomField(fieldId) {
+    setCustomFields(prev => prev.filter(f => f.fieldId !== fieldId));
+  }
+
+  function updateCustomFieldLabel(fieldId, value) {
+    setCustomFields(prev => prev.map(f => f.fieldId === fieldId ? { ...f, label: value } : f));
+  }
+
+  function updateCustomFieldType(fieldId, value) {
+    setCustomFields(prev => prev.map(f => f.fieldId === fieldId ? { ...f, type: value } : f));
+  }
+
+  function toggleCustomFieldRequired(fieldId) {
+    setCustomFields(prev => prev.map(f => f.fieldId === fieldId ? { ...f, required: !f.required } : f));
+  }
+
+  function addCustomFieldOption(fieldId) {
+    const value = (optionInputs[fieldId] || '').trim();
+    if (!value) return;
+    setCustomFields(prev => prev.map(f =>
+      f.fieldId === fieldId && !f.options.includes(value)
+        ? { ...f, options: [...f.options, value] }
+        : f
+    ));
+    setOptionInputs(prev => ({ ...prev, [fieldId]: '' }));
+  }
+
+  function removeCustomFieldOption(fieldId, option) {
+    setCustomFields(prev => prev.map(f =>
+      f.fieldId === fieldId ? { ...f, options: f.options.filter(o => o !== option) } : f
+    ));
+  }
+
   async function handleSave() {
     if (!label.trim()) {
       setError('A label is required.');
@@ -54,6 +114,16 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
     if (departmentsEnabled && !departmentId) {
       setError('A department is required.');
       return;
+    }
+    for (const field of customFields) {
+      if (!field.label.trim()) {
+        setError('Each custom field needs a name.');
+        return;
+      }
+      if (needsOptions(field.type) && field.options.length === 0) {
+        setError(`${field.label.trim()} needs at least one choice.`);
+        return;
+      }
     }
     setSaving(true);
     setError('');
@@ -81,7 +151,14 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
             emergencyContact: true,
           },
           toggleableFields,
-          customFields:    [],
+          customFields: customFields.map(f => ({
+            fieldId:  f.fieldId,
+            label:    f.label.trim(),
+            type:     f.type,
+            options:  needsOptions(f.type) ? f.options : [],
+            required: f.required,
+            order:    f.order,
+          })),
         }
       );
       onSuccess();
@@ -174,6 +251,104 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
               </div>
             ))}
           </div>
+        </div>
+
+        <div>
+          <p className="text-sm font-medium text-gray-700 mb-1">Custom Fields</p>
+          <p className="text-xs text-gray-400 mb-3">Add fields specific to this person type.</p>
+          <div className="space-y-3">
+            {customFields.map(field => (
+              <div key={field.fieldId} className="border border-gray-200 rounded-lg p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={field.label}
+                    onChange={e => updateCustomFieldLabel(field.fieldId, e.target.value)}
+                    placeholder="Field name"
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeCustomField(field.fieldId)}
+                    className="text-sm font-medium text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
+
+                <select
+                  value={field.type}
+                  onChange={e => updateCustomFieldType(field.fieldId, e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  {CUSTOM_FIELD_TYPES.map(t => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+
+                {needsOptions(field.type) && (
+                  <div>
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {field.options.map(opt => (
+                        <span key={opt} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                          {opt}
+                          <button
+                            type="button"
+                            onClick={() => removeCustomFieldOption(field.fieldId, opt)}
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={optionInputs[field.fieldId] || ''}
+                        onChange={e => setOptionInputs(prev => ({ ...prev, [field.fieldId]: e.target.value }))}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomFieldOption(field.fieldId); } }}
+                        placeholder="Add a choice"
+                        className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => addCustomFieldOption(field.fieldId)}
+                        disabled={!(optionInputs[field.fieldId] || '').trim()}
+                        className="text-sm font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-40 transition-colors"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between py-1">
+                  <span className="text-sm text-gray-700">Required</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleCustomFieldRequired(field.fieldId)}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
+                      field.required ? 'bg-indigo-600' : 'bg-gray-200'
+                    }`}
+                    role="switch"
+                    aria-checked={field.required}
+                  >
+                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+                      field.required ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={addCustomField}
+            className="mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+          >
+            Add Field
+          </button>
         </div>
       </div>
 
