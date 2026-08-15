@@ -295,6 +295,15 @@ export default function SettingsView() {
                           </span>
                         ))
                       }
+                      {(type.customFields || [])
+                        .slice()
+                        .sort((a, b) => a.order - b.order)
+                        .map(f => (
+                          <span key={f.fieldId} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-600">
+                            {f.label}
+                          </span>
+                        ))
+                      }
                     </div>
                   </div>
                   <div className="flex-shrink-0 text-right space-y-2">
