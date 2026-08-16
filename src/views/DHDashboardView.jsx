@@ -2,10 +2,16 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useUnread } from '../contexts/UnreadContext';
 import { DASHBOARD_STATES } from '../models/org';
 import { differenceInDays, startOfDay, endOfDay, addDays } from 'date-fns';
 import { getDisplayName } from '../utils/displayName';
+import UnreadCallout from '../components/messaging/UnreadCallout';
 import toast from 'react-hot-toast';
+
+function goToMessages() {
+  window.dispatchEvent(new CustomEvent('navigate', { detail: { section: 'messages' } }));
+}
 
 // One retry after a short delay before giving up — cheap insurance against a
 // single dropped request on a slow/unreliable connection (seen on mobile)
@@ -36,6 +42,7 @@ export default function DHDashboardView() {
   const { userProfile } = useAuth();
   const orgId = userProfile?.orgId;
   const uid   = userProfile?.uid;
+  const unreadCount = useUnread();
 
   const [departmentId, setDepartmentId]   = useState(null);
   const [department, setDepartment]       = useState(null);
@@ -129,7 +136,7 @@ export default function DHDashboardView() {
         where('level', '==', 'department'),
         ...deptFilter,
         where('status', 'in', ['not_started', 'in_progress', 'overdue']),
-        orderBy('dueDate', 'asc'),
+        orderBy('dueByDate', 'asc'),
         limit(20)
       );
       subs.push(onSnapshot(q, snap => setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() })))));
@@ -143,15 +150,15 @@ export default function DHDashboardView() {
         collection(db, 'tasks'),
         where('orgId', '==', orgId),
         ...deptFilter,
-        where('dueDate', '>=', todayStart),
-        where('dueDate', '<=', todayEnd)
+        where('dueByDate', '>=', todayStart),
+        where('dueByDate', '<=', todayEnd)
       );
       const qTomorrow = query(
         collection(db, 'tasks'),
         where('orgId', '==', orgId),
         ...deptFilter,
-        where('dueDate', '>=', tomorrowStart),
-        where('dueDate', '<=', tomorrowEnd),
+        where('dueByDate', '>=', tomorrowStart),
+        where('dueByDate', '<=', tomorrowEnd),
         where('status', 'in', ['not_started', 'overdue'])
       );
       const qMembers = query(
@@ -170,9 +177,9 @@ export default function DHDashboardView() {
         collection(db, 'tasks'),
         where('orgId', '==', orgId),
         ...deptFilter,
-        where('dueDate', '>=', todayStart),
-        where('dueDate', '<=', todayEnd),
-        orderBy('dueDate', 'asc')
+        where('dueByDate', '>=', todayStart),
+        where('dueByDate', '<=', todayEnd),
+        orderBy('dueByDate', 'asc')
       );
       const qFlags = query(
         collection(db, 'organizations', orgId, 'flags'),
@@ -186,7 +193,14 @@ export default function DHDashboardView() {
       );
 
       subs.push(onSnapshot(qTasks,   snap => setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() })))));
-      subs.push(onSnapshot(qFlags,   snap => setFlags(snap.docs.map(d => ({ id: d.id, ...d.data() })))));
+      subs.push(onSnapshot(
+        qFlags,
+        snap => setFlags(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+        err => {
+          console.error('DHDashboardView flags subscription error:', err);
+          toast.error('Could not load flags. Please refresh and try again.');
+        }
+      ));
       subs.push(onSnapshot(qMembers, snap => setMembers(snap.docs.map(d => ({ id: d.id, ...d.data() })))));
     }
 
@@ -196,7 +210,7 @@ export default function DHDashboardView() {
         where('orgId', '==', orgId),
         where('phase', '==', 'wrap'),
         ...deptFilter,
-        orderBy('dueDate', 'asc')
+        orderBy('dueByDate', 'asc')
       );
       subs.push(onSnapshot(q, snap => setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() })))));
     }
@@ -238,6 +252,12 @@ export default function DHDashboardView() {
         </div>
         {deptName && <p className="text-sm text-gray-500">{deptName}</p>}
       </div>
+
+      {unreadCount > 0 && (
+        <div className="mb-6">
+          <UnreadCallout count={unreadCount} onClick={goToMessages} />
+        </div>
+      )}
 
       {dashState === DASHBOARD_STATES.PLANNING && (
         <DHPlanningState tasks={tasks} departmentId={departmentId} />
@@ -381,9 +401,9 @@ function TaskList({ tasks }) {
           <div key={task.id} className="px-4 py-3 flex items-center justify-between gap-4">
             <p className="text-sm text-gray-900 font-medium truncate">{task.title}</p>
             <div className="flex items-center gap-2 flex-shrink-0">
-              {task.dueDate && (
+              {task.dueByDate && (
                 <span className="text-xs text-gray-400">
-                  {task.dueDate.toDate?.().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {task.dueByDate.toDate?.().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
               )}
               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${

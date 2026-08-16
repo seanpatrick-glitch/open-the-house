@@ -104,7 +104,7 @@ export default function CalendarGrid({ tasks, departments }) {
           <div className="grid grid-cols-7">
             {cells.map((day, i) => {
               const isToday = day && new Date().getFullYear() === year && new Date().getMonth() === month && new Date().getDate() === day;
-              const dayTasks = day ? filteredTasks.filter(t => sameDay(t.dueDate, year, month, day)) : [];
+              const dayTasks = day ? filteredTasks.filter(t => sameDay(t.dueByDate, year, month, day)) : [];
 
               return (
                 <div
@@ -162,7 +162,7 @@ export default function CalendarGrid({ tasks, departments }) {
             <div className="space-y-3 text-sm">
               <div>
                 <p className="text-xs text-gray-400 mb-0.5">Due</p>
-                <p className="text-gray-700">{formatDetailDate(selectedTask.dueDate)}</p>
+                <p className="text-gray-700">{formatDetailDate(selectedTask.dueByDate)}</p>
               </div>
 
               <div>

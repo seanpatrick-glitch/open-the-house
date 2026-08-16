@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
+import { useUnread } from '../../contexts/UnreadContext'
 import { getDisplayName } from '../../utils/displayName'
 import toast from 'react-hot-toast'
 
@@ -33,6 +34,7 @@ function hasActiveChild(item, activeSection) {
 
 export default function Sidebar({ activeSection, onNavigate, sidebarOpen }) {
   const { userProfile, logout } = useAuth()
+  const unreadCount = useUnread()
   const orgId = userProfile?.orgId
   const [departmentsEnabled, setDepartmentsEnabled] = useState(false)
   const [editingName, setEditingName] = useState(false)
@@ -155,6 +157,11 @@ export default function Sidebar({ activeSection, onNavigate, sidebarOpen }) {
                   {item.emoji}
                 </span>
                 <span className="flex-1 leading-snug">{item.label}</span>
+                {item.key === 'messages' && unreadCount > 0 && (
+                  <span className="flex-shrink-0 min-w-[1.25rem] h-5 px-1.5 rounded-full bg-amber-500 text-white text-xs font-semibold flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
                 {item.children && (
                   <span className="text-xs opacity-50 flex-shrink-0">
                     {childActive ? '▾' : '▸'}

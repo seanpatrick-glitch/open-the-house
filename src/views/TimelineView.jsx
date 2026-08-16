@@ -108,7 +108,7 @@ export default function TimelineView({ navState }) {
     const q = query(
       collection(db, 'tasks'),
       where('orgId', '==', orgId),
-      orderBy('dueDate', 'asc')
+      orderBy('dueByDate', 'asc')
     );
     const unsubscribe = onSnapshot(q, (snap) => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -279,7 +279,7 @@ export default function TimelineView({ navState }) {
                             <p className="font-medium text-gray-900">{task.title}</p>
                             {task.production && <p className="text-xs text-gray-400 mt-0.5">Production linked</p>}
                           </td>
-                          <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{formatDate(task.dueDate)}</td>
+                          <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{formatDate(task.dueByDate)}</td>
                           <td className="px-4 py-3">
                             {dept ? (
                               <div className="flex items-center gap-2">

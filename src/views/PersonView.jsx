@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, onSnapshot, getDocs, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useUnreadCount } from '../hooks/useUnreadCount';
 import { getOrCreateDHThread } from '../utils/messaging';
 import { getDisplayName } from '../utils/displayName';
+import UnreadCallout from '../components/messaging/UnreadCallout';
 import toast from 'react-hot-toast';
 
 function formatDate(ts) {
@@ -16,6 +18,7 @@ export default function PersonView() {
   const { userProfile, logout } = useAuth();
   const uid   = userProfile?.uid;
   const orgId = userProfile?.orgId;
+  const unreadCount = useUnreadCount(uid, orgId);
 
   const [tasks, setTasks]               = useState([]);
   const [assignments, setAssignments]   = useState([]);
@@ -84,28 +87,28 @@ export default function PersonView() {
       where('orgId', '==', orgId),
       where('currentAssigneeUid', '==', uid),
       where('status', 'in', ['not_started', 'in_progress', 'overdue']),
-      orderBy('dueDate', 'asc')
+      orderBy('dueByDate', 'asc')
     );
     const qContributor = query(
       collection(db, 'tasks'),
       where('orgId', '==', orgId),
       where('contributorUids', 'array-contains', uid),
       where('status', 'in', ['not_started', 'in_progress', 'overdue']),
-      orderBy('dueDate', 'asc')
+      orderBy('dueByDate', 'asc')
     );
 
     const taskMap = {};
     const unsubA = onSnapshot(qAssigned, snap => {
       snap.docs.forEach(d => { taskMap[d.id] = { id: d.id, ...d.data() }; });
       setTasks(Object.values(taskMap).sort((a, b) =>
-        (a.dueDate?.toMillis?.() ?? 0) - (b.dueDate?.toMillis?.() ?? 0)
+        (a.dueByDate?.toMillis?.() ?? 0) - (b.dueByDate?.toMillis?.() ?? 0)
       ));
       setLoading(false);
     });
     const unsubC = onSnapshot(qContributor, snap => {
       snap.docs.forEach(d => { taskMap[d.id] = { id: d.id, ...d.data() }; });
       setTasks(Object.values(taskMap).sort((a, b) =>
-        (a.dueDate?.toMillis?.() ?? 0) - (b.dueDate?.toMillis?.() ?? 0)
+        (a.dueByDate?.toMillis?.() ?? 0) - (b.dueByDate?.toMillis?.() ?? 0)
       ));
     });
 
@@ -281,7 +284,7 @@ export default function PersonView() {
             <h1 className="text-base font-semibold text-gray-900">Places People!</h1>
             {nextTask ? (
               <p className="text-xs text-gray-500 mt-0.5">
-                Next up: {nextTask.title}, due {formatDate(nextTask.dueDate)}
+                Next up: {nextTask.title}, due {formatDate(nextTask.dueByDate)}
               </p>
             ) : (
               <p className="text-xs text-gray-500 mt-0.5">No tasks due</p>
@@ -326,6 +329,9 @@ export default function PersonView() {
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
 
+        {/* Unread messages */}
+        <UnreadCallout count={unreadCount} onClick={handleOpenMessages} />
+
         {/* Unconfirmed assignments */}
         {unconfirmedAssignments.length > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
@@ -365,7 +371,7 @@ export default function PersonView() {
                         )}
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-xs text-gray-400">{formatDate(task.dueDate)}</span>
+                        <span className="text-xs text-gray-400">{formatDate(task.dueByDate)}</span>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                           task.status === 'overdue'     ? 'bg-red-100 text-red-700' :
                           task.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
@@ -411,8 +417,13 @@ export default function PersonView() {
         <div className="flex gap-3">
           <button
             onClick={handleOpenMessages}
-            className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:border-gray-300 transition-colors text-center">
+            className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:border-gray-300 transition-colors text-center flex items-center justify-center gap-2">
             Messages
+            {unreadCount > 0 && (
+              <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-amber-500 text-white text-xs font-semibold flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
           </button>
           <button
             onClick={logout}

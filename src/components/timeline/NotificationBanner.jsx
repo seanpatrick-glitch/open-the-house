@@ -18,7 +18,7 @@ export default function NotificationBanner({ tasks }) {
     const result   = [];
 
     for (const task of tasks) {
-      const dueMs = toMs(task.dueDate);
+      const dueMs = toMs(task.dueByDate);
       if (!dueMs) continue;
 
       // Overdue — past due and not complete

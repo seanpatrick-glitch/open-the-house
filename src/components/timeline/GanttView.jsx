@@ -51,7 +51,7 @@ export default function GanttView({ tasks, departments }) {
   const deptOptions = Object.entries(departments);
 
   const allMs = filteredTasks
-    .flatMap(t => [t.startDate, t.dueDate].filter(Boolean).map(toMs))
+    .flatMap(t => [t.assignedOnDate, t.dueByDate].filter(Boolean).map(toMs))
     .filter(Boolean);
 
   const emptyState = (
@@ -159,8 +159,8 @@ export default function GanttView({ tasks, departments }) {
                 {filteredTasks.map(task => {
                   const dept         = task.department ? departments[task.department] : null;
                   const color        = dept?.colorCode || '#6366f1';
-                  const startOffset  = task.startDate ? dayOffset(task.startDate) : dayOffset(task.dueDate);
-                  const endOffset    = dayOffset(task.dueDate);
+                  const startOffset  = task.assignedOnDate ? dayOffset(task.assignedOnDate) : dayOffset(task.dueByDate);
+                  const endOffset    = dayOffset(task.dueByDate);
                   const barLeft      = startOffset * DAY_WIDTH;
                   const barWidth     = Math.max(DAY_WIDTH * 2, (endOffset - startOffset + 1) * DAY_WIDTH);
                   const isSelected   = selectedTask?.id === task.id;
@@ -220,12 +220,12 @@ export default function GanttView({ tasks, departments }) {
             <div className="space-y-3 text-sm">
               <div>
                 <p className="text-xs text-gray-400 mb-0.5">Due</p>
-                <p className="text-gray-700">{formatDetailDate(selectedTask.dueDate)}</p>
+                <p className="text-gray-700">{formatDetailDate(selectedTask.dueByDate)}</p>
               </div>
-              {selectedTask.startDate && (
+              {selectedTask.assignedOnDate && (
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">Starts</p>
-                  <p className="text-gray-700">{formatDetailDate(selectedTask.startDate)}</p>
+                  <p className="text-xs text-gray-400 mb-0.5">Assigned on</p>
+                  <p className="text-gray-700">{formatDetailDate(selectedTask.assignedOnDate)}</p>
                 </div>
               )}
               <div>

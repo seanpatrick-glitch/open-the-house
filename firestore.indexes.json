@@ -5,7 +5,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
-        { "fieldPath": "dueDate", "order": "ASCENDING" }
+        { "fieldPath": "dueByDate", "order": "ASCENDING" }
       ]
     },
     {
@@ -15,7 +15,7 @@
         { "fieldPath": "orgId", "order": "ASCENDING" },
         { "fieldPath": "level", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "dueDate", "order": "ASCENDING" }
+        { "fieldPath": "dueByDate", "order": "ASCENDING" }
       ]
     },
     {
@@ -25,7 +25,7 @@
         { "fieldPath": "currentAssigneeUid", "order": "ASCENDING" },
         { "fieldPath": "orgId", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "dueDate", "order": "ASCENDING" }
+        { "fieldPath": "dueByDate", "order": "ASCENDING" }
       ]
     },
     {
@@ -35,7 +35,7 @@
         { "fieldPath": "contributorUids", "arrayConfig": "CONTAINS" },
         { "fieldPath": "orgId", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "dueDate", "order": "ASCENDING" }
+        { "fieldPath": "dueByDate", "order": "ASCENDING" }
       ]
     },
     {
@@ -45,6 +45,14 @@
         { "fieldPath": "orgId", "order": "ASCENDING" },
         { "fieldPath": "date", "order": "ASCENDING" },
         { "fieldPath": "active", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "checkins",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "assignmentId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" }
       ]
     },
     {
@@ -62,6 +70,15 @@
       "fields": [
         { "fieldPath": "elevatedToAdmin", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "flags",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "departmentId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "ASCENDING" }
       ]
     },
@@ -87,14 +104,6 @@
       "fields": [
         { "fieldPath": "participantA", "order": "ASCENDING" },
         { "fieldPath": "lastMessageAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "threads",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "participantB", "order": "ASCENDING" },
-        { "fieldPath": "lastMessageAt", "order": "ASCENDING" }
       ]
     },
     {

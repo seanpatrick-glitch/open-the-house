@@ -53,6 +53,14 @@ service cloud.firestore {
       return isMember(orgId) && userDoc().organizations[orgId].role == 'orgCollaborator';
     }
 
+    // Covers all three roles AuthRouter sends to CollaboratorView (orgCollaborator,
+    // collaborator, productionCollaborator) — used where a grant must apply to
+    // whichever of the three a given account has, not just 'orgCollaborator'.
+    function isAnyCollaborator(orgId) {
+      return isMember(orgId)
+        && userDoc().organizations[orgId].role in ['orgCollaborator', 'collaborator', 'productionCollaborator'];
+    }
+
     // Is the requesting user an active staff-toggled Person class member?
     function isActiveStaff(orgId) {
       return isSignedIn() && isMember(orgId)
@@ -402,6 +410,13 @@ service cloud.firestore {
       allow create: if isActivePerson(orgId)
         && request.resource.data.participantA == request.auth.uid;
 
+      allow read, write: if isAnyCollaborator(orgId)
+        && (resource.data.participantA == request.auth.uid
+            || resource.data.participantB == request.auth.uid);
+
+      allow create: if isAnyCollaborator(orgId)
+        && request.resource.data.participantA == request.auth.uid;
+
       match /messages/{messageId} {
         allow read, write: if isAdminOrSecondary(orgId);
 
@@ -410,6 +425,10 @@ service cloud.firestore {
               || get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantB == request.auth.uid);
 
         allow read, write: if isActivePerson(orgId)
+          && (get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantA == request.auth.uid
+              || get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantB == request.auth.uid);
+
+        allow read, write: if isAnyCollaborator(orgId)
           && (get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantA == request.auth.uid
               || get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantB == request.auth.uid);
       }

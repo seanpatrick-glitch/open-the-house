@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { doc, collection, addDoc, updateDoc, writeBatch, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { doc, collection, addDoc, updateDoc, writeBatch, onSnapshot, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDisplayName } from '../../utils/displayName';
@@ -9,6 +9,20 @@ function formatDate(ts) {
   if (!ts) return '';
   const d = ts.toDate ? ts.toDate() : new Date(ts);
   return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function toDateInputValue(ts) {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day   = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${month}-${day}`;
+}
+
+function parseLocalDate(dateStr) {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return Timestamp.fromDate(new Date(year, month - 1, day));
 }
 
 const STATUS_STYLES = {
@@ -36,6 +50,12 @@ export default function TaskDetailPanel({ task, orgUsers, departments, onClose }
   const [handoffNote, setHandoffNote]   = useState('');
   const [submitting, setSubmitting]     = useState(false);
   const [error, setError]               = useState('');
+
+  const [editingDates, setEditingDates]         = useState(false);
+  const [assignedOnDate, setAssignedOnDate]     = useState('');
+  const [dueByDate, setDueByDate]               = useState('');
+  const [dateError, setDateError]               = useState('');
+  const [savingDates, setSavingDates]           = useState(false);
 
   const isPrimaryAssignee = task.currentAssigneeUid === uid;
   const isAdmin           = userProfile?.role === 'admin' || userProfile?.role === 'secondaryAdmin';
@@ -120,6 +140,38 @@ export default function TaskDetailPanel({ task, orgUsers, departments, onClose }
     }
   }
 
+  function startEditingDates() {
+    setAssignedOnDate(toDateInputValue(task.assignedOnDate));
+    setDueByDate(toDateInputValue(task.dueByDate));
+    setDateError('');
+    setEditingDates(true);
+  }
+
+  async function handleSaveDates() {
+    if (!dueByDate) {
+      setDateError('Due date is required.');
+      return;
+    }
+    if (assignedOnDate && assignedOnDate > dueByDate) {
+      setDateError('Due date cannot be before the assigned-on date.');
+      return;
+    }
+    setSavingDates(true);
+    setDateError('');
+    try {
+      await updateDoc(doc(db, 'tasks', task.id), {
+        assignedOnDate: parseLocalDate(assignedOnDate),
+        dueByDate:      parseLocalDate(dueByDate),
+      });
+      setEditingDates(false);
+    } catch (err) {
+      console.error('Task date update error:', err);
+      setDateError('Failed to save dates. Please try again.');
+    } finally {
+      setSavingDates(false);
+    }
+  }
+
   const dept         = (task.departmentId || task.department) ? departments[task.departmentId || task.department] : null;
   const assigneeUser = orgUsers.find(u => u.uid === task.currentAssigneeUid);
   const handoffCandidates = orgUsers.filter(u => u.uid !== uid);
@@ -136,10 +188,50 @@ export default function TaskDetailPanel({ task, orgUsers, departments, onClose }
       </div>
 
       <div className="space-y-3 text-sm">
-        <div>
-          <p className="text-xs text-gray-400 mb-0.5">Due</p>
-          <p className="text-gray-700">{formatDate(task.dueDate)}</p>
-        </div>
+        {!editingDates ? (
+          <div>
+            <div className="flex items-start justify-between gap-2">
+              <div className="space-y-2">
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Assigned on</p>
+                  <p className="text-gray-700">{task.assignedOnDate ? formatDate(task.assignedOnDate) : 'Not set'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Due by</p>
+                  <p className="text-gray-700">{formatDate(task.dueByDate)}</p>
+                </div>
+              </div>
+              <button onClick={startEditingDates}
+                className="text-xs text-indigo-600 hover:text-indigo-700 font-medium transition-colors flex-shrink-0">
+                Edit
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Assigned on</label>
+              <input type="date" value={assignedOnDate} onChange={e => setAssignedOnDate(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Due by</label>
+              <input type="date" value={dueByDate} onChange={e => setDueByDate(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            {dateError && <p className="text-xs text-red-600">{dateError}</p>}
+            <div className="flex gap-2 pt-1">
+              <button onClick={handleSaveDates} disabled={savingDates || !dueByDate}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-medium py-1.5 rounded-lg transition-colors">
+                {savingDates ? 'Saving...' : 'Save'}
+              </button>
+              <button onClick={() => setEditingDates(false)}
+                className="text-xs text-gray-500 hover:text-gray-700 transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         <div>
           <p className="text-xs text-gray-400 mb-0.5">Status</p>

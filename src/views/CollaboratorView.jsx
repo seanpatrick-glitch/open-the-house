@@ -5,9 +5,12 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useUnreadCount } from '../hooks/useUnreadCount';
 import { DASHBOARD_STATES } from '../models/org';
 import { differenceInDays } from 'date-fns';
 import { getDisplayName } from '../utils/displayName';
+import UnreadCallout from '../components/messaging/UnreadCallout';
+import MessagingView from '../components/messaging/MessagingView';
 import toast from 'react-hot-toast';
 
 function getDashboardState(openDate, closeDate, override) {
@@ -38,10 +41,14 @@ export default function CollaboratorView() {
   const [activeProd, setActiveProd] = useState(null);
   const [daysToOpen, setDaysToOpen] = useState(null);
   const [loading, setLoading]       = useState(true);
+  const unreadCount = useUnreadCount(uid, orgId);
 
   const [peopleCount, setPeopleCount]   = useState(0);
   const [flags, setFlags]               = useState([]);
   const [tasks, setTasks]               = useState([]);
+
+  const [showMessages, setShowMessages] = useState(false);
+  const [orgUsers, setOrgUsers]         = useState([]);
 
   const [showFlagForm, setShowFlagForm] = useState(false);
   const [flagNote, setFlagNote]         = useState('');
@@ -119,6 +126,13 @@ export default function CollaboratorView() {
     loadState();
   }, [orgId]);
 
+  // Org members list, for the MessagingView "New" recipient picker
+  useEffect(() => {
+    if (!orgId) return;
+    getDocs(collection(db, 'organizations', orgId, 'members'))
+      .then(snap => setOrgUsers(snap.docs.map(d => ({ uid: d.id, ...d.data() }))));
+  }, [orgId]);
+
   // Flags subscription — admin-elevated only
   useEffect(() => {
     if (!orgId || loading) return;
@@ -147,7 +161,7 @@ export default function CollaboratorView() {
       where('level', '==', 'org'),
       where('visibleToAll', '==', true),
       where('status', 'in', ['not_started', 'overdue']),
-      orderBy('dueDate', 'asc')
+      orderBy('dueByDate', 'asc')
     );
     return onSnapshot(q, snap => setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
   }, [orgId, loading]);
@@ -180,6 +194,26 @@ export default function CollaboratorView() {
     return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <p className="text-gray-500 text-sm">Loading...</p>
     </div>;
+  }
+
+  if (showMessages) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="bg-white border-b border-gray-200 px-4 py-4">
+          <div className="max-w-2xl mx-auto flex items-center justify-between">
+            <button onClick={() => setShowMessages(false)}
+              className="text-xs text-gray-500 hover:text-gray-700 transition-colors">
+              ← Back
+            </button>
+            <h1 className="text-base font-semibold text-gray-900">Messages</h1>
+            <div className="w-10" />
+          </div>
+        </div>
+        <div className="max-w-2xl mx-auto w-full flex-1 px-4 py-4 min-h-0">
+          <MessagingView orgUsers={orgUsers} />
+        </div>
+      </div>
+    );
   }
 
   const prodName = activeProd?.name || 'upcoming production';
@@ -245,6 +279,27 @@ export default function CollaboratorView() {
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
 
+        {/* Unread messages */}
+        <UnreadCallout count={unreadCount} onClick={() => setShowMessages(true)} />
+
+        {/* Messages entry point */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-sm font-semibold text-gray-700">Messages</h2>
+            {unreadCount > 0 && (
+              <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-amber-500 text-white text-xs font-semibold flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-gray-400 mb-4">Conversations with your team.</p>
+          <button
+            onClick={() => setShowMessages(true)}
+            className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+            Open Messages
+          </button>
+        </div>
+
         {/* Production status */}
         <div className="bg-white border border-gray-200 rounded-xl p-5">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Production Status</h2>
@@ -286,7 +341,7 @@ export default function CollaboratorView() {
                   <div key={task.id} className="px-4 py-3 flex items-center justify-between gap-4">
                     <p className="text-sm font-medium text-gray-900 truncate">{task.title}</p>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-xs text-gray-400">{formatDate(task.dueDate)}</span>
+                      <span className="text-xs text-gray-400">{formatDate(task.dueByDate)}</span>
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                         task.status === 'overdue' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
                       }`}>
