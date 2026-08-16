@@ -190,6 +190,31 @@ service cloud.firestore {
       }
     }
 
+    // ── events ────────────────────────────────────────────────────────────────
+    match /events/{eventId} {
+      // Admin: full access
+      allow read:           if isMember(resource.data.orgId);
+      allow create:         if isAdmin(request.resource.data.orgId);
+      allow update, delete: if isAdmin(resource.data.orgId);
+
+      // Secondary admin: full access
+      allow create:         if isSecondaryAdmin(request.resource.data.orgId);
+      allow update, delete: if isSecondaryAdmin(resource.data.orgId);
+
+      // Department Head: create/update/delete only department-scoped events
+      // where a department document exists with departmentHeadUid == their uid
+      // (mirrors the tasks department-scoped write rule above).
+      allow create: if isDepartmentHead(request.resource.data.orgId)
+        && request.resource.data.scope == 'department'
+        && exists(/databases/$(database)/documents/departments/$(request.resource.data.departmentId))
+        && get(/databases/$(database)/documents/departments/$(request.resource.data.departmentId)).data.departmentHeadUid == request.auth.uid
+        && get(/databases/$(database)/documents/departments/$(request.resource.data.departmentId)).data.orgId == request.resource.data.orgId;
+      allow update, delete: if isDepartmentHead(resource.data.orgId)
+        && resource.data.scope == 'department'
+        && exists(/databases/$(database)/documents/departments/$(resource.data.departmentId))
+        && get(/databases/$(database)/documents/departments/$(resource.data.departmentId)).data.departmentHeadUid == request.auth.uid;
+    }
+
     // ── timelineTemplates + subcollection ─────────────────────────────────────
     match /timelineTemplates/{templateId} {
       allow read:           if isMember(resource.data.orgId);
