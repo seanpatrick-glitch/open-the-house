@@ -110,7 +110,7 @@ service cloud.firestore {
     match /departments/{departmentId} {
       allow read:           if isMember(resource.data.orgId);
       allow create:         if isAdmin(request.resource.data.orgId);
-      allow update, delete: if isAdmin(resource.data.orgId);
+      allow update, delete: if isAdminOrSecondary(resource.data.orgId);
 
       // Incoming Department Head: on invite acceptance, may write only
       // departmentHeadUid and departmentHeadEmail. Scoped to an accepted
@@ -194,7 +194,7 @@ service cloud.firestore {
     match /timelineTemplates/{templateId} {
       allow read:           if isMember(resource.data.orgId);
       allow create:         if isAdmin(request.resource.data.orgId);
-      allow update, delete: if isAdmin(resource.data.orgId);
+      allow update, delete: if isAdminOrSecondary(resource.data.orgId);
 
       match /templateTasks/{templateTaskId} {
         function templateOrgId() {
