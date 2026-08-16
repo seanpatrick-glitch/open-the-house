@@ -161,7 +161,7 @@ export default function CollaboratorView() {
       where('level', '==', 'org'),
       where('visibleToAll', '==', true),
       where('status', 'in', ['not_started', 'overdue']),
-      orderBy('dueDate', 'asc')
+      orderBy('dueByDate', 'asc')
     );
     return onSnapshot(q, snap => setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
   }, [orgId, loading]);
@@ -341,7 +341,7 @@ export default function CollaboratorView() {
                   <div key={task.id} className="px-4 py-3 flex items-center justify-between gap-4">
                     <p className="text-sm font-medium text-gray-900 truncate">{task.title}</p>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-xs text-gray-400">{formatDate(task.dueDate)}</span>
+                      <span className="text-xs text-gray-400">{formatDate(task.dueByDate)}</span>
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                         task.status === 'overdue' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
                       }`}>

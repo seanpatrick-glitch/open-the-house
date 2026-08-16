@@ -23,8 +23,8 @@ export default function CreateTaskForm({ onSuccess, onCancel, activeProdId }) {
 
   const [title, setTitle]               = useState('');
   const [description, setDescription]   = useState('');
-  const [dueDate, setDueDate]           = useState('');
-  const [startDate, setStartDate]       = useState('');
+  const [dueByDate, setDueByDate]       = useState('');
+  const [assignedOnDate, setAssignedOnDate] = useState('');
   const [level, setLevel]               = useState(isDepartmentHead ? TASK_LEVELS.DEPARTMENT : TASK_LEVELS.ORG);
   const [phase, setPhase]               = useState(TASK_PHASES.PLANNING);
   const [departmentId, setDepartmentId] = useState('');
@@ -80,12 +80,16 @@ export default function CreateTaskForm({ onSuccess, onCancel, activeProdId }) {
   }
 
   async function handleSubmit() {
-    if (!title.trim() || !dueDate) {
+    if (!title.trim() || !dueByDate) {
       setError('Title and due date are required.');
       return;
     }
     if (level === TASK_LEVELS.DEPARTMENT && !departmentId) {
       setError('Select a department for department-level tasks.');
+      return;
+    }
+    if (assignedOnDate && dueByDate && assignedOnDate > dueByDate) {
+      setError('Due date cannot be before the assigned-on date.');
       return;
     }
     setSaving(true);
@@ -95,8 +99,8 @@ export default function CreateTaskForm({ onSuccess, onCancel, activeProdId }) {
         orgId,
         title:              title.trim(),
         description:        description.trim(),
-        dueDate:            parseLocalDate(dueDate),
-        startDate:          parseLocalDate(startDate),
+        dueByDate:          parseLocalDate(dueByDate),
+        assignedOnDate:     parseLocalDate(assignedOnDate),
         status:             'not_started',
         level,
         departmentId:       level === TASK_LEVELS.DEPARTMENT ? departmentId : null,
@@ -149,16 +153,19 @@ export default function CreateTaskForm({ onSuccess, onCancel, activeProdId }) {
 
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Due Date <span className="text-red-500">*</span></label>
-            <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
+            <label className="block text-sm font-medium text-gray-700 mb-1">Assigned On</label>
+            <input type="date" value={assignedOnDate} onChange={e => setAssignedOnDate(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+            <label className="block text-sm font-medium text-gray-700 mb-1">Due By <span className="text-red-500">*</span></label>
+            <input type="date" value={dueByDate} onChange={e => setDueByDate(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
         </div>
+        {assignedOnDate && dueByDate && assignedOnDate > dueByDate && (
+          <p className="text-sm text-red-600">Due date cannot be before the assigned-on date.</p>
+        )}
 
         {/* Task Level */}
         <div className="flex items-start justify-between gap-6">
@@ -293,7 +300,7 @@ export default function CreateTaskForm({ onSuccess, onCancel, activeProdId }) {
 
       <div className="flex items-center gap-3 mt-6">
         <button onClick={handleSubmit}
-          disabled={saving || !title.trim() || !dueDate || (level === TASK_LEVELS.DEPARTMENT && !departmentId)}
+          disabled={saving || !title.trim() || !dueByDate || (assignedOnDate && dueByDate && assignedOnDate > dueByDate) || (level === TASK_LEVELS.DEPARTMENT && !departmentId)}
           className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
           {saving ? 'Creating...' : 'Create Task'}
         </button>

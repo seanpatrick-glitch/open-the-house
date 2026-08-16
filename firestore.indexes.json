@@ -5,7 +5,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
-        { "fieldPath": "dueDate", "order": "ASCENDING" }
+        { "fieldPath": "dueByDate", "order": "ASCENDING" }
       ]
     },
     {
@@ -15,7 +15,7 @@
         { "fieldPath": "orgId", "order": "ASCENDING" },
         { "fieldPath": "level", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "dueDate", "order": "ASCENDING" }
+        { "fieldPath": "dueByDate", "order": "ASCENDING" }
       ]
     },
     {
@@ -25,7 +25,7 @@
         { "fieldPath": "currentAssigneeUid", "order": "ASCENDING" },
         { "fieldPath": "orgId", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "dueDate", "order": "ASCENDING" }
+        { "fieldPath": "dueByDate", "order": "ASCENDING" }
       ]
     },
     {
@@ -35,7 +35,7 @@
         { "fieldPath": "contributorUids", "arrayConfig": "CONTAINS" },
         { "fieldPath": "orgId", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "dueDate", "order": "ASCENDING" }
+        { "fieldPath": "dueByDate", "order": "ASCENDING" }
       ]
     },
     {

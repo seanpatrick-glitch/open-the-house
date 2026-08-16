@@ -87,28 +87,28 @@ export default function PersonView() {
       where('orgId', '==', orgId),
       where('currentAssigneeUid', '==', uid),
       where('status', 'in', ['not_started', 'in_progress', 'overdue']),
-      orderBy('dueDate', 'asc')
+      orderBy('dueByDate', 'asc')
     );
     const qContributor = query(
       collection(db, 'tasks'),
       where('orgId', '==', orgId),
       where('contributorUids', 'array-contains', uid),
       where('status', 'in', ['not_started', 'in_progress', 'overdue']),
-      orderBy('dueDate', 'asc')
+      orderBy('dueByDate', 'asc')
     );
 
     const taskMap = {};
     const unsubA = onSnapshot(qAssigned, snap => {
       snap.docs.forEach(d => { taskMap[d.id] = { id: d.id, ...d.data() }; });
       setTasks(Object.values(taskMap).sort((a, b) =>
-        (a.dueDate?.toMillis?.() ?? 0) - (b.dueDate?.toMillis?.() ?? 0)
+        (a.dueByDate?.toMillis?.() ?? 0) - (b.dueByDate?.toMillis?.() ?? 0)
       ));
       setLoading(false);
     });
     const unsubC = onSnapshot(qContributor, snap => {
       snap.docs.forEach(d => { taskMap[d.id] = { id: d.id, ...d.data() }; });
       setTasks(Object.values(taskMap).sort((a, b) =>
-        (a.dueDate?.toMillis?.() ?? 0) - (b.dueDate?.toMillis?.() ?? 0)
+        (a.dueByDate?.toMillis?.() ?? 0) - (b.dueByDate?.toMillis?.() ?? 0)
       ));
     });
 
@@ -284,7 +284,7 @@ export default function PersonView() {
             <h1 className="text-base font-semibold text-gray-900">Places People!</h1>
             {nextTask ? (
               <p className="text-xs text-gray-500 mt-0.5">
-                Next up: {nextTask.title}, due {formatDate(nextTask.dueDate)}
+                Next up: {nextTask.title}, due {formatDate(nextTask.dueByDate)}
               </p>
             ) : (
               <p className="text-xs text-gray-500 mt-0.5">No tasks due</p>
@@ -371,7 +371,7 @@ export default function PersonView() {
                         )}
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-xs text-gray-400">{formatDate(task.dueDate)}</span>
+                        <span className="text-xs text-gray-400">{formatDate(task.dueByDate)}</span>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                           task.status === 'overdue'     ? 'bg-red-100 text-red-700' :
                           task.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :

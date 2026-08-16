@@ -53,8 +53,8 @@ COLLECTION: tasks/{taskId}
   description: string,
   assignedTo: string | null,            // uid or department id
   assignedToDepartment: string | null,  // departmentId
-  dueDate: Timestamp,
-  startDate: Timestamp | null,
+  assignedOnDate: Timestamp | null,     // when the task is assigned/starts
+  dueByDate: Timestamp,                 // when the task is due
   status: 'not_started' | 'in_progress' | 'complete' | 'overdue',
   level: 'org' | 'department',     // default 'org'. 'department' scopes task to one department.
   departmentId: string | null,      // required when level is 'department', null when level is 'org'
