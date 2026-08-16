@@ -5,7 +5,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUnread } from '../contexts/UnreadContext';
 import { DASHBOARD_STATES } from '../models/org';
 import { differenceInDays, startOfDay, endOfDay, addDays } from 'date-fns';
-import { getDisplayName } from '../utils/displayName';
 import UnreadCallout from '../components/messaging/UnreadCallout';
 import toast from 'react-hot-toast';
 
@@ -342,12 +341,6 @@ function DHPlanningState({ tasks, departmentId }) {
 function DHFinalCountdownState({ tasksToday, tasksTomorrow, members }) {
   return (
     <div className="space-y-6">
-      {members.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-          <p className="text-sm font-medium text-amber-800 mb-1">{members.length} unconfirmed in your department</p>
-          <p className="text-xs text-amber-600">Send a reminder before opening night.</p>
-        </div>
-      )}
       <div>
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Today</h2>
         {tasksToday.length === 0 ? <EmptyState message="Nothing due today." /> : <TaskList tasks={tasksToday} />}
@@ -361,9 +354,6 @@ function DHFinalCountdownState({ tasksToday, tasksTomorrow, members }) {
 }
 
 function DHLiveState({ tasks, members, flags }) {
-  const confirmed   = members.filter(m => m.accountStatus === 'confirmed');
-  const unconfirmed = members.filter(m => m.accountStatus !== 'confirmed');
-
   return (
     <div className="grid grid-cols-3 gap-6">
       <div>
@@ -372,16 +362,10 @@ function DHLiveState({ tasks, members, flags }) {
       </div>
       <div>
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Department Status</h2>
-        <div className="bg-white border border-gray-200 rounded-xl p-4 mb-3">
-          <p className="text-2xl font-bold text-gray-900">{confirmed.length}</p>
-          <p className="text-xs text-gray-500">confirmed of {members.length}</p>
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <p className="text-2xl font-bold text-gray-900">{members.length}</p>
+          <p className="text-xs text-gray-500">department members</p>
         </div>
-        {unconfirmed.map(m => (
-          <div key={m.uid} className="flex items-center gap-2 text-sm text-amber-700 mb-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
-            {getDisplayName(m)}
-          </div>
-        ))}
       </div>
       <div>
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Department Flags</h2>
