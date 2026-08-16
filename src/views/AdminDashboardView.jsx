@@ -26,6 +26,21 @@ function getDashboardState(openDate, closeDate, override) {
   return DASHBOARD_STATES.PLANNING;
 }
 
+// Short badge suffix explaining why the dashboard is in this state. Only
+// call with isOverride true when the override actually determined the
+// displayed state — not just whenever the org has one stored, since the
+// no-active-production fallback ignores it.
+function getStateDescriptor(state, isOverride) {
+  if (isOverride) return 'manually set';
+  switch (state) {
+    case DASHBOARD_STATES.PLANNING:        return 'more than a week out';
+    case DASHBOARD_STATES.FINAL_COUNTDOWN: return 'within a week';
+    case DASHBOARD_STATES.LIVE:            return 'opens tonight';
+    case DASHBOARD_STATES.POSTMORTEM:      return 'production closed';
+    default: return '';
+  }
+}
+
 function formatDate(ts) {
   if (!ts) return '';
   const d = ts.toDate ? ts.toDate() : new Date(ts);
@@ -40,6 +55,7 @@ export default function AdminDashboardView() {
   const [dashState, setDashState]         = useState(DASHBOARD_STATES.PLANNING);
   const [activeProd, setActiveProd]       = useState(null);
   const [daysToOpen, setDaysToOpen]       = useState(null);
+  const [isOverride, setIsOverride]       = useState(false);
   const [loading, setLoading]             = useState(true);
 
   // State-specific data
@@ -65,6 +81,7 @@ export default function AdminDashboardView() {
 
         if (!compositeId) {
           setDashState(DASHBOARD_STATES.PLANNING);
+          setIsOverride(false);
           setLoading(false);
           return;
         }
@@ -76,6 +93,7 @@ export default function AdminDashboardView() {
 
         if (!prodSnap.exists()) {
           setDashState(DASHBOARD_STATES.PLANNING);
+          setIsOverride(false);
           setLoading(false);
           return;
         }
@@ -85,6 +103,7 @@ export default function AdminDashboardView() {
         const open  = prod.openDate?.toDate ? prod.openDate.toDate() : new Date(prod.openDate);
         setActiveProd(prod);
         setDashState(state);
+        setIsOverride(!!override);
         setDaysToOpen(differenceInDays(open, new Date()));
       } catch (err) {
         console.error('AdminDashboardView load error:', err);
@@ -194,6 +213,7 @@ export default function AdminDashboardView() {
         state={dashState}
         activeProd={activeProd}
         daysToOpen={daysToOpen}
+        isOverride={isOverride}
       />
       {unreadCount > 0 && (
         <div className="mb-6">
@@ -215,7 +235,7 @@ export default function AdminDashboardView() {
   );
 }
 
-function DashboardHeader({ state, activeProd, daysToOpen }) {
+function DashboardHeader({ state, activeProd, daysToOpen, isOverride }) {
   const prodName = activeProd?.name || 'your next production';
 
   const headers = {
@@ -233,13 +253,14 @@ function DashboardHeader({ state, activeProd, daysToOpen }) {
   };
 
   const { label, color } = stateLabels[state] || stateLabels[DASHBOARD_STATES.PLANNING];
+  const descriptor = getStateDescriptor(state, isOverride);
 
   return (
     <div className="mb-6">
       <div className="flex items-center gap-3 mb-1">
         <h1 className="text-2xl font-bold text-gray-900">{headers[state]}</h1>
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color}`}>
-          {label}
+          {descriptor ? `${label} (${descriptor})` : label}
         </span>
       </div>
     </div>
