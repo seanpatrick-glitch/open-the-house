@@ -378,16 +378,19 @@ export default function SettingsView() {
         </div>
 
         {/* Dashboard State Override */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <h2 className="text-base font-semibold text-gray-800 mb-1">Dashboard State Override</h2>
-          <p className="text-sm text-gray-500 mb-4">
-            Force the dashboard to a specific state regardless of production dates. Leave blank to auto-calculate.
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+          <h2 className="text-base font-semibold text-amber-900 mb-1">Dashboard State Override</h2>
+          <p className="text-sm text-amber-800 mb-1">
+            Force the dashboard to a specific state regardless of production dates.
+          </p>
+          <p className="text-xs text-amber-700 mb-4">
+            This overrides the computed state on the Admin, Department Head, and Collaborator dashboards until you turn it back to Auto. Most settings here are set once and left alone. This one keeps acting until you turn it off, so it is worth checking back on.
           </p>
           <select
             value={dashboardOverride}
             onChange={e => handleSetOverride(e.target.value)}
             disabled={savingOverride}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+            className="w-full border border-amber-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50"
           >
             <option value="">Auto (based on production dates)</option>
             <option value="planning">Planning</option>
