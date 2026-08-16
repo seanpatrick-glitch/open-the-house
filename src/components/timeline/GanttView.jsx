@@ -46,7 +46,7 @@ export default function GanttView({ tasks, departments }) {
 
   const filteredTasks = deptFilter === 'all'
     ? tasks
-    : tasks.filter(t => t.department === deptFilter);
+    : tasks.filter(t => (t.departmentId || t.department) === deptFilter);
 
   const deptOptions = Object.entries(departments);
 
@@ -157,7 +157,7 @@ export default function GanttView({ tasks, departments }) {
 
                 {/* Task rows */}
                 {filteredTasks.map(task => {
-                  const dept         = task.department ? departments[task.department] : null;
+                  const dept         = (task.departmentId || task.department) ? departments[task.departmentId || task.department] : null;
                   const color        = dept?.colorCode || '#6366f1';
                   const startOffset  = task.assignedOnDate ? dayOffset(task.assignedOnDate) : dayOffset(task.dueByDate);
                   const endOffset    = dayOffset(task.dueByDate);
@@ -234,13 +234,13 @@ export default function GanttView({ tasks, departments }) {
                   {STATUS_LABELS[selectedTask.status] || 'Not started'}
                 </span>
               </div>
-              {selectedTask.department && departments[selectedTask.department] && (
+              {(selectedTask.departmentId || selectedTask.department) && departments[selectedTask.departmentId || selectedTask.department] && (
                 <div>
                   <p className="text-xs text-gray-400 mb-0.5">Department</p>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: departments[selectedTask.department].colorCode || '#6366f1' }} />
-                    <span className="text-gray-700">{departments[selectedTask.department].name}</span>
+                      style={{ backgroundColor: departments[selectedTask.departmentId || selectedTask.department].colorCode || '#6366f1' }} />
+                    <span className="text-gray-700">{departments[selectedTask.departmentId || selectedTask.department].name}</span>
                   </div>
                 </div>
               )}

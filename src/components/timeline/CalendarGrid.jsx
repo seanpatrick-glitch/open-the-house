@@ -38,7 +38,7 @@ export default function CalendarGrid({ tasks, departments }) {
 
   const filteredTasks = deptFilter === 'all'
     ? tasks
-    : tasks.filter(t => t.department === deptFilter);
+    : tasks.filter(t => (t.departmentId || t.department) === deptFilter);
 
   const firstDayOfWeek = new Date(year, month, 1).getDay();
   const daysInMonth    = new Date(year, month + 1, 0).getDate();
@@ -118,7 +118,7 @@ export default function CalendarGrid({ tasks, departments }) {
                       </p>
                       <div className="space-y-0.5">
                         {dayTasks.map(task => {
-                          const dept = task.department ? departments[task.department] : null;
+                          const dept = (task.departmentId || task.department) ? departments[task.departmentId || task.department] : null;
                           return (
                             <button
                               key={task.id}
@@ -172,12 +172,12 @@ export default function CalendarGrid({ tasks, departments }) {
                 </span>
               </div>
 
-              {selectedTask.department && departments[selectedTask.department] && (
+              {(selectedTask.departmentId || selectedTask.department) && departments[selectedTask.departmentId || selectedTask.department] && (
                 <div>
                   <p className="text-xs text-gray-400 mb-0.5">Department</p>
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: departments[selectedTask.department].colorCode || '#6366f1' }} />
-                    <span className="text-gray-700">{departments[selectedTask.department].name}</span>
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: departments[selectedTask.departmentId || selectedTask.department].colorCode || '#6366f1' }} />
+                    <span className="text-gray-700">{departments[selectedTask.departmentId || selectedTask.department].name}</span>
                   </div>
                 </div>
               )}
