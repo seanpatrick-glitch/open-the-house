@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, getDocs, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
+import { TASK_LEVELS, TASK_PHASES } from '../../models/timeline';
 import CreateTemplateForm from './CreateTemplateForm';
 import toast from 'react-hot-toast';
 
@@ -79,6 +80,7 @@ export default function TemplatesPanel({ departments, onClose, onTasksCreated })
     try {
       await Promise.all(templateTasks.map(task => {
         const dueDate = calcDueDate(anchorDate, task.offsetDays);
+        const departmentId = task.department || null;
         return addDoc(collection(db, 'tasks'), {
           orgId,
           title: task.title,
@@ -88,8 +90,16 @@ export default function TemplatesPanel({ departments, onClose, onTasksCreated })
           dueDate: Timestamp.fromDate(dueDate),
           startDate: null,
           status: 'not_started',
-          department: task.department || null,
+          level: departmentId ? TASK_LEVELS.DEPARTMENT : TASK_LEVELS.ORG,
+          departmentId,
+          promotedToOrg: false,
+          primaryAssigneeUid: null,
+          currentAssigneeUid: null,
+          handoffPending: false,
+          contributorUids: [],
+          phase: TASK_PHASES.PLANNING,
           production: null,
+          productionName: null,
           visibleToAll: false,
           visibleToDepartments: [],
           dependsOn: [],
