@@ -14,6 +14,13 @@ organizations/{orgId}
       Enum: 'planning' | 'finalCountdown' | 'live' | 'postmortem' | null
       null means auto-calculate from production dates.
       Settings UI for this field comes in a later step.
+
+  + departmentsEnabled (boolean) — controls the Departments nav item and module.
+      Written explicitly as true at org creation (SignupStep3.jsx) as of 2026-08-16.
+      Every read site falls back with `?? false` when the field is absent, so
+      orgs created before this change (no field written) still read as false —
+      that fallback is intentional and must not become `?? true`, or every
+      pre-existing org with the field unset would silently flip on.
 */
 
 export const DASHBOARD_STATES = {

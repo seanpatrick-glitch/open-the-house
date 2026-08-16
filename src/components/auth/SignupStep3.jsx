@@ -24,6 +24,7 @@ export default function SignupStep3({ firebaseUser }) {
         type:      'theater',
         ownerId:   firebaseUser.uid,
         createdAt: serverTimestamp(),
+        departmentsEnabled: true,
         subscription: {
           tier:   'house',
           status: 'trial',
