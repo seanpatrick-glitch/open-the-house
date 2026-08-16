@@ -5,6 +5,7 @@ import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 import { getAuth } from 'firebase/auth'
+import { getFunctions } from 'firebase/functions'
 
 const firebaseConfig = {
   apiKey: "AIzaSyAcfAWxvJj0tThNZY7PDrEicaLhbFdsppg",
@@ -17,9 +18,10 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig)
 
-export const db      = getFirestore(app)   // Firestore database
-export const storage = getStorage(app)     // File storage
-export const auth    = getAuth(app)        // Authentication
+export const db        = getFirestore(app)   // Firestore database
+export const storage   = getStorage(app)     // File storage
+export const auth      = getAuth(app)        // Authentication
+export const functions = getFunctions(app)   // Cloud Functions callables
 
 export { firebaseConfig }
 export default app
