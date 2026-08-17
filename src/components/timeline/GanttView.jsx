@@ -364,7 +364,7 @@ export default function GanttView({ tasks, events = [], departments }) {
                   <p className="text-gray-700">
                     {formatDetailDateShort(selected.data.startDate) === formatDetailDateShort(selected.data.endDate)
                       ? formatDetailDate(selected.data.startDate)
-                      : `${formatDetailDateShort(selected.data.startDate)} – ${formatDetailDateShort(selected.data.endDate)}`}
+                      : `${formatDetailDateShort(selected.data.startDate)} to ${formatDetailDateShort(selected.data.endDate)}`}
                   </p>
                 </div>
                 {(selected.data.startTime || selected.data.endTime) && (
@@ -372,7 +372,7 @@ export default function GanttView({ tasks, events = [], departments }) {
                     <p className="text-xs text-gray-400 mb-0.5">Time</p>
                     <p className="text-gray-700">
                       {formatTime(selected.data.startTime)}
-                      {selected.data.endTime ? ` – ${formatTime(selected.data.endTime)}` : ''}
+                      {selected.data.endTime ? ` to ${formatTime(selected.data.endTime)}` : ''}
                     </p>
                   </div>
                 )}

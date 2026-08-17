@@ -269,7 +269,7 @@ export default function CalendarGrid({ tasks, events = [], departments }) {
                   <p className="text-gray-700">
                     {isSameCalendarDay(selectedEvent.startDate, selectedEvent.endDate)
                       ? formatDetailDate(selectedEvent.startDate)
-                      : `${formatDetailDateShort(selectedEvent.startDate)} – ${formatDetailDateShort(selectedEvent.endDate)}`}
+                      : `${formatDetailDateShort(selectedEvent.startDate)} to ${formatDetailDateShort(selectedEvent.endDate)}`}
                   </p>
                 </div>
 
@@ -278,7 +278,7 @@ export default function CalendarGrid({ tasks, events = [], departments }) {
                     <p className="text-xs text-gray-400 mb-0.5">Time</p>
                     <p className="text-gray-700">
                       {formatTime(selectedEvent.startTime)}
-                      {selectedEvent.endTime ? ` – ${formatTime(selectedEvent.endTime)}` : ''}
+                      {selectedEvent.endTime ? ` to ${formatTime(selectedEvent.endTime)}` : ''}
                     </p>
                   </div>
                 )}
