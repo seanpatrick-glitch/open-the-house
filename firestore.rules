@@ -215,6 +215,15 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/departments/$(resource.data.departmentId)).data.departmentHeadUid == request.auth.uid;
     }
 
+    // ── volunteerShifts ───────────────────────────────────────────────────────
+    // Admin/secondaryAdmin only — matches the same permission level the
+    // Active Modules toggle itself is gated to (productions update rule).
+    match /volunteerShifts/{shiftId} {
+      allow read:           if isMember(resource.data.orgId);
+      allow create:         if isAdminOrSecondary(request.resource.data.orgId);
+      allow update, delete: if isAdminOrSecondary(resource.data.orgId);
+    }
+
     // ── timelineTemplates + subcollection ─────────────────────────────────────
     match /timelineTemplates/{templateId} {
       allow read:           if isMember(resource.data.orgId);

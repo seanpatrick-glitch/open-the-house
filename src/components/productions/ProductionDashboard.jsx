@@ -4,6 +4,7 @@ import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { getDisplayName } from '../../utils/displayName'
 import TaskDetailPanel from '../timeline/TaskDetailPanel'
+import VolunteersPanel from './VolunteersPanel'
 import toast from 'react-hot-toast'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -360,6 +361,11 @@ export default function ProductionDashboard({ production, places, onBack }) {
           </div>
         )}
       </section>
+
+      {/* Volunteer Shifts — only when the Volunteers module is active for this production */}
+      {activeModules.volunteerScheduling && (
+        <VolunteersPanel production={production} roster={roster} />
+      )}
 
     </div>
   )

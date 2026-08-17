@@ -75,6 +75,15 @@
       ]
     },
     {
+      "collectionGroup": "volunteerShifts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "orgId", "order": "ASCENDING" },
+        { "fieldPath": "production", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "checkinTokens",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
