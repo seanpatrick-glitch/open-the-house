@@ -10,6 +10,7 @@ import TemplatesPanel from '../components/timeline/TemplatesPanel';
 import NotificationBanner from '../components/timeline/NotificationBanner';
 import CreateTaskForm from '../components/timeline/CreateTaskForm';
 import TaskDetailPanel from '../components/timeline/TaskDetailPanel';
+import CreateEventForm from '../components/events/CreateEventForm';
 import toast from 'react-hot-toast';
 
 const STATUS_STYLES = {
@@ -35,11 +36,13 @@ function formatDate(ts) {
 export default function TimelineView({ navState }) {
   const { userProfile } = useAuth();
   const [tasks, setTasks]             = useState([]);
+  const [events, setEvents]           = useState([]);
   const [departments, setDepartments] = useState({});
   const [loading, setLoading]         = useState(true);
   const [viewMode, setViewMode]       = useState(null);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showCreateTask, setShowCreateTask] = useState(false);
+  const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [levelFilter, setLevelFilter] = useState('all');
   const [departmentIdFilter, setDepartmentIdFilter] = useState(null);
   const [orgUsers, setOrgUsers] = useState([]);
@@ -115,7 +118,17 @@ export default function TimelineView({ navState }) {
       setTasks(data);
       setLoading(false);
     });
-    return () => unsubscribe();
+
+    const eventsQ = query(
+      collection(db, 'events'),
+      where('orgId', '==', orgId),
+      orderBy('startDate', 'asc')
+    );
+    const unsubscribeEvents = onSnapshot(eventsQ, (snap) => {
+      setEvents(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+
+    return () => { unsubscribe(); unsubscribeEvents(); };
   }, [orgId]);
 
   const filteredTasks = tasks.filter(task => {
@@ -123,6 +136,16 @@ export default function TimelineView({ navState }) {
     if (levelFilter === 'all') return true;
     if (levelFilter === 'org') return (task.level ?? 'org') === 'org' || task.promotedToOrg === true;
     if (levelFilter === 'department') return task.level === 'department' && !task.promotedToOrg;
+    return true;
+  });
+
+  // Same departmentId-based filter the task pills already apply, per event's
+  // own scope field (org | department) rather than task's level/promotedToOrg.
+  const filteredEvents = events.filter(event => {
+    if (departmentIdFilter) return event.departmentId === departmentIdFilter;
+    if (levelFilter === 'all') return true;
+    if (levelFilter === 'org') return event.scope === 'org';
+    if (levelFilter === 'department') return event.scope === 'department';
     return true;
   });
 
@@ -155,12 +178,20 @@ export default function TimelineView({ navState }) {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {!showTemplates && !showCreateTask && (
+          {!showTemplates && !showCreateTask && !showCreateEvent && (
             <button
               onClick={() => setShowCreateTask(true)}
               className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
               New Task
+            </button>
+          )}
+          {!showTemplates && !showCreateTask && !showCreateEvent && (
+            <button
+              onClick={() => setShowCreateEvent(true)}
+              className="bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg border border-gray-200 transition-colors"
+            >
+              New Event
             </button>
           )}
           <button
@@ -188,7 +219,7 @@ export default function TimelineView({ navState }) {
         </div>
       </div>
 
-      {!showTemplates && !showCreateTask && Object.keys(departments).length > 0 && (
+      {!showTemplates && !showCreateTask && !showCreateEvent && Object.keys(departments).length > 0 && (
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           {[
             { key: 'all',        label: 'All Tasks' },
@@ -238,15 +269,28 @@ export default function TimelineView({ navState }) {
         </div>
       )}
 
-      {!showCreateTask && (showTemplates ? (
+      {showCreateEvent && (
+        <div className="mb-6">
+          <button onClick={() => setShowCreateEvent(false)}
+            className="text-sm text-gray-500 hover:text-gray-700 mb-4 flex items-center gap-1">
+            ← Back to Timeline
+          </button>
+          <CreateEventForm
+            onSuccess={() => setShowCreateEvent(false)}
+            onCancel={() => setShowCreateEvent(false)}
+          />
+        </div>
+      )}
+
+      {!showCreateTask && !showCreateEvent && (showTemplates ? (
         <TemplatesPanel
           departments={departments}
           onClose={() => setShowTemplates(false)}
         />
       ) : viewMode === 'gantt' ? (
-        <GanttView tasks={filteredTasks} departments={departments} />
+        <GanttView tasks={filteredTasks} events={filteredEvents} departments={departments} />
       ) : viewMode === 'calendar' ? (
-        <CalendarGrid tasks={filteredTasks} departments={departments} />
+        <CalendarGrid tasks={filteredTasks} events={filteredEvents} departments={departments} />
       ) : (
         <>
           {filteredTasks.length === 0 ? (

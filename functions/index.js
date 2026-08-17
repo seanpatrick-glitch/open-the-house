@@ -1,5 +1,6 @@
 const { setGlobalOptions } = require("firebase-functions");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 
@@ -52,3 +53,118 @@ exports.emailOnNewMessage = onDocumentCreated(
     }
   }
 );
+
+// Admin-only data scrub for one organization. Deletes productions, places,
+// people, personTypes, departments, tasks, timelineTemplates, threads
+// (with messages), broadcasts, and checkins — everything a test/seed org
+// accumulates during setup. Does NOT touch the organization document itself,
+// its members/collaborators, or its settings (activeProdId,
+// dashboardStateOverride, departmentsEnabled, name, etc.) — this is a data
+// scrub, not an org deletion. personTypes has no system-default concept in
+// the schema (checked models/people.js: label, description, orgId,
+// departmentHeadId, departmentId, createdBy, createdAt, active,
+// universalFields, toggleableFields, customFields — nothing resembling a
+// protected/default flag), so every personType document is deleted
+// unconditionally.
+//
+// Runs server-side via the Admin SDK specifically because several of these
+// collections nest multiple levels of subcollections (tasks alone can carry
+// up to six: comments, clarificationFlags, accessRequests, handoffs,
+// history, notes; people has internalData and hours; threads has messages;
+// places has productions) and because a real org can accumulate far more
+// documents than a single 500-op client batch can hold. admin.firestore()
+// bypasses firestore.rules entirely, so authorization is enforced here in
+// code — never trust request.data for the caller's role.
+exports.resetOrganization = onCall({ timeoutSeconds: 300, memory: "256MiB" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign in required.");
+  }
+
+  const { orgId, confirmName } = request.data || {};
+  if (!orgId || typeof orgId !== "string") {
+    throw new HttpsError("invalid-argument", "orgId is required.");
+  }
+
+  const db = admin.firestore();
+
+  const userSnap = await db.doc(`users/${uid}`).get();
+  const role = userSnap.exists ? userSnap.data()?.organizations?.[orgId]?.role : null;
+  if (role !== "admin" && role !== "secondaryAdmin") {
+    throw new HttpsError("permission-denied", "Only an admin can reset organization data.");
+  }
+
+  const orgSnap = await db.doc(`organizations/${orgId}`).get();
+  if (!orgSnap.exists) {
+    throw new HttpsError("not-found", "Organization not found.");
+  }
+  const orgName = orgSnap.data()?.name || "";
+
+  // Mirrors the UI's type-to-confirm gate server-side, so a scripted or
+  // buggy client can never skip confirmation.
+  if (!confirmName || confirmName !== orgName) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Confirmation text did not match the organization name."
+    );
+  }
+
+  const counts = {
+    people: 0,
+    personTypes: 0,
+    places: 0,
+    productions: 0,
+    departments: 0,
+    tasks: 0,
+    timelineTemplates: 0,
+    threads: 0,
+    messages: 0,
+    broadcasts: 0,
+    checkins: 0,
+  };
+
+  logger.info("resetOrganization starting", { orgId, uid });
+
+  // places → count and cascade-delete nested productions along the way
+  const placesSnap = await db.collection(`organizations/${orgId}/places`).get();
+  counts.places = placesSnap.size;
+  for (const place of placesSnap.docs) {
+    const prodsSnap = await place.ref.collection("productions").get();
+    counts.productions += prodsSnap.size;
+    await db.recursiveDelete(place.ref);
+  }
+
+  // threads → count and cascade-delete nested messages along the way
+  const threadsSnap = await db.collection(`organizations/${orgId}/threads`).get();
+  counts.threads = threadsSnap.size;
+  for (const thread of threadsSnap.docs) {
+    const msgsSnap = await thread.ref.collection("messages").get();
+    counts.messages += msgsSnap.size;
+    await db.recursiveDelete(thread.ref);
+  }
+
+  // Remaining org subcollections with no further nesting to report on.
+  for (const sub of ["people", "personTypes", "broadcasts", "checkins"]) {
+    const snap = await db.collection(`organizations/${orgId}/${sub}`).get();
+    counts[sub] = snap.size;
+    for (const doc of snap.docs) {
+      await db.recursiveDelete(doc.ref);
+    }
+  }
+
+  // Top-level collections that reference orgId as a field rather than
+  // living under organizations/{orgId}. recursiveDelete on each doc catches
+  // tasks' and timelineTemplates' subcollections regardless of which ones
+  // actually have data.
+  for (const collectionName of ["departments", "tasks", "timelineTemplates"]) {
+    const snap = await db.collection(collectionName).where("orgId", "==", orgId).get();
+    counts[collectionName] = snap.size;
+    for (const doc of snap.docs) {
+      await db.recursiveDelete(doc.ref);
+    }
+  }
+
+  logger.info("resetOrganization complete", { orgId, uid, counts });
+
+  return { success: true, counts };
+});

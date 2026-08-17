@@ -5,7 +5,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUnread } from '../contexts/UnreadContext';
 import { DASHBOARD_STATES } from '../models/org';
 import { differenceInDays, startOfDay, endOfDay, addDays } from 'date-fns';
-import { getDisplayName } from '../utils/displayName';
 import UnreadCallout from '../components/messaging/UnreadCallout';
 import toast from 'react-hot-toast';
 
@@ -26,6 +25,21 @@ function getDashboardState(openDate, closeDate, override) {
   return DASHBOARD_STATES.PLANNING;
 }
 
+// Short badge suffix explaining why the dashboard is in this state. Only
+// call with isOverride true when the override actually determined the
+// displayed state — not just whenever the org has one stored, since the
+// no-active-production fallback ignores it.
+function getStateDescriptor(state, isOverride) {
+  if (isOverride) return 'manually set';
+  switch (state) {
+    case DASHBOARD_STATES.PLANNING:        return 'more than a week out';
+    case DASHBOARD_STATES.FINAL_COUNTDOWN: return 'within a week';
+    case DASHBOARD_STATES.LIVE:            return 'opens tonight';
+    case DASHBOARD_STATES.POSTMORTEM:      return 'production closed';
+    default: return '';
+  }
+}
+
 function formatDate(ts) {
   if (!ts) return '';
   const d = ts.toDate ? ts.toDate() : new Date(ts);
@@ -40,6 +54,7 @@ export default function AdminDashboardView() {
   const [dashState, setDashState]         = useState(DASHBOARD_STATES.PLANNING);
   const [activeProd, setActiveProd]       = useState(null);
   const [daysToOpen, setDaysToOpen]       = useState(null);
+  const [isOverride, setIsOverride]       = useState(false);
   const [loading, setLoading]             = useState(true);
 
   // State-specific data
@@ -65,6 +80,7 @@ export default function AdminDashboardView() {
 
         if (!compositeId) {
           setDashState(DASHBOARD_STATES.PLANNING);
+          setIsOverride(false);
           setLoading(false);
           return;
         }
@@ -76,6 +92,7 @@ export default function AdminDashboardView() {
 
         if (!prodSnap.exists()) {
           setDashState(DASHBOARD_STATES.PLANNING);
+          setIsOverride(false);
           setLoading(false);
           return;
         }
@@ -85,6 +102,7 @@ export default function AdminDashboardView() {
         const open  = prod.openDate?.toDate ? prod.openDate.toDate() : new Date(prod.openDate);
         setActiveProd(prod);
         setDashState(state);
+        setIsOverride(!!override);
         setDaysToOpen(differenceInDays(open, new Date()));
       } catch (err) {
         console.error('AdminDashboardView load error:', err);
@@ -194,6 +212,7 @@ export default function AdminDashboardView() {
         state={dashState}
         activeProd={activeProd}
         daysToOpen={daysToOpen}
+        isOverride={isOverride}
       />
       {unreadCount > 0 && (
         <div className="mb-6">
@@ -215,7 +234,7 @@ export default function AdminDashboardView() {
   );
 }
 
-function DashboardHeader({ state, activeProd, daysToOpen }) {
+function DashboardHeader({ state, activeProd, daysToOpen, isOverride }) {
   const prodName = activeProd?.name || 'your next production';
 
   const headers = {
@@ -233,13 +252,14 @@ function DashboardHeader({ state, activeProd, daysToOpen }) {
   };
 
   const { label, color } = stateLabels[state] || stateLabels[DASHBOARD_STATES.PLANNING];
+  const descriptor = getStateDescriptor(state, isOverride);
 
   return (
     <div className="mb-6">
       <div className="flex items-center gap-3 mb-1">
         <h1 className="text-2xl font-bold text-gray-900">{headers[state]}</h1>
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color}`}>
-          {label}
+          {descriptor ? `${label} (${descriptor})` : label}
         </span>
       </div>
     </div>
@@ -303,12 +323,6 @@ function PlanningState({ tasks, orgId }) {
 function FinalCountdownState({ tasksToday, tasksTomorrow, members }) {
   return (
     <div className="space-y-6">
-      {members.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-          <p className="text-sm font-medium text-amber-800 mb-1">{members.length} unconfirmed</p>
-          <p className="text-xs text-amber-600">These people have not yet confirmed their access. Send a reminder before opening night.</p>
-        </div>
-      )}
       <div>
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Today</h2>
         {tasksToday.length === 0 ? <EmptyState message="Nothing due today." /> : <TaskList tasks={tasksToday} />}
@@ -322,9 +336,6 @@ function FinalCountdownState({ tasksToday, tasksTomorrow, members }) {
 }
 
 function LiveState({ tasks, members, flags, checkinTokens }) {
-  const confirmed   = members.filter(m => m.accountStatus === 'confirmed');
-  const unconfirmed = members.filter(m => m.accountStatus !== 'confirmed');
-
   return (
     <div className="grid grid-cols-3 gap-6">
       {/* Today's Schedule */}
@@ -348,20 +359,10 @@ function LiveState({ tasks, members, flags, checkinTokens }) {
       {/* People Status */}
       <div>
         <h2 className="text-sm font-semibold text-gray-700 mb-3">People Status</h2>
-        <div className="bg-white border border-gray-200 rounded-xl p-4 mb-3">
-          <p className="text-2xl font-bold text-gray-900">{confirmed.length}</p>
-          <p className="text-xs text-gray-500">confirmed of {members.length}</p>
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <p className="text-2xl font-bold text-gray-900">{members.length}</p>
+          <p className="text-xs text-gray-500">team members</p>
         </div>
-        {unconfirmed.length > 0 && (
-          <div className="space-y-1.5">
-            {unconfirmed.map(m => (
-              <div key={m.uid} className="flex items-center gap-2 text-sm text-amber-700">
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
-                {getDisplayName(m)}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Open Flags */}

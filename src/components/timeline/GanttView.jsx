@@ -3,6 +3,7 @@ import { useState } from 'react';
 const DAY_WIDTH = 28;
 const ROW_HEIGHT = 44;
 const LABEL_WIDTH = 200;
+const EVENT_MARKER_SIZE = 10;
 
 function toMs(ts) {
   if (!ts) return 0;
@@ -26,6 +27,20 @@ function formatDetailDate(ts) {
   return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 }
 
+function formatDetailDateShort(ts) {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function formatTime(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+}
+
 const STATUS_STYLES = {
   not_started: 'bg-gray-100 text-gray-600',
   in_progress:  'bg-blue-100 text-blue-700',
@@ -40,19 +55,32 @@ const STATUS_LABELS = {
   overdue:      'Overdue',
 };
 
-export default function GanttView({ tasks, departments }) {
-  const [deptFilter, setDeptFilter]     = useState('all');
-  const [selectedTask, setSelectedTask] = useState(null);
+export default function GanttView({ tasks, events = [], departments }) {
+  const [deptFilter, setDeptFilter] = useState('all');
+  const [selected, setSelected]     = useState(null); // { type: 'task' | 'event', data }
 
   const filteredTasks = deptFilter === 'all'
     ? tasks
-    : tasks.filter(t => t.department === deptFilter);
+    : tasks.filter(t => (t.departmentId || t.department) === deptFilter);
+
+  const filteredEvents = deptFilter === 'all'
+    ? events
+    : events.filter(e => e.departmentId === deptFilter);
 
   const deptOptions = Object.entries(departments);
 
-  const allMs = filteredTasks
-    .flatMap(t => [t.assignedOnDate, t.dueByDate].filter(Boolean).map(toMs))
-    .filter(Boolean);
+  // Rows share one timeline: tasks first, then events. Each row knows its own
+  // type so it can render as a duration bar (tasks, and multi-day events) or
+  // a small marker (single-day events, which don't fit the bar model well).
+  const rows = [
+    ...filteredTasks.map(t => ({ type: 'task', id: t.id, data: t })),
+    ...filteredEvents.map(e => ({ type: 'event', id: e.id, data: e })),
+  ];
+
+  const allMs = [
+    ...filteredTasks.flatMap(t => [t.assignedOnDate, t.dueByDate].filter(Boolean).map(toMs)),
+    ...filteredEvents.flatMap(e => [e.startDate, e.endDate].filter(Boolean).map(toMs)),
+  ].filter(Boolean);
 
   const emptyState = (
     <div>
@@ -68,13 +96,13 @@ export default function GanttView({ tasks, departments }) {
         </div>
       )}
       <div className="bg-white border border-gray-200 rounded-xl p-10 text-center">
-        <p className="text-gray-500 text-sm mb-1">No tasks to display.</p>
-        <p className="text-gray-400 text-sm">Tasks with due dates will appear here.</p>
+        <p className="text-gray-500 text-sm mb-1">No tasks or events to display.</p>
+        <p className="text-gray-400 text-sm">Tasks with due dates and events with a start date will appear here.</p>
       </div>
     </div>
   );
 
-  if (filteredTasks.length === 0 || allMs.length === 0) return emptyState;
+  if (rows.length === 0 || allMs.length === 0) return emptyState;
 
   const minMs = Math.min(...allMs);
   const maxMs = Math.max(...allMs);
@@ -104,6 +132,25 @@ export default function GanttView({ tasks, departments }) {
 
   const todayOffset = dayOffset(new Date());
 
+  function isSelected(row) {
+    return selected?.type === row.type && selected?.id === row.id;
+  }
+
+  function renderGridlines() {
+    return (
+      <>
+        {weeks.map((week, i) => (
+          <div key={i} className="absolute top-0 h-full border-l border-gray-100"
+            style={{ left: dayOffset(week) * DAY_WIDTH }} />
+        ))}
+        {todayOffset >= 0 && todayOffset <= totalDays && (
+          <div className="absolute top-0 h-full w-0.5 bg-red-100"
+            style={{ left: todayOffset * DAY_WIDTH }} />
+        )}
+      </>
+    );
+  }
+
   return (
     <div className="flex gap-6">
       {/* Gantt chart */}
@@ -125,15 +172,19 @@ export default function GanttView({ tasks, departments }) {
             {/* Fixed label column */}
             <div className="flex-shrink-0 z-10 bg-white" style={{ width: LABEL_WIDTH }}>
               <div className="h-10 border-b border-r border-gray-200 bg-gray-50 px-3 flex items-center">
-                <span className="text-xs font-medium text-gray-500">Task</span>
+                <span className="text-xs font-medium text-gray-500">Task / Event</span>
               </div>
-              {filteredTasks.map(task => (
-                <div key={task.id}
-                  className={`border-b border-r border-gray-100 px-3 flex items-center cursor-pointer transition-colors ${selectedTask?.id === task.id ? 'bg-indigo-50' : 'hover:bg-gray-50'}`}
+              {rows.map(row => (
+                <div key={`${row.type}-${row.id}`}
+                  className={`border-b border-r border-gray-100 px-3 flex items-center gap-1.5 cursor-pointer transition-colors ${isSelected(row) ? 'bg-indigo-50' : 'hover:bg-gray-50'}`}
                   style={{ height: ROW_HEIGHT }}
-                  onClick={() => setSelectedTask(selectedTask?.id === task.id ? null : task)}
+                  onClick={() => setSelected(isSelected(row) ? null : { type: row.type, id: row.id, data: row.data })}
                 >
-                  <p className="text-sm text-gray-900 truncate font-medium">{task.title}</p>
+                  {row.type === 'event' && (
+                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: (row.data.departmentId && departments[row.data.departmentId]?.colorCode) || '#7c3aed' }} />
+                  )}
+                  <p className="text-sm text-gray-900 truncate font-medium">{row.data.title}</p>
                 </div>
               ))}
             </div>
@@ -156,30 +207,24 @@ export default function GanttView({ tasks, departments }) {
                 </div>
 
                 {/* Task rows */}
-                {filteredTasks.map(task => {
-                  const dept         = task.department ? departments[task.department] : null;
+                {rows.filter(r => r.type === 'task').map(row => {
+                  const task         = row.data;
+                  const dept         = (task.departmentId || task.department) ? departments[task.departmentId || task.department] : null;
                   const color        = dept?.colorCode || '#6366f1';
                   const startOffset  = task.assignedOnDate ? dayOffset(task.assignedOnDate) : dayOffset(task.dueByDate);
                   const endOffset    = dayOffset(task.dueByDate);
                   const barLeft      = startOffset * DAY_WIDTH;
                   const barWidth     = Math.max(DAY_WIDTH * 2, (endOffset - startOffset + 1) * DAY_WIDTH);
-                  const isSelected   = selectedTask?.id === task.id;
+                  const rowSelected  = isSelected(row);
 
                   return (
-                    <div key={task.id}
-                      className={`border-b border-gray-100 relative transition-colors ${isSelected ? 'bg-indigo-50' : ''}`}
+                    <div key={`task-${task.id}`}
+                      className={`border-b border-gray-100 relative transition-colors ${rowSelected ? 'bg-indigo-50' : ''}`}
                       style={{ height: ROW_HEIGHT, width: totalWidth }}
                     >
-                      {weeks.map((week, i) => (
-                        <div key={i} className="absolute top-0 h-full border-l border-gray-100"
-                          style={{ left: dayOffset(week) * DAY_WIDTH }} />
-                      ))}
-                      {todayOffset >= 0 && todayOffset <= totalDays && (
-                        <div className="absolute top-0 h-full w-0.5 bg-red-100"
-                          style={{ left: todayOffset * DAY_WIDTH }} />
-                      )}
+                      {renderGridlines()}
                       <button
-                        onClick={() => setSelectedTask(isSelected ? null : task)}
+                        onClick={() => setSelected(rowSelected ? null : { type: 'task', id: task.id, data: task })}
                         title={task.title}
                         className="absolute top-3 rounded flex items-center px-2 overflow-hidden hover:opacity-90 transition-opacity"
                         style={{
@@ -188,13 +233,68 @@ export default function GanttView({ tasks, departments }) {
                           height: ROW_HEIGHT - 24,
                           backgroundColor: `${color}28`,
                           borderLeft: `3px solid ${color}`,
-                          outline: isSelected ? `2px solid ${color}` : 'none',
+                          outline: rowSelected ? `2px solid ${color}` : 'none',
                         }}
                       >
                         <span className="text-xs font-medium truncate" style={{ color }}>
                           {task.title}
                         </span>
                       </button>
+                    </div>
+                  );
+                })}
+
+                {/* Event rows: multi-day events render as a dashed-outline duration bar
+                    (distinct from a task's solid tinted bar); single-day events render
+                    as a small diamond marker, since a 1-day bar doesn't read well next
+                    to multi-day bars on the same axis. */}
+                {rows.filter(r => r.type === 'event').map(row => {
+                  const event        = row.data;
+                  const dept         = event.departmentId ? departments[event.departmentId] : null;
+                  const color        = dept?.colorCode || '#7c3aed';
+                  const startOffset  = dayOffset(event.startDate);
+                  const endOffset    = dayOffset(event.endDate);
+                  const isSingleDay  = endOffset <= startOffset;
+                  const rowSelected  = isSelected(row);
+
+                  return (
+                    <div key={`event-${event.id}`}
+                      className={`border-b border-gray-100 relative transition-colors ${rowSelected ? 'bg-indigo-50' : ''}`}
+                      style={{ height: ROW_HEIGHT, width: totalWidth }}
+                    >
+                      {renderGridlines()}
+                      {isSingleDay ? (
+                        <button
+                          onClick={() => setSelected(rowSelected ? null : { type: 'event', id: event.id, data: event })}
+                          title={event.title}
+                          className="absolute top-1/2 rounded-sm rotate-45 hover:scale-110 transition-transform"
+                          style={{
+                            left: startOffset * DAY_WIDTH + DAY_WIDTH / 2 - EVENT_MARKER_SIZE / 2,
+                            width: EVENT_MARKER_SIZE,
+                            height: EVENT_MARKER_SIZE,
+                            marginTop: -EVENT_MARKER_SIZE / 2,
+                            backgroundColor: color,
+                            outline: rowSelected ? `2px solid ${color}` : 'none',
+                          }}
+                        />
+                      ) : (
+                        <button
+                          onClick={() => setSelected(rowSelected ? null : { type: 'event', id: event.id, data: event })}
+                          title={event.title}
+                          className="absolute top-3 rounded-full flex items-center px-2 overflow-hidden bg-white hover:bg-gray-50 transition-colors"
+                          style={{
+                            left: startOffset * DAY_WIDTH,
+                            width: (endOffset - startOffset + 1) * DAY_WIDTH,
+                            height: ROW_HEIGHT - 24,
+                            border: `2px dashed ${color}`,
+                            outline: rowSelected ? `2px solid ${color}` : 'none',
+                          }}
+                        >
+                          <span className="text-xs font-medium truncate" style={{ color }}>
+                            {event.title}
+                          </span>
+                        </button>
+                      )}
                     </div>
                   );
                 })}
@@ -205,52 +305,106 @@ export default function GanttView({ tasks, departments }) {
       </div>
 
       {/* Detail panel */}
-      {selectedTask && (
+      {selected && (
         <div className="w-72 flex-shrink-0">
           <div className="bg-white border border-gray-200 rounded-xl p-5">
             <div className="flex items-start justify-between gap-2 mb-4">
-              <h3 className="text-sm font-semibold text-gray-900 leading-snug">{selectedTask.title}</h3>
-              <button onClick={() => setSelectedTask(null)}
+              <h3 className="text-sm font-semibold text-gray-900 leading-snug">{selected.data.title}</h3>
+              <button onClick={() => setSelected(null)}
                 className="text-gray-400 hover:text-gray-600 flex-shrink-0 transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <div className="space-y-3 text-sm">
-              <div>
-                <p className="text-xs text-gray-400 mb-0.5">Due</p>
-                <p className="text-gray-700">{formatDetailDate(selectedTask.dueByDate)}</p>
-              </div>
-              {selectedTask.assignedOnDate && (
+
+            {selected.type === 'task' && (
+              <div className="space-y-3 text-sm">
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">Assigned on</p>
-                  <p className="text-gray-700">{formatDetailDate(selectedTask.assignedOnDate)}</p>
+                  <p className="text-xs text-gray-400 mb-0.5">Due</p>
+                  <p className="text-gray-700">{formatDetailDate(selected.data.dueByDate)}</p>
                 </div>
-              )}
-              <div>
-                <p className="text-xs text-gray-400 mb-0.5">Status</p>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[selectedTask.status] || STATUS_STYLES.not_started}`}>
-                  {STATUS_LABELS[selectedTask.status] || 'Not started'}
-                </span>
-              </div>
-              {selectedTask.department && departments[selectedTask.department] && (
-                <div>
-                  <p className="text-xs text-gray-400 mb-0.5">Department</p>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: departments[selectedTask.department].colorCode || '#6366f1' }} />
-                    <span className="text-gray-700">{departments[selectedTask.department].name}</span>
+                {selected.data.assignedOnDate && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">Assigned on</p>
+                    <p className="text-gray-700">{formatDetailDate(selected.data.assignedOnDate)}</p>
                   </div>
-                </div>
-              )}
-              {selectedTask.description && (
+                )}
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">Description</p>
-                  <p className="text-gray-700 leading-relaxed">{selectedTask.description}</p>
+                  <p className="text-xs text-gray-400 mb-0.5">Status</p>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[selected.data.status] || STATUS_STYLES.not_started}`}>
+                    {STATUS_LABELS[selected.data.status] || 'Not started'}
+                  </span>
                 </div>
-              )}
-            </div>
+                {(selected.data.departmentId || selected.data.department) && departments[selected.data.departmentId || selected.data.department] && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">Department</p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: departments[selected.data.departmentId || selected.data.department].colorCode || '#6366f1' }} />
+                      <span className="text-gray-700">{departments[selected.data.departmentId || selected.data.department].name}</span>
+                    </div>
+                  </div>
+                )}
+                {selected.data.description && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">Description</p>
+                    <p className="text-gray-700 leading-relaxed">{selected.data.description}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selected.type === 'event' && (
+              <div className="space-y-3 text-sm">
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">
+                    {formatDetailDateShort(selected.data.startDate) === formatDetailDateShort(selected.data.endDate) ? 'Date' : 'Dates'}
+                  </p>
+                  <p className="text-gray-700">
+                    {formatDetailDateShort(selected.data.startDate) === formatDetailDateShort(selected.data.endDate)
+                      ? formatDetailDate(selected.data.startDate)
+                      : `${formatDetailDateShort(selected.data.startDate)} to ${formatDetailDateShort(selected.data.endDate)}`}
+                  </p>
+                </div>
+                {(selected.data.startTime || selected.data.endTime) && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">Time</p>
+                    <p className="text-gray-700">
+                      {formatTime(selected.data.startTime)}
+                      {selected.data.endTime ? ` to ${formatTime(selected.data.endTime)}` : ''}
+                    </p>
+                  </div>
+                )}
+                {selected.data.location && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">Location</p>
+                    <p className="text-gray-700">{selected.data.location}</p>
+                  </div>
+                )}
+                {selected.data.departmentId && departments[selected.data.departmentId] && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">Department</p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: departments[selected.data.departmentId].colorCode || '#7c3aed' }} />
+                      <span className="text-gray-700">{departments[selected.data.departmentId].name}</span>
+                    </div>
+                  </div>
+                )}
+                {selected.data.recurrence?.enabled && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">Repeats</p>
+                    <p className="text-gray-700 capitalize">{selected.data.recurrence.frequency}</p>
+                  </div>
+                )}
+                {selected.data.description && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">Description</p>
+                    <p className="text-gray-700 leading-relaxed">{selected.data.description}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -19,6 +19,12 @@ const TOGGLEABLE_LABELS = {
   accessibilityNeeds:  'Accessibility Needs',
 };
 
+// multiselect/checkboxGroup fields expect an array value; CSV cells are flat
+// strings, so multiple selections within one cell are semicolon-separated
+// (e.g. "Red; Blue; Green") and split back into an array on import.
+const MULTI_VALUE_FIELD_TYPES = ['multiselect', 'checkboxGroup'];
+const MULTI_VALUE_DELIMITER = ';';
+
 export default function CsvImportForm({ personType, onSuccess, onCancel }) {
   const { userProfile } = useAuth();
   const { orgId, uid } = userProfile;
@@ -35,14 +41,16 @@ export default function CsvImportForm({ personType, onSuccess, onCancel }) {
 
   // Build the list of fields this person type uses
   const typeFields = [
-    ...UNIVERSAL_FIELDS,
+    ...UNIVERSAL_FIELDS.map(f => ({ ...f, type: 'text' })),
     ...Object.entries(personType.toggleableFields || {})
       .filter(([, v]) => v)
-      .map(([k]) => ({ key: k, label: TOGGLEABLE_LABELS[k] || k })),
+      .map(([k]) => ({ key: k, label: TOGGLEABLE_LABELS[k] || k, type: k === 'dateOfBirth' ? 'date' : 'text' })),
     ...(personType.customFields || [])
       .sort((a, b) => a.order - b.order)
-      .map(f => ({ key: f.fieldId, label: f.label })),
+      .map(f => ({ key: f.fieldId, label: f.label, type: f.type })),
   ];
+
+  const multiValueFields = typeFields.filter(f => MULTI_VALUE_FIELD_TYPES.includes(f.type));
 
   function handleFile(e) {
     const file = e.target.files[0];
@@ -114,7 +122,10 @@ export default function CsvImportForm({ personType, onSuccess, onCancel }) {
         const fieldValues = {};
         typeFields.forEach(field => {
           const col = mapping[field.key];
-          fieldValues[field.key] = col ? (row[col] || '') : '';
+          const raw = col ? (row[col] || '') : '';
+          fieldValues[field.key] = MULTI_VALUE_FIELD_TYPES.includes(field.type)
+            ? (raw ? raw.split(MULTI_VALUE_DELIMITER).map(v => v.trim()).filter(Boolean) : [])
+            : raw;
         });
 
         await addDoc(
@@ -163,6 +174,13 @@ export default function CsvImportForm({ personType, onSuccess, onCancel }) {
           <input ref={fileInputRef} type="file" accept=".csv" onChange={handleFile} className="hidden" />
         </div>
 
+        {multiValueFields.length > 0 && (
+          <p className="text-xs text-gray-400 mt-3">
+            {multiValueFields.map(f => f.label).join(', ')} accept{multiValueFields.length === 1 ? 's' : ''} multiple values.
+            Separate them with a semicolon within the cell, e.g. "Red; Blue; Green".
+          </p>
+        )}
+
         {error && <p className="text-sm text-red-600 mt-4">{error}</p>}
 
         <div className="flex items-center gap-3 mt-6">
@@ -189,6 +207,9 @@ export default function CsvImportForm({ personType, onSuccess, onCancel }) {
               <span className="text-sm font-medium text-gray-700 w-40 flex-shrink-0">
                 {field.label}
                 {field.key === 'name' && <span className="text-red-500 ml-0.5">*</span>}
+                {MULTI_VALUE_FIELD_TYPES.includes(field.type) && (
+                  <span className="block text-xs font-normal text-gray-400">semicolon-separated</span>
+                )}
               </span>
               <select
                 value={mapping[field.key] || ''}

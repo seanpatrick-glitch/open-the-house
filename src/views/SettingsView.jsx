@@ -1,11 +1,26 @@
 import { useState, useEffect } from 'react';
 import { doc, getDoc, updateDoc, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getDisplayName } from '../utils/displayName';
 import CreatePersonTypeForm from '../components/people/CreatePersonTypeForm';
 import CreateSignupTokenForm from '../components/people/CreateSignupTokenForm';
 import toast from 'react-hot-toast';
+
+const RESET_COLLECTION_LABELS = {
+  people:            'People',
+  personTypes:       'Person types',
+  places:            'Places',
+  productions:       'Productions',
+  departments:       'Departments',
+  tasks:             'Tasks',
+  timelineTemplates: 'Timeline templates',
+  threads:           'Message threads',
+  messages:          'Messages',
+  broadcasts:        'Broadcasts',
+  checkins:          'Check ins',
+};
 
 export default function SettingsView() {
   const { userProfile } = useAuth();
@@ -26,8 +41,14 @@ export default function SettingsView() {
   const [dashboardOverride, setDashboardOverride] = useState('');
   const [savingProd, setSavingProd]           = useState(false);
   const [savingOverride, setSavingOverride]   = useState(false);
+  const [orgName, setOrgName]                 = useState('');
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetConfirmText, setResetConfirmText] = useState('');
+  const [resetting, setResetting]             = useState(false);
+  const [resetResult, setResetResult]         = useState(null);
 
   const orgId = userProfile?.orgId;
+  const isAdminRole = userProfile?.role === 'admin' || userProfile?.role === 'secondaryAdmin';
 
   useEffect(() => {
     if (!orgId) return;
@@ -41,6 +62,7 @@ export default function SettingsView() {
           setDepartmentsEnabled(data.departmentsEnabled ?? false);
           setActiveProdId(data.activeProdId ?? '');
           setDashboardOverride(data.dashboardStateOverride ?? '');
+          setOrgName(data.name ?? '');
         }
       } catch (err) {
         console.error('Error fetching org settings:', err);
@@ -195,6 +217,24 @@ export default function SettingsView() {
       toast.error('Could not set dashboard override. Please try again.');
     } finally {
       setSavingOverride(false);
+    }
+  }
+
+  async function handleResetOrganization() {
+    if (resetConfirmText !== orgName) return;
+    setResetting(true);
+    setResetResult(null);
+    try {
+      const resetOrganization = httpsCallable(functions, 'resetOrganization');
+      const { data } = await resetOrganization({ orgId, confirmName: resetConfirmText });
+      setResetResult({ success: true, counts: data.counts });
+      setShowResetConfirm(false);
+      setResetConfirmText('');
+    } catch (err) {
+      console.error('Error resetting organization:', err);
+      setResetResult({ success: false, message: err.message || 'Reset failed. Please try again.' });
+    } finally {
+      setResetting(false);
     }
   }
 
@@ -378,16 +418,19 @@ export default function SettingsView() {
         </div>
 
         {/* Dashboard State Override */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <h2 className="text-base font-semibold text-gray-800 mb-1">Dashboard State Override</h2>
-          <p className="text-sm text-gray-500 mb-4">
-            Force the dashboard to a specific state regardless of production dates. Leave blank to auto-calculate.
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+          <h2 className="text-base font-semibold text-amber-900 mb-1">Dashboard State Override</h2>
+          <p className="text-sm text-amber-800 mb-1">
+            Force the dashboard to a specific state regardless of production dates.
+          </p>
+          <p className="text-xs text-amber-700 mb-4">
+            This overrides the computed state on the Admin, Department Head, and Collaborator dashboards until you turn it back to Auto. Most settings here are set once and left alone. This one keeps acting until you turn it off, so it is worth checking back on.
           </p>
           <select
             value={dashboardOverride}
             onChange={e => handleSetOverride(e.target.value)}
             disabled={savingOverride}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+            className="w-full border border-amber-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50"
           >
             <option value="">Auto (based on production dates)</option>
             <option value="planning">Planning</option>
@@ -462,6 +505,77 @@ export default function SettingsView() {
             </div>
           )}
         </div>
+
+        {/* Danger Zone */}
+        {isAdminRole && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+            <h2 className="text-base font-semibold text-red-900 mb-1">Danger Zone</h2>
+            <p className="text-sm text-red-800 mb-4">
+              Permanently delete productions, places, people, person types, departments, tasks, timeline templates, message threads, broadcasts, and check ins for this organization. Your organization, members, and settings are not affected. This cannot be undone.
+            </p>
+
+            {!showResetConfirm ? (
+              <button
+                onClick={() => { setShowResetConfirm(true); setResetResult(null); }}
+                className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              >
+                Reset Organization Data
+              </button>
+            ) : (
+              <div className="bg-white border border-red-300 rounded-lg p-4 space-y-3">
+                <p className="text-sm text-gray-800">
+                  Type <span className="font-mono font-semibold">{orgName}</span> to confirm. This will permanently delete the data listed above.
+                </p>
+                <input
+                  type="text"
+                  value={resetConfirmText}
+                  onChange={e => setResetConfirmText(e.target.value)}
+                  placeholder={orgName}
+                  autoComplete="off"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                />
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleResetOrganization}
+                    disabled={resetting || resetConfirmText !== orgName}
+                    className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                  >
+                    {resetting ? 'Resetting...' : 'Confirm Reset'}
+                  </button>
+                  <button
+                    onClick={() => { setShowResetConfirm(false); setResetConfirmText(''); }}
+                    disabled={resetting}
+                    className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {resetResult && (
+              resetResult.success ? (
+                <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
+                  <p className="text-sm font-medium text-green-800 mb-2">Organization data reset.</p>
+                  <ul className="text-xs text-green-700 space-y-0.5">
+                    {Object.entries(resetResult.counts)
+                      .filter(([, count]) => count > 0)
+                      .map(([key, count]) => (
+                        <li key={key}>{RESET_COLLECTION_LABELS[key] || key}: {count} deleted</li>
+                      ))}
+                    {Object.values(resetResult.counts).every(c => c === 0) && (
+                      <li>Nothing to delete. The organization was already clean.</li>
+                    )}
+                  </ul>
+                </div>
+              ) : (
+                <div className="mt-4 bg-red-100 border border-red-300 rounded-lg p-4">
+                  <p className="text-sm font-medium text-red-800">Reset failed: {resetResult.message}</p>
+                </div>
+              )
+            )}
+          </div>
+        )}
 
       </div>
     </div>

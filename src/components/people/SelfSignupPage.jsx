@@ -199,6 +199,11 @@ export default function SelfSignupPage() {
                     onChange={e => setField(field.fieldId, e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 )}
+                {field.type === 'date' && (
+                  <input type="date" value={fieldValues[field.fieldId] || ''}
+                    onChange={e => setField(field.fieldId, e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                )}
                 {field.type === 'select' && (
                   <select value={fieldValues[field.fieldId] || ''}
                     onChange={e => setField(field.fieldId, e.target.value)}
@@ -206,6 +211,42 @@ export default function SelfSignupPage() {
                     <option value="">Select...</option>
                     {(field.options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
                   </select>
+                )}
+                {field.type === 'multiselect' && (
+                  <div className="space-y-1">
+                    {(field.options || []).map(opt => (
+                      <label key={opt} className="flex items-center gap-2 text-sm text-gray-700">
+                        <input type="checkbox"
+                          checked={(fieldValues[field.fieldId] || []).includes(opt)}
+                          onChange={e => {
+                            const current = fieldValues[field.fieldId] || [];
+                            setField(field.fieldId, e.target.checked
+                              ? [...current, opt]
+                              : current.filter(v => v !== opt));
+                          }}
+                          className="rounded border-gray-300" />
+                        {opt}
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {field.type === 'checkboxGroup' && (
+                  <div className="space-y-1">
+                    {(field.options || []).map(opt => (
+                      <label key={opt} className="flex items-center gap-2 text-sm text-gray-700">
+                        <input type="checkbox"
+                          checked={(fieldValues[field.fieldId] || []).includes(opt)}
+                          onChange={e => {
+                            const current = fieldValues[field.fieldId] || [];
+                            setField(field.fieldId, e.target.checked
+                              ? [...current, opt]
+                              : current.filter(v => v !== opt));
+                          }}
+                          className="rounded border-gray-300" />
+                        {opt}
+                      </label>
+                    ))}
+                  </div>
                 )}
               </div>
             ))}

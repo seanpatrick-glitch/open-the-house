@@ -238,7 +238,7 @@ export default function PersonView() {
             <>
               <div className="flex-1 overflow-y-auto space-y-3 pb-4">
                 {dhMessages.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center mt-6">No messages yet. Say hello!</p>
+                  <p className="text-sm text-gray-400 text-center mt-6">No messages yet. Say hello.</p>
                 ) : (
                   dhMessages.map(msg => {
                     const isMine = msg.senderUid === uid;
