@@ -74,9 +74,12 @@ export default function BroadcastForm({ onClose, initialScope, initialDepartment
         }
       );
 
-      // Fan out — create one thread + one message per recipient in batches of 400
+      // Fan out — create one thread + one message per recipient, chunked to stay
+      // under Firestore's 500-write-per-batch limit (2 writes per recipient here).
       const threadIds = [];
-      const BATCH_SIZE = 400;
+      const OPERATIONS_PER_RECIPIENT = 2;
+      const FIRESTORE_BATCH_WRITE_LIMIT = 500;
+      const BATCH_SIZE = Math.floor(FIRESTORE_BATCH_WRITE_LIMIT / OPERATIONS_PER_RECIPIENT);
 
       for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
         const batch = writeBatch(db);
