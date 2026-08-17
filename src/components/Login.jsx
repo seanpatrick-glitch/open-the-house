@@ -55,7 +55,7 @@ export default function Login() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="text-4xl mb-3">🎭</div>
-          <h1 className="text-3xl font-bold text-gray-900">Open the House</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Places People!</h1>
         </div>
 
         {/* Login Form */}

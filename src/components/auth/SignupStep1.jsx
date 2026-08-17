@@ -49,7 +49,7 @@ export default function SignupStep1({ onComplete }) {
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <div className="text-4xl mb-3">🎭</div>
-          <h1 className="text-3xl font-bold text-gray-900">Open the House</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Places People!</h1>
           <p className="text-gray-500 mt-2 text-sm">Create your account</p>
         </div>
 
