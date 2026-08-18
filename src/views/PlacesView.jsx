@@ -3,6 +3,7 @@ import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import CreatePlaceForm from '../components/productions/CreatePlaceForm';
+import ProductionDashboard from '../components/productions/ProductionDashboard';
 import toast from 'react-hot-toast';
 
 export default function PlacesView() {
@@ -13,6 +14,7 @@ export default function PlacesView() {
   const [prodCounts, setProdCounts]     = useState({});
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [productions, setProductions]   = useState([]);
+  const [selectedProduction, setSelectedProduction] = useState(null);
   const [loading, setLoading]           = useState(true);
   const [showAddPlace, setShowAddPlace] = useState(false);
 
@@ -74,6 +76,21 @@ export default function PlacesView() {
     return <div className="p-6 text-gray-500 text-sm">Loading places...</div>;
   }
 
+  // Production workspace — drilled into from a place's production list below.
+  // Same component ProductionsView.jsx opens; Check-In for a specific show
+  // date now lives inside it (see ShowDatesPanel), which is the reason this
+  // view needed a real click-through into a production at all (2026-08-18).
+  if (selectedProduction) {
+    return (
+      <ProductionDashboard
+        production={selectedProduction}
+        places={places}
+        onBack={() => setSelectedProduction(null)}
+        backLabel={selectedPlace?.name ?? 'Places'}
+      />
+    );
+  }
+
   // Place detail view
   if (selectedPlace) {
     return (
@@ -103,7 +120,11 @@ export default function PlacesView() {
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div className="divide-y divide-gray-100">
               {productions.map(prod => (
-                <div key={prod.id} className="px-4 py-4">
+                <button
+                  key={prod.id}
+                  onClick={() => setSelectedProduction(prod)}
+                  className="w-full text-left px-4 py-4 hover:bg-gray-50 transition-colors"
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-gray-900">{prod.name}</p>
@@ -133,7 +154,7 @@ export default function PlacesView() {
                         ))}
                     </div>
                   )}
-                </div>
+                </button>
               ))}
             </div>
           </div>

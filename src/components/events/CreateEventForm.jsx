@@ -46,11 +46,18 @@ function generateOccurrences(startDate, endDate, frequency, recurrenceEndDate, m
   return occurrences;
 }
 
-export default function CreateEventForm({ onSuccess, onCancel }) {
+// production: optional. When passed (production.id + production.name), the
+// form locks to EVENT_SCOPE.PRODUCTION and hides the Scope/Department UI
+// entirely — this is the "Add Show Date" mode used from ShowDatesPanel.
+// Only admin/secondaryAdmin ever reach this mode (gated at the panel's
+// button, matching firestore.rules, which has no Department Head clause
+// for scope 'production').
+export default function CreateEventForm({ onSuccess, onCancel, production }) {
   const { userProfile } = useAuth();
   const { orgId, uid } = userProfile;
 
   const isDepartmentHead = userProfile.role === 'departmentHead';
+  const isShowDate = !!production;
 
   const [title, setTitle]             = useState('');
   const [description, setDescription] = useState('');
@@ -60,7 +67,9 @@ export default function CreateEventForm({ onSuccess, onCancel }) {
   const [startTime, setStartTime]     = useState('');
   const [endTime, setEndTime]         = useState('');
   const [location, setLocation]       = useState('');
-  const [scope, setScope]             = useState(isDepartmentHead ? EVENT_SCOPE.DEPARTMENT : EVENT_SCOPE.ORG);
+  const [scope, setScope]             = useState(
+    isShowDate ? EVENT_SCOPE.PRODUCTION : isDepartmentHead ? EVENT_SCOPE.DEPARTMENT : EVENT_SCOPE.ORG
+  );
   const [departmentId, setDepartmentId] = useState('');
   const [departments, setDepartments] = useState([]);
   const [recurrenceEnabled, setRecurrenceEnabled] = useState(false);
@@ -71,10 +80,10 @@ export default function CreateEventForm({ onSuccess, onCancel }) {
   const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
-    if (!orgId) return;
+    if (!orgId || isShowDate) return;
     getDocs(query(collection(db, 'departments'), where('orgId', '==', orgId)))
       .then(snap => setDepartments(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-  }, [orgId]);
+  }, [orgId, isShowDate]);
 
   function handleStartDateChange(value) {
     setStartDate(value);
@@ -151,6 +160,8 @@ export default function CreateEventForm({ onSuccess, onCancel }) {
       endTime: endTime || null,
       scope,
       departmentId: scope === EVENT_SCOPE.DEPARTMENT ? departmentId : null,
+      production: isShowDate ? production.id : null,
+      productionName: isShowDate ? production.name : null,
       createdBy: uid,
       createdAt: serverTimestamp(),
     };
@@ -209,13 +220,13 @@ export default function CreateEventForm({ onSuccess, onCancel }) {
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 max-w-lg">
-      <h2 className="text-base font-semibold text-gray-900 mb-5">New Event</h2>
+      <h2 className="text-base font-semibold text-gray-900 mb-5">{isShowDate ? `New Show Date for ${production.name}` : 'New Event'}</h2>
       <div className="space-y-4">
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Title <span className="text-red-500">*</span></label>
           <input type="text" value={title} onChange={e => { setTitle(e.target.value); clearFieldError('title'); }}
-            placeholder="e.g. Opening Night"
+            placeholder={isShowDate ? 'e.g. Friday 8pm show' : 'e.g. Opening Night'}
             className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500', !!fieldErrors.title)} />
           <FieldError message={fieldErrors.title} />
         </div>
@@ -265,31 +276,33 @@ export default function CreateEventForm({ onSuccess, onCancel }) {
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
         </div>
 
-        {/* Scope */}
-        <div className="flex items-start justify-between gap-6">
-          <div>
-            <p className="text-sm font-medium text-gray-700">Scope</p>
-            <p className="text-xs text-gray-400 mt-0.5">
-              {isDepartmentHead
-                ? 'Department events are owned by your department.'
-                : 'Org events appear on the org-wide calendar. Department events are owned by a department.'}
-            </p>
-          </div>
-          {!isDepartmentHead && (
-            <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1 flex-shrink-0">
-              <button type="button" onClick={() => setScope(EVENT_SCOPE.ORG)}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${scope === EVENT_SCOPE.ORG ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-                Org
-              </button>
-              <button type="button" onClick={() => setScope(EVENT_SCOPE.DEPARTMENT)}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${scope === EVENT_SCOPE.DEPARTMENT ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-                Department
-              </button>
+        {/* Scope — hidden entirely in show-date mode, where scope is always 'production' */}
+        {!isShowDate && (
+          <div className="flex items-start justify-between gap-6">
+            <div>
+              <p className="text-sm font-medium text-gray-700">Scope</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {isDepartmentHead
+                  ? 'Department events are owned by your department.'
+                  : 'Org events appear on the org-wide calendar. Department events are owned by a department.'}
+              </p>
             </div>
-          )}
-        </div>
+            {!isDepartmentHead && (
+              <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1 flex-shrink-0">
+                <button type="button" onClick={() => setScope(EVENT_SCOPE.ORG)}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${scope === EVENT_SCOPE.ORG ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                  Org
+                </button>
+                <button type="button" onClick={() => setScope(EVENT_SCOPE.DEPARTMENT)}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${scope === EVENT_SCOPE.DEPARTMENT ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                  Department
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
-        {scope === EVENT_SCOPE.DEPARTMENT && departments.length > 0 && (
+        {!isShowDate && scope === EVENT_SCOPE.DEPARTMENT && departments.length > 0 && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Department <span className="text-red-500">*</span></label>
             <select value={departmentId} onChange={e => { setDepartmentId(e.target.value); clearFieldError('departmentId'); }}
@@ -356,7 +369,7 @@ export default function CreateEventForm({ onSuccess, onCancel }) {
         <button onClick={handleSubmit}
           disabled={submitDisabled}
           className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
-          {saving ? 'Creating...' : 'Create Event'}
+          {saving ? 'Creating...' : isShowDate ? 'Create Show Date' : 'Create Event'}
         </button>
         <button onClick={onCancel}
           className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
