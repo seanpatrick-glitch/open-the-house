@@ -3,6 +3,7 @@ import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestor
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import CreateDepartmentForm from '../components/departments/CreateDepartmentForm';
+import DepartmentDetailView from '../components/departments/DepartmentDetailView';
 
 export default function DepartmentsView({ onNavigate }) {
   const { userProfile } = useAuth();
@@ -10,6 +11,7 @@ export default function DepartmentsView({ onNavigate }) {
   const [deptStats, setDeptStats]       = useState({});
   const [loading, setLoading]           = useState(true);
   const [showForm, setShowForm]         = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState(null);
 
   const orgId = userProfile?.orgId;
 
@@ -73,6 +75,18 @@ export default function DepartmentsView({ onNavigate }) {
     return <div className="p-6 text-gray-500 text-sm">Loading departments...</div>;
   }
 
+  if (selectedDepartment) {
+    return (
+      <div className="p-6">
+        <DepartmentDetailView
+          department={selectedDepartment}
+          onBack={() => setSelectedDepartment(null)}
+          onViewTimeline={() => onNavigate && onNavigate('timeline', { departmentFilter: selectedDepartment.id })}
+        />
+      </div>
+    );
+  }
+
   if (showForm) {
     return (
       <div className="p-6 max-w-4xl">
@@ -129,7 +143,7 @@ export default function DepartmentsView({ onNavigate }) {
             return (
               <button
                 key={dept.id}
-                onClick={() => onNavigate && onNavigate('timeline', { departmentFilter: dept.id })}
+                onClick={() => setSelectedDepartment(dept)}
                 className="bg-white border border-gray-200 rounded-xl p-5 text-left hover:border-gray-300 hover:shadow-sm transition-all"
               >
                 <div className="flex items-start gap-3 mb-3">
