@@ -135,6 +135,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
       }
 
       setSuccess(true)
+      setLoading(false)
       setName('')
       setDescription('')
       setColorCode('#f59e0b')
