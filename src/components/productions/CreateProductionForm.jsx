@@ -64,7 +64,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
     setError('')
 
     try {
-      await addDoc(
+      const ref = await addDoc(
         collection(db, 'organizations', userProfile.orgId, 'places', placeId, 'productions'),
         {
           name:         name.trim(),
@@ -99,7 +99,10 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
 
       setTimeout(() => {
         setSuccess(false)
-        onSuccess()
+        // id/placeId passed for callers that need to reference the just-created
+        // production (e.g. the onboarding wizard setting activeProdId); existing
+        // callers that call onSuccess() with no args are unaffected.
+        onSuccess({ id: ref.id, placeId })
       }, 1500)
     } catch (err) {
       console.error('CreateProductionForm submit:', err)
