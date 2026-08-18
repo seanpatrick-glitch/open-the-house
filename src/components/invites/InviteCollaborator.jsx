@@ -2,20 +2,15 @@ import React, { useState, useEffect } from 'react'
 import {
   collection,
   doc,
-  getDoc,
   getDocs,
-  setDoc,
   deleteDoc,
   query,
   where,
   onSnapshot,
-  serverTimestamp,
-  Timestamp,
 } from 'firebase/firestore'
-import { sendSignInLinkToEmail } from 'firebase/auth'
-import { db, auth } from '../../firebase'
+import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
-import { getInviteActionCodeSettings } from '../../utils/invites'
+import { sendCollaboratorInvite } from '../../utils/collaboratorInvites'
 import toast from 'react-hot-toast'
 
 const ROLE_OPTIONS = [
@@ -115,41 +110,13 @@ export default function InviteCollaborator() {
     setSubmitting(true)
 
     try {
-      const orgSnap = await getDoc(doc(db, 'organizations', userProfile.orgId))
-      if (!orgSnap.exists()) {
-        toast.error('Could not read organization information. Please try again.')
-        setSubmitting(false)
-        return
-      }
-      const orgName = orgSnap.data().name
-
-      // Department Head invites use the department's own id as the pendingInvites
-      // doc id, so firestore.rules can look it up deterministically when the
-      // incoming head writes departmentHeadUid back onto the department doc.
-      const inviteId  = role === 'departmentHead' ? departmentId : crypto.randomUUID()
-      const now       = Timestamp.now()
-      const expiresAt = Timestamp.fromMillis(now.toMillis() + 7 * 24 * 60 * 60 * 1000)
-
-      await setDoc(
-        doc(db, 'organizations', userProfile.orgId, 'pendingInvites', inviteId),
-        {
-          inviteId,
-          email:        email.trim(),
-          role,
-          departmentId: role === 'departmentHead' ? departmentId : null,
-          level:        'organization',
-          scopeId:      userProfile.orgId,
-          orgId:        userProfile.orgId,
-          orgName,
-          createdBy:    userProfile.uid,
-          createdAt:    serverTimestamp(),
-          expiresAt,
-          status:       'pending',
-        }
-      )
-
-      await sendSignInLinkToEmail(auth, email.trim(), getInviteActionCodeSettings(userProfile.orgId, inviteId))
-      window.localStorage.setItem('emailForSignIn', email.trim())
+      await sendCollaboratorInvite({
+        orgId: userProfile.orgId,
+        uid: userProfile.uid,
+        email: email.trim(),
+        role,
+        departmentId: role === 'departmentHead' ? departmentId : null,
+      })
 
       setEmail('')
       setRole('orgCollaborator')
