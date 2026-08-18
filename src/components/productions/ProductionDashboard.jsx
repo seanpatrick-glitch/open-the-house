@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { getDisplayName } from '../../utils/displayName'
 import TaskDetailPanel from '../timeline/TaskDetailPanel'
 import VolunteersPanel from './VolunteersPanel'
+import ShowDatesPanel from './ShowDatesPanel'
 import toast from 'react-hot-toast'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -65,7 +66,7 @@ function formatDate(ts) {
 
 // ── ProductionDashboard ───────────────────────────────────────────────────────
 
-export default function ProductionDashboard({ production, places, onBack }) {
+export default function ProductionDashboard({ production, places, onBack, backLabel = 'Productions' }) {
   const { userProfile } = useAuth()
   const orgId = userProfile.orgId
 
@@ -200,7 +201,7 @@ export default function ProductionDashboard({ production, places, onBack }) {
         onClick={onBack}
         className="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
       >
-        ← Productions
+        ← {backLabel}
       </button>
 
       {/* Header */}
@@ -269,6 +270,11 @@ export default function ProductionDashboard({ production, places, onBack }) {
           })}
         </div>
       </section>
+
+      {/* Show Dates — performance dates for this production, each opening
+          the Check-In flow scoped to that date (2026-08-18, relocated from
+          the old standalone top-level Check-In nav entry). */}
+      <ShowDatesPanel production={production} />
 
       {/* This Production's Tasks */}
       <section>

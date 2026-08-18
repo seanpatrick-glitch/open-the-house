@@ -7,7 +7,6 @@ import DepartmentsView from '../../views/DepartmentsView'
 import TimelineView from '../../views/TimelineView'
 import SettingsView from '../../views/SettingsView'
 import PeopleView from '../../views/PeopleView'
-import CheckInView from '../checkin/CheckInView'
 import MessageView from '../../views/MessageView'
 import AdminDashboardView from '../../views/AdminDashboardView';
 import DHDashboardView from '../../views/DHDashboardView';
@@ -22,7 +21,6 @@ import { UnreadProvider } from '../../contexts/UnreadContext';
 const SECTION_LABELS = {
   messages:            'Messages',
   productions:         'Productions',
-  checkin:             'Check-In',
   departments:         'Departments',
   'volunteer-list':    'Volunteer List',
   'collaborator-list': 'Collaborator List',
@@ -48,7 +46,6 @@ function SectionContent({ section, onNavigate, userProfile, navState }) {
   }
   if (section === 'messages')            return <MessageView navState={navState} />
   if (section === 'productions')        return <ProductionsView />
-  if (section === 'checkin')            return <CheckInView />
   if (section === 'timeline')           return <TimelineView navState={navState} />;
   if (section === 'departments')        return <DepartmentsView onNavigate={onNavigate} />
   if (section === 'places')              return <PlacesView />;

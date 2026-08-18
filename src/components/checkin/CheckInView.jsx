@@ -18,49 +18,36 @@ function formatDate(ts) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export default function CheckInView() {
+// dateOnlyString: 'YYYY-MM-DD' for a given Date, in local time — matches the
+// same format the old <input type="date"> picker produced, since the
+// check-ins date-range query (below) is written against that string shape.
+function dateOnlyString(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+// Reached only from ShowDatesPanel now (Places > Production > show date) —
+// production and event are both required, no standalone top-level route or
+// production/date picker exists anymore (2026-08-18). event is the show-date
+// Event document (scope 'production'); its startDate is the fixed check-in
+// date for this screen.
+export default function CheckInView({ production, event, onBack }) {
   const { userProfile } = useAuth();
   const orgId = userProfile?.orgId;
   const uid   = userProfile?.uid;
 
-  const [productions, setProductions]     = useState([]);
-  const [selectedProd, setSelectedProd]   = useState('');
-  const [selectedDate, setSelectedDate]   = useState(() => new Date().toISOString().split('T')[0]);
+  const selectedProd = production.id;
+  const selectedDate = dateOnlyString(event.startDate.toDate ? event.startDate.toDate() : new Date(event.startDate));
+
   const [roster, setRoster]               = useState([]);
   const [checkins, setCheckins]           = useState({});
   const [loading, setLoading]             = useState(false);
-  const [loadingProds, setLoadingProds]   = useState(true);
   const [saving, setSaving]               = useState({});
   const [showQR, setShowQR] = useState(false);
-  const [qrProduction, setQrProduction] = useState(null);
 
-  // Load all productions for this org
-  useEffect(() => {
-    if (!orgId) return;
-    const loadProductions = async () => {
-      try {
-        const placesSnap = await getDocs(collection(db, 'organizations', orgId, 'places'));
-        const allProds = [];
-        for (const place of placesSnap.docs) {
-          const prodsSnap = await getDocs(
-            collection(db, 'organizations', orgId, 'places', place.id, 'productions')
-          );
-          prodsSnap.docs.forEach(d => {
-            allProds.push({ id: d.id, placeId: place.id, ...d.data() });
-          });
-        }
-        setProductions(allProds);
-      } catch (err) {
-        console.error('CheckInView load productions error:', err);
-        toast.error('Could not load productions. Please refresh and try again.');
-      } finally {
-        setLoadingProds(false);
-      }
-    };
-    loadProductions();
-  }, [orgId]);
-
-  // Load roster and existing check-ins when production or date changes
+  // Load roster and existing check-ins for this production and show date
   useEffect(() => {
     if (!orgId || !selectedProd || !selectedDate) return;
     const loadRoster = async () => {
@@ -142,47 +129,21 @@ export default function CheckInView() {
 
   return (
     <div className="p-6 max-w-3xl">
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors mb-4"
+        >
+          ← Back to Show Dates
+        </button>
+      )}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">Check-In</h1>
-        <p className="text-sm text-gray-500">Mark attendance for a production by date.</p>
-      </div>
-
-      {/* Controls */}
-      <div className="flex gap-3 mb-6 flex-wrap">
-        <div className="flex-1 min-w-[180px]">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Production</label>
-          {loadingProds ? (
-            <p className="text-sm text-gray-400">Loading...</p>
-          ) : (
-            <select
-              value={selectedProd}
-              onChange={e => setSelectedProd(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">Select a production...</option>
-              {productions.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          )}
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={e => setSelectedDate(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">Check-In — {event.title}</h1>
+        <p className="text-sm text-gray-500">{production.name} · {formatDate(event.startDate)}</p>
       </div>
 
       {/* Roster */}
-      {!selectedProd ? (
-        <div className="bg-white border border-gray-200 rounded-xl p-10 text-center">
-          <p className="text-gray-500 text-sm">Select a production to see the roster.</p>
-        </div>
-      ) : loading ? (
+      {loading ? (
         <div className="bg-white border border-gray-200 rounded-xl p-10 text-center">
           <p className="text-gray-400 text-sm">Loading roster...</p>
         </div>
@@ -201,20 +162,16 @@ export default function CheckInView() {
               {Object.keys(checkins).length} checked in
             </p>
             <button
-              onClick={() => {
-                const prod = productions.find(p => p.id === selectedProd);
-                setQrProduction(prod);
-                setShowQR(true);
-              }}
+              onClick={() => setShowQR(true)}
               className="text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
             >
               QR Check-In
             </button>
           </div>
-          {showQR && qrProduction && (
+          {showQR && (
             <div className="p-4 border-b border-gray-200">
               <CheckInTokenGenerator
-                production={qrProduction}
+                production={production}
                 onClose={() => setShowQR(false)}
               />
             </div>

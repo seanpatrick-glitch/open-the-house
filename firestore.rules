@@ -215,7 +215,11 @@ service cloud.firestore {
 
       // Department Head: create/update/delete only department-scoped events
       // where a department document exists with departmentHeadUid == their uid
-      // (mirrors the tasks department-scoped write rule above).
+      // (mirrors the tasks department-scoped write rule above). Note:
+      // 'production'-scoped events (show dates, added 2026-08-18) are
+      // intentionally not covered here — only admin/secondaryAdmin above
+      // may write them, matching the same write-level gate already used
+      // for Active Modules and volunteerShifts on a production.
       allow create: if isDepartmentHead(request.resource.data.orgId)
         && request.resource.data.scope == 'department'
         && exists(/databases/$(database)/documents/departments/$(request.resource.data.departmentId))
