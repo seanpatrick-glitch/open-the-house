@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import Sidebar from './Sidebar'
 import InviteCollaborator from '../invites/InviteCollaborator'
+import CollaboratorRoster from '../invites/CollaboratorRoster'
 import ProductionsView from '../productions/ProductionsView'
 import DepartmentsView from '../../views/DepartmentsView'
 import TimelineView from '../../views/TimelineView'
@@ -52,7 +53,7 @@ function SectionContent({ section, onNavigate, userProfile, navState }) {
   if (section === 'departments')        return <DepartmentsView onNavigate={onNavigate} />
   if (section === 'places')              return <PlacesView />;
   if (section === 'invite-collaborator') return <InviteCollaborator />
-  if (section === 'collaborator-list')   return <InviteCollaborator />
+  if (section === 'collaborator-list')   return <CollaboratorRoster />
   if (section === 'settings')            return <SettingsView />
   if (section === 'people')              return <PeopleView onNavigate={onNavigate} navState={navState} />
   return <PlaceholderSection section={section} />
