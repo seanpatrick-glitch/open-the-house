@@ -35,11 +35,10 @@ jobs:
 
       # Step 2: Install Node.js
       # Pinned to 24, matching functions/package.json's declared engines.node
-      # ("24") — the functions deploy step below loads functions/index.js
-      # locally to introspect what to deploy, and a mismatch here is the
-      # likely cause of this job's Firestore/functions deploy step failing
-      # in CI (exit code 2) while the identical command succeeded locally
-      # under Node v24. See PROJECT_STATE.md for the investigation.
+      # ("24"). (This was tried as a fix for the functions deploy failure
+      # investigated in PROJECT_STATE.md — it wasn't the actual cause, see
+      # the "Install functions dependencies" step below for what was, but
+      # matching the declared engine is still correct to keep.)
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -76,6 +75,20 @@ jobs:
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
+
+      # Step 5.5: Install functions/'s own dependencies. This is the actual
+      # root cause of every Firestore/functions CI deploy failure so far
+      # (confirmed from the real log, not guessed): `firebase deploy` loads
+      # functions/index.js locally to introspect what to deploy, which
+      # requires firebase-functions/firebase-admin to be installed — but the
+      # root "Install dependencies" step above only ever ran `npm ci` at the
+      # repo root, which does not touch functions/'s separate package.json.
+      # Locally this always worked because functions/node_modules already
+      # existed from a prior local `npm install`; CI does a fresh checkout
+      # every run, so it never existed there at all.
+      - name: Install functions dependencies
+        run: npm ci
+        working-directory: functions
 
       # Step 6: Deploy Hosting first, on its own — this is the one target that
       # has always worked from CI, and must keep working even if something
