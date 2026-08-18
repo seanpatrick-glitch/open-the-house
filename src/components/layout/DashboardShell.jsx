@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import Sidebar from './Sidebar'
 import InviteCollaborator from '../invites/InviteCollaborator'
+import CollaboratorRoster from '../invites/CollaboratorRoster'
 import ProductionsView from '../productions/ProductionsView'
 import DepartmentsView from '../../views/DepartmentsView'
 import TimelineView from '../../views/TimelineView'
@@ -15,22 +16,19 @@ import { useAuth } from '../../contexts/AuthContext';
 import { UnreadProvider } from '../../contexts/UnreadContext';
 
 // Section key → human-readable label for placeholder screens
+// Lobby, Bar Program, Inventory, and Promo entries removed (2026-08-17) —
+// those modules never had a real toggle path to reach them, and the
+// Active Modules grid that once suggested one now only offers Volunteers.
 const SECTION_LABELS = {
-  messages:                'Messages',
-  productions:             'Productions',
-  checkin:                 'Check-In',
-  departments:             'Departments',
-  'volunteer-list':        'Volunteer List',
-  lobby:                   'Lobby',
-  'bar-program':           'Bar Program',
-  'inventory-beverages':   'Beverages',
-  'inventory-concessions': 'Concessions and Snacks',
-  'inventory-merch':       'Merch',
-  promo:                   'Promo',
-  'collaborator-list':     'Collaborator List',
-  places:                  'Places',
-  people:                  'People',
-  settings:                'Settings',
+  messages:            'Messages',
+  productions:         'Productions',
+  checkin:             'Check-In',
+  departments:         'Departments',
+  'volunteer-list':    'Volunteer List',
+  'collaborator-list': 'Collaborator List',
+  places:              'Places',
+  people:              'People',
+  settings:            'Settings',
 }
 
 function PlaceholderSection({ section }) {
@@ -55,7 +53,7 @@ function SectionContent({ section, onNavigate, userProfile, navState }) {
   if (section === 'departments')        return <DepartmentsView onNavigate={onNavigate} />
   if (section === 'places')              return <PlacesView />;
   if (section === 'invite-collaborator') return <InviteCollaborator />
-  if (section === 'collaborator-list')   return <InviteCollaborator />
+  if (section === 'collaborator-list')   return <CollaboratorRoster />
   if (section === 'settings')            return <SettingsView />
   if (section === 'people')              return <PeopleView onNavigate={onNavigate} navState={navState} />
   return <PlaceholderSection section={section} />

@@ -55,12 +55,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
           endDate:      localDateToTimestamp(endDate),
           status,
           activeModules: {
-            fohPrep:             false,
-            lobbyInstall:        false,
-            barProgram:          false,
             volunteerScheduling: false,
-            inventory:           false,
-            promo:               false,
           },
           createdAt: serverTimestamp(),
           createdBy: userProfile.uid,

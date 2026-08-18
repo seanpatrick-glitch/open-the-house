@@ -4,6 +4,7 @@ import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { getDisplayName } from '../../utils/displayName'
 import TaskDetailPanel from '../timeline/TaskDetailPanel'
+import VolunteersPanel from './VolunteersPanel'
 import toast from 'react-hot-toast'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -24,22 +25,16 @@ const STATUS_LABELS = {
 
 // Explicit key order so the grid is always consistent regardless of
 // Firestore document field order.
+// FOH Prep, Lobby Install, Bar Program, Inventory, and Promo toggles were
+// removed from the UI (2026-08-17) — those modules never had real content
+// behind them. Their boolean fields are left alone on existing production
+// documents; only the toggles themselves are gone.
 const MODULE_KEYS = [
-  'fohPrep',
-  'lobbyInstall',
-  'barProgram',
   'volunteerScheduling',
-  'inventory',
-  'promo',
 ]
 
 const MODULE_LABELS = {
-  fohPrep:             'FOH Prep',
-  lobbyInstall:        'Lobby Install',
-  barProgram:          'Bar Program',
   volunteerScheduling: 'Volunteers',
-  inventory:           'Inventory',
-  promo:               'Promo',
 }
 
 const TASK_STATUS_STYLES = {
@@ -366,6 +361,11 @@ export default function ProductionDashboard({ production, places, onBack }) {
           </div>
         )}
       </section>
+
+      {/* Volunteer Shifts — only when the Volunteers module is active for this production */}
+      {activeModules.volunteerScheduling && (
+        <VolunteersPanel production={production} roster={roster} />
+      )}
 
     </div>
   )

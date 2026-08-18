@@ -180,6 +180,9 @@ export default function InviteCollaborator() {
         <p className="text-gray-500 text-sm mt-1">
           Send an email invite. The person will receive a secure sign-in link.
         </p>
+        <p className="text-xs text-gray-400 mt-1">
+          Collaborators sign in and use the app directly. For contacts who don't need a login, add them as People instead.
+        </p>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">

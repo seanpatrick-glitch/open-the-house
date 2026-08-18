@@ -24,12 +24,7 @@ const STATUS_LABELS = {
 }
 
 const MODULE_LABELS = {
-  fohPrep:             'FOH Prep',
-  lobbyInstall:        'Lobby Install',
-  barProgram:          'Bar Program',
   volunteerScheduling: 'Volunteers',
-  inventory:           'Inventory',
-  promo:               'Promo',
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -47,9 +42,13 @@ function formatDate(ts) {
 // ── ProductionCard ────────────────────────────────────────────────────────────
 
 function ProductionCard({ prod, placeName, onOpen }) {
+  // Filtering against MODULE_LABELS (not just "is this key truthy") means a
+  // production with a deprecated key still set true from before the 2.4
+  // cleanup (e.g. fohPrep) is silently ignored here rather than rendering a
+  // pill for a module that no longer exists.
   const activeModuleKeys = prod.activeModules
     ? Object.entries(prod.activeModules)
-        .filter(([, active]) => active)
+        .filter(([key, active]) => active && MODULE_LABELS[key])
         .map(([key]) => key)
     : []
 

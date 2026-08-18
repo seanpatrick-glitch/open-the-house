@@ -7,15 +7,8 @@ import { getDisplayName } from '../utils/displayName';
 import AssignmentsPanel from '../components/people/AssignmentsPanel';
 import HoursPanel from '../components/people/HoursPanel';
 import PersonInviteForm from '../components/people/PersonInviteForm';
+import PersonFieldsEditor, { TOGGLEABLE_LABELS, validatePersonFields, cleanFieldValues } from '../components/people/PersonFieldsEditor';
 import toast from 'react-hot-toast';
-
-const TOGGLEABLE_LABELS = {
-  address:             'Address',
-  dateOfBirth:         'Date of Birth',
-  tShirtSize:          'T-Shirt Size',
-  dietaryRestrictions: 'Dietary Restrictions',
-  accessibilityNeeds:  'Accessibility Needs',
-};
 
 const STATUS_STYLES = {
   [PERSON_STATUS.APPLIED]:    'bg-amber-100 text-amber-700',
@@ -50,6 +43,11 @@ export default function PersonProfileView({ personId, onBack }) {
   const [internalSaved, setInternalSaved]   = useState(false);
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [savingStaff, setSavingStaff]       = useState(false);
+
+  const [editing, setEditing]               = useState(false);
+  const [editFieldValues, setEditFieldValues] = useState({});
+  const [savingEdit, setSavingEdit]         = useState(false);
+  const [editError, setEditError]           = useState('');
 
   useEffect(() => {
     if (!orgId || !personId) return;
@@ -133,6 +131,37 @@ export default function PersonProfileView({ personId, onBack }) {
     }
   }
 
+  function startEditing() {
+    setEditFieldValues({ ...(person.fieldValues || {}) });
+    setEditError('');
+    setEditing(true);
+  }
+
+  function setEditField(key, value) {
+    setEditFieldValues(prev => ({ ...prev, [key]: value }));
+  }
+
+  async function handleSaveEdit() {
+    const validationError = validatePersonFields(editFieldValues);
+    if (validationError) {
+      setEditError(validationError);
+      return;
+    }
+    setSavingEdit(true);
+    setEditError('');
+    try {
+      await updateDoc(doc(db, 'organizations', orgId, 'people', personId), {
+        fieldValues: cleanFieldValues(editFieldValues),
+      });
+      setEditing(false);
+    } catch (err) {
+      console.error('Error saving person edits:', err);
+      setEditError('Failed to save. Please try again.');
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
   function addTag() {
     const t = tagInput.trim();
     if (!t || tags.includes(t)) return;
@@ -157,6 +186,13 @@ export default function PersonProfileView({ personId, onBack }) {
 
   const customFields = personType?.customFields || [];
 
+  // Matches firestore.rules exactly: admin/secondaryAdmin can write any
+  // person; a Department Head can only write people whose type they're
+  // assigned to. Gating the button on this avoids a save that renders but
+  // then fails permission-denied for a DH viewing another department's person.
+  const canEdit = role === 'admin' || role === 'secondaryAdmin'
+    || (role === 'departmentHead' && personType?.departmentHeadId === userProfile.uid);
+
   return (
     <div className="p-6 max-w-2xl">
       <button onClick={onBack}
@@ -178,12 +214,17 @@ export default function PersonProfileView({ personId, onBack }) {
           </div>
         </div>
         {isStaff && (!person.accountStatus || person.accountStatus === 'no_account') && !showInviteForm && (
-          <button
-            onClick={() => setShowInviteForm(true)}
-            className="border border-indigo-200 text-indigo-600 hover:bg-indigo-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            Invite to Platform
-          </button>
+          <div className="text-right">
+            <button
+              onClick={() => setShowInviteForm(true)}
+              className="inline-flex items-center gap-1.5 border border-indigo-200 text-indigo-600 hover:bg-indigo-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              <span aria-hidden="true">🔗</span> Give {getDisplayName(person) || 'this person'} a login
+            </button>
+            <p className="text-xs text-gray-400 mt-1 max-w-xs">
+              Links a login to this specific record. Not the same as inviting a new Collaborator.
+            </p>
+          </div>
         )}
         {isStaff && person.accountStatus === 'invited' && (
           <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-50 text-blue-700">
@@ -207,52 +248,80 @@ export default function PersonProfileView({ personId, onBack }) {
         </div>
       )}
 
-      {/* Universal fields */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
-        <h2 className="text-sm font-semibold text-gray-700 mb-4">Contact Information</h2>
-        <div className="space-y-3">
-          {universalKeys.map(key => (
-            <div key={key} className="flex flex-col sm:flex-row gap-1 sm:gap-4">
-              <span className="text-sm text-gray-400 sm:w-36 flex-shrink-0">{universalLabels[key]}</span>
-              <span className="text-sm text-gray-900">{person.fieldValues?.[key] || <span className="text-gray-300">Not set</span>}</span>
+      {editing ? (
+        <div className="bg-white border border-indigo-200 rounded-xl p-5 mb-4">
+          <h2 className="text-sm font-semibold text-gray-700 mb-4">Edit Person</h2>
+          <PersonFieldsEditor personType={personType} fieldValues={editFieldValues} setField={setEditField} />
+          {editError && <p className="text-sm text-red-600 mt-4">{editError}</p>}
+          <div className="flex items-center gap-3 mt-5">
+            <button onClick={handleSaveEdit} disabled={savingEdit}
+              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
+              {savingEdit ? 'Saving...' : 'Save'}
+            </button>
+            <button onClick={() => setEditing(false)}
+              className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Universal fields */}
+          <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-gray-700">Contact Information</h2>
+              {canEdit && (
+                <button onClick={startEditing}
+                  className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+                  Edit
+                </button>
+              )}
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Toggleable fields */}
-      {activeToggleable.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Additional Information</h2>
-          <div className="space-y-3">
-            {activeToggleable.map(([key]) => (
-              <div key={key} className="flex flex-col sm:flex-row gap-1 sm:gap-4">
-                <span className="text-sm text-gray-400 sm:w-36 flex-shrink-0">{TOGGLEABLE_LABELS[key] || key}</span>
-                <span className="text-sm text-gray-900">{person.fieldValues?.[key] || <span className="text-gray-300">Not set</span>}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Custom fields */}
-      {customFields.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Custom Fields</h2>
-          <div className="space-y-3">
-            {customFields.sort((a, b) => a.order - b.order).map(field => {
-              const val = person.fieldValues?.[field.fieldId];
-              return (
-                <div key={field.fieldId} className="flex flex-col sm:flex-row gap-1 sm:gap-4">
-                  <span className="text-sm text-gray-400 sm:w-36 flex-shrink-0">{field.label}</span>
-                  <span className="text-sm text-gray-900">
-                    {Array.isArray(val) ? val.join(', ') : val || <span className="text-gray-300">Not set</span>}
-                  </span>
+            <div className="space-y-3">
+              {universalKeys.map(key => (
+                <div key={key} className="flex flex-col sm:flex-row gap-1 sm:gap-4">
+                  <span className="text-sm text-gray-400 sm:w-36 flex-shrink-0">{universalLabels[key]}</span>
+                  <span className="text-sm text-gray-900">{person.fieldValues?.[key] || <span className="text-gray-300">Not set</span>}</span>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
-        </div>
+
+          {/* Toggleable fields */}
+          {activeToggleable.length > 0 && (
+            <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
+              <h2 className="text-sm font-semibold text-gray-700 mb-4">Additional Information</h2>
+              <div className="space-y-3">
+                {activeToggleable.map(([key]) => (
+                  <div key={key} className="flex flex-col sm:flex-row gap-1 sm:gap-4">
+                    <span className="text-sm text-gray-400 sm:w-36 flex-shrink-0">{TOGGLEABLE_LABELS[key] || key}</span>
+                    <span className="text-sm text-gray-900">{person.fieldValues?.[key] || <span className="text-gray-300">Not set</span>}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Custom fields */}
+          {customFields.length > 0 && (
+            <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
+              <h2 className="text-sm font-semibold text-gray-700 mb-4">Custom Fields</h2>
+              <div className="space-y-3">
+                {customFields.sort((a, b) => a.order - b.order).map(field => {
+                  const val = person.fieldValues?.[field.fieldId];
+                  return (
+                    <div key={field.fieldId} className="flex flex-col sm:flex-row gap-1 sm:gap-4">
+                      <span className="text-sm text-gray-400 sm:w-36 flex-shrink-0">{field.label}</span>
+                      <span className="text-sm text-gray-900">
+                        {Array.isArray(val) ? val.join(', ') : val || <span className="text-gray-300">Not set</span>}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Internal section — staff only */}

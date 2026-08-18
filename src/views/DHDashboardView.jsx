@@ -6,6 +6,7 @@ import { useUnread } from '../contexts/UnreadContext';
 import { DASHBOARD_STATES } from '../models/org';
 import { differenceInDays, startOfDay, endOfDay, addDays } from 'date-fns';
 import UnreadCallout from '../components/messaging/UnreadCallout';
+import UpcomingDatesWidget, { mergeUpcoming, UPCOMING_LIMIT } from '../components/dashboard/UpcomingDatesWidget';
 import toast from 'react-hot-toast';
 
 function goToMessages() {
@@ -71,6 +72,8 @@ export default function DHDashboardView() {
   const [tasksTomorrow, setTasksTomorrow] = useState([]);
   const [members, setMembers]             = useState([]);
   const [flags, setFlags]                 = useState([]);
+  const [upcomingTasks, setUpcomingTasks]   = useState([]);
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
 
   // Load DH's department and org state
   useEffect(() => {
@@ -133,6 +136,42 @@ export default function DHDashboardView() {
 
     loadState();
   }, [orgId, uid]);
+
+  // Upcoming Dates widget — department-scoped, independent of dashState so
+  // it shows in every state. Explicitly guarded on a real departmentId
+  // (rather than the deptFilter-omit-if-falsy pattern the other queries
+  // below use) since showing every department's items to a DH with no
+  // assignment yet would defeat the point of a department-scoped widget.
+  useEffect(() => {
+    if (!orgId || loading || !departmentId) {
+      setUpcomingTasks([]);
+      setUpcomingEvents([]);
+      return;
+    }
+    const todayStart = startOfDay(new Date());
+
+    const tasksQ = query(
+      collection(db, 'tasks'),
+      where('orgId', '==', orgId),
+      where('departmentId', '==', departmentId),
+      where('dueByDate', '>=', todayStart),
+      orderBy('dueByDate', 'asc'),
+      limit(UPCOMING_LIMIT)
+    );
+    const eventsQ = query(
+      collection(db, 'events'),
+      where('orgId', '==', orgId),
+      where('departmentId', '==', departmentId),
+      where('startDate', '>=', todayStart),
+      orderBy('startDate', 'asc'),
+      limit(UPCOMING_LIMIT)
+    );
+
+    const unsubTasks  = onSnapshot(tasksQ,  snap => setUpcomingTasks(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const unsubEvents = onSnapshot(eventsQ, snap => setUpcomingEvents(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+
+    return () => { unsubTasks(); unsubEvents(); };
+  }, [orgId, departmentId, loading]);
 
   // Live data subscriptions scoped to department
   useEffect(() => {
@@ -277,6 +316,8 @@ export default function DHDashboardView() {
           <UnreadCallout count={unreadCount} onClick={goToMessages} />
         </div>
       )}
+
+      <UpcomingDatesWidget items={mergeUpcoming(upcomingTasks, upcomingEvents)} />
 
       {dashState === DASHBOARD_STATES.PLANNING && (
         <DHPlanningState tasks={tasks} departmentId={departmentId} />

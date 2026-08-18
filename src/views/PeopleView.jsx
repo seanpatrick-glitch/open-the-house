@@ -94,6 +94,10 @@ export default function PeopleView({ onNavigate, navState }) {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">People</h1>
           <p className="text-sm text-gray-500">Everyone your organization coordinates, in one place.</p>
+          <p className="text-xs text-gray-400 mt-1">
+            People are your org's contacts, cast, crew, and vendors who don't need to sign in.
+            Giving someone a login instead? Invite them as a Collaborator from the sidebar.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {personTypes.length > 0 && !showForm && !showCsvImport && (

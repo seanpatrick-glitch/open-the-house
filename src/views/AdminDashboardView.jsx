@@ -6,6 +6,7 @@ import { useUnread } from '../contexts/UnreadContext';
 import { DASHBOARD_STATES } from '../models/org';
 import { differenceInDays, startOfDay, endOfDay, addDays } from 'date-fns';
 import UnreadCallout from '../components/messaging/UnreadCallout';
+import UpcomingDatesWidget, { mergeUpcoming, UPCOMING_LIMIT } from '../components/dashboard/UpcomingDatesWidget';
 import toast from 'react-hot-toast';
 
 function goToMessages() {
@@ -65,6 +66,8 @@ export default function AdminDashboardView() {
   const [flags, setFlags]                 = useState([]);
   const [checkinTokens, setCheckinTokens] = useState([]);
   const [nextProd, setNextProd]           = useState(null);
+  const [upcomingTasks, setUpcomingTasks]   = useState([]);
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
 
   useEffect(() => {
     if (!orgId) return;
@@ -114,6 +117,36 @@ export default function AdminDashboardView() {
 
     loadOrgAndState();
   }, [orgId]);
+
+  // Upcoming Dates widget — org-wide, independent of dashState so it shows
+  // in every state. Each query is capped to UPCOMING_LIMIT and already
+  // sorted ascending by its own date field, so merging the two capped,
+  // sorted lists and re-slicing to UPCOMING_LIMIT always yields the true
+  // nearest N items across both collections.
+  useEffect(() => {
+    if (!orgId || loading) return;
+    const todayStart = startOfDay(new Date());
+
+    const tasksQ = query(
+      collection(db, 'tasks'),
+      where('orgId', '==', orgId),
+      where('dueByDate', '>=', todayStart),
+      orderBy('dueByDate', 'asc'),
+      limit(UPCOMING_LIMIT)
+    );
+    const eventsQ = query(
+      collection(db, 'events'),
+      where('orgId', '==', orgId),
+      where('startDate', '>=', todayStart),
+      orderBy('startDate', 'asc'),
+      limit(UPCOMING_LIMIT)
+    );
+
+    const unsubTasks  = onSnapshot(tasksQ,  snap => setUpcomingTasks(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const unsubEvents = onSnapshot(eventsQ, snap => setUpcomingEvents(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+
+    return () => { unsubTasks(); unsubEvents(); };
+  }, [orgId, loading]);
 
   // Live data subscriptions based on state
   useEffect(() => {
@@ -219,6 +252,7 @@ export default function AdminDashboardView() {
           <UnreadCallout count={unreadCount} onClick={goToMessages} />
         </div>
       )}
+      <UpcomingDatesWidget items={mergeUpcoming(upcomingTasks, upcomingEvents)} />
       <DashboardContent
         state={dashState}
         tasks={tasks}

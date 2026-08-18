@@ -5,7 +5,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { getDisplayName } from '../../utils/displayName';
+import { getDisplayName, hasDisplayName } from '../../utils/displayName';
 import toast from 'react-hot-toast';
 
 function formatTime(ts) {
@@ -185,7 +185,9 @@ export default function MessagingView({ orgUsers }) {
               className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
               <option value="">Select recipient...</option>
               {orgUsers.filter(u => u.uid !== uid).map(u => (
-                <option key={u.uid} value={u.uid}>{getDisplayName(u)}</option>
+                <option key={u.uid} value={u.uid}>
+                  {getDisplayName(u)}{!hasDisplayName(u) && getDisplayName(u) ? ' (email only)' : ''}
+                </option>
               ))}
             </select>
             <input type="text" value={newSubject} onChange={e => setNewSubject(e.target.value)}
@@ -214,11 +216,19 @@ export default function MessagingView({ orgUsers }) {
               const other   = getOtherParticipant(thread);
               const unread  = isUnread(thread);
               const selected = selectedThread?.id === thread.id;
+              const otherHasName = hasDisplayName(other);
               return (
                 <button key={thread.id} onClick={() => setSelectedThread(thread)}
                   className={`w-full text-left p-4 transition-colors ${selected ? 'bg-indigo-50' : 'hover:bg-gray-50'}`}>
                   <div className="flex items-start justify-between gap-2">
-                    <p className={`text-xs truncate ${unread ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
+                    <p
+                      className={`text-xs truncate ${
+                        !otherHasName
+                          ? 'italic text-gray-400'
+                          : unread ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'
+                      }`}
+                      title={!otherHasName ? 'No display name on file, showing email' : undefined}
+                    >
                       {getDisplayName(other) || 'Unknown'}
                     </p>
                     <p className="text-xs text-gray-400 flex-shrink-0">{formatTime(thread.lastMessageAt)}</p>
@@ -242,7 +252,10 @@ export default function MessagingView({ orgUsers }) {
         <div className="flex-1 flex flex-col min-w-0">
           <div className="p-4 border-b border-gray-200">
             <p className="text-sm font-semibold text-gray-900">{selectedThread.subject}</p>
-            <p className="text-xs text-gray-400">
+            <p
+              className={`text-xs text-gray-400 ${!hasDisplayName(getOtherParticipant(selectedThread)) ? 'italic' : ''}`}
+              title={!hasDisplayName(getOtherParticipant(selectedThread)) ? 'No display name on file, showing email' : undefined}
+            >
               {getDisplayName(getOtherParticipant(selectedThread)) || 'Unknown'}
             </p>
           </div>

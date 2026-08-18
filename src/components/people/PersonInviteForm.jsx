@@ -68,11 +68,14 @@ export default function PersonInviteForm({ person, onSuccess, onCancel }) {
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 max-w-md">
-      <h3 className="text-sm font-semibold text-gray-900 mb-1">Invite to Platform</h3>
+    <div className="bg-white border-2 border-indigo-200 rounded-xl p-5 max-w-md">
+      <div className="flex items-center gap-1.5 mb-1">
+        <span aria-hidden="true">🔗</span>
+        <h3 className="text-sm font-semibold text-gray-900">Give {getDisplayName(person) || 'this person'} a login</h3>
+      </div>
       <p className="text-sm text-gray-500 mb-4">
-        Send {getDisplayName(person) || 'this person'} a secure sign-in link at <span className="font-medium text-gray-700">{email || 'no email on file'}</span>.
-        They will create an account and their profile will be linked automatically.
+        Send a secure sign-in link to <span className="font-medium text-gray-700">{email || 'no email on file'}</span>.
+        They will create an account linked directly to this People record, not a general Collaborator invite.
       </p>
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
