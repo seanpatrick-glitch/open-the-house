@@ -178,12 +178,17 @@ export default function PersonProfileView({ personId, onBack }) {
           </div>
         </div>
         {isStaff && (!person.accountStatus || person.accountStatus === 'no_account') && !showInviteForm && (
-          <button
-            onClick={() => setShowInviteForm(true)}
-            className="border border-indigo-200 text-indigo-600 hover:bg-indigo-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            Invite to Platform
-          </button>
+          <div className="text-right">
+            <button
+              onClick={() => setShowInviteForm(true)}
+              className="inline-flex items-center gap-1.5 border border-indigo-200 text-indigo-600 hover:bg-indigo-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              <span aria-hidden="true">🔗</span> Give {getDisplayName(person) || 'this person'} a login
+            </button>
+            <p className="text-xs text-gray-400 mt-1 max-w-xs">
+              Links a login to this specific record. Not the same as inviting a new Collaborator.
+            </p>
+          </div>
         )}
         {isStaff && person.accountStatus === 'invited' && (
           <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-50 text-blue-700">
