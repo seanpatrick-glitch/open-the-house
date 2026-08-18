@@ -5,6 +5,7 @@ import { db, auth } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { getDisplayName } from '../../utils/displayName'
 import { getInviteActionCodeSettings } from '../../utils/invites'
+import { withFieldError, FieldError } from '../shared/FormField'
 import toast from 'react-hot-toast'
 
 export default function CreateDepartmentForm({ onSuccess, onCancel }) {
@@ -22,6 +23,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
   const [error,             setError]             = useState('')
   const [success,           setSuccess]           = useState(false)
   const [showHeadConfirm,   setShowHeadConfirm]   = useState(false)
+  const [fieldErrors,       setFieldErrors]       = useState({})
 
   // Fetch all users that belong to this org (client-side filter on organizations map)
   useEffect(() => {
@@ -43,7 +45,11 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
 
   function handleSubmit(e) {
     e.preventDefault()
-    if (!name.trim()) return
+    if (!name.trim()) {
+      setFieldErrors({ name: 'Name is required.' })
+      return
+    }
+    setFieldErrors({})
 
     // Assigning an existing member directly is a real promotion, not just a
     // label — confirm before it fires rather than firing on the same click
@@ -129,11 +135,13 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
       }
 
       setSuccess(true)
+      setLoading(false)
       setName('')
       setDescription('')
       setColorCode('#f59e0b')
       setDepartmentHeadUid('')
       setHeadEmail('')
+      setFieldErrors({})
 
       setTimeout(() => {
         setSuccess(false)
@@ -185,7 +193,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
 
         {/* Name */}
         <div>
@@ -195,11 +203,11 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
           <input
             type="text"
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={e => { setName(e.target.value); setFieldErrors(prev => (prev.name ? { ...prev, name: undefined } : prev)) }}
             placeholder="e.g. Front of House"
-            required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent', !!fieldErrors.name)}
           />
+          <FieldError message={fieldErrors.name} />
         </div>
 
         {/* Description */}
@@ -277,7 +285,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
         <div className="flex items-center gap-3 pt-1">
           <button
             type="submit"
-            disabled={loading || !name.trim() || usersLoading}
+            disabled={loading || usersLoading}
             className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
           >
             {loading ? 'Creating…' : 'Create Department'}

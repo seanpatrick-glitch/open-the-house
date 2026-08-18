@@ -3,6 +3,7 @@ import { collection, addDoc, serverTimestamp, Timestamp } from 'firebase/firesto
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { PRODUCTION_SCOPE } from '../../models/productions'
+import { withFieldError, FieldError } from '../shared/FormField'
 
 const STATUS_OPTIONS = [
   { value: 'planning',    label: 'Planning' },
@@ -35,10 +36,30 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
   const [loading,      setLoading]      = useState(false)
   const [error,        setError]        = useState('')
   const [success,      setSuccess]      = useState(false)
+  const [fieldErrors,  setFieldErrors]  = useState({})
+
+  function getFieldErrors() {
+    const errors = {}
+    if (!name.trim()) errors.name = 'Production name is required.'
+    if (!placeId)     errors.placeId = 'Place is required.'
+    if (!scope)        errors.scope = 'Scope is required.'
+    if (!startDate)    errors.startDate = 'Start date is required.'
+    if (!endDate)      errors.endDate = 'End date is required.'
+    return errors
+  }
+
+  function clearFieldError(key) {
+    setFieldErrors(prev => (prev[key] ? { ...prev, [key]: undefined } : prev))
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!name.trim() || !placeId || !scope || !startDate || !endDate) return
+    const errors = getFieldErrors()
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      return
+    }
+    setFieldErrors({})
     setLoading(true)
     setError('')
 
@@ -66,6 +87,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
       )
 
       setSuccess(true)
+      setLoading(false)
       setName('')
       setDisplayLabel('')
       setPlaceId(places[0]?.id ?? '')
@@ -73,6 +95,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
       setStartDate('')
       setEndDate('')
       setStatus('planning')
+      setFieldErrors({})
 
       setTimeout(() => {
         setSuccess(false)
@@ -95,7 +118,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
 
         {/* Production name */}
         <div>
@@ -105,11 +128,11 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
           <input
             type="text"
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={e => { setName(e.target.value); clearFieldError('name') }}
             placeholder="e.g. The Tempest"
-            required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent', !!fieldErrors.name)}
           />
+          <FieldError message={fieldErrors.name} />
         </div>
 
         {/* Display label */}
@@ -133,14 +156,14 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
           </label>
           <select
             value={placeId}
-            onChange={e => setPlaceId(e.target.value)}
-            required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            onChange={e => { setPlaceId(e.target.value); clearFieldError('placeId') }}
+            className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent', !!fieldErrors.placeId)}
           >
             {places.map(p => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
+          <FieldError message={fieldErrors.placeId} />
         </div>
 
         {/* Scope */}
@@ -150,15 +173,15 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
           </label>
           <select
             value={scope}
-            onChange={e => setScope(e.target.value)}
-            required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            onChange={e => { setScope(e.target.value); clearFieldError('scope') }}
+            className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent', !!fieldErrors.scope)}
           >
             <option value="">Select scope...</option>
             {SCOPE_OPTIONS.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
+          <FieldError message={fieldErrors.scope} />
         </div>
 
         {/* Dates */}
@@ -170,10 +193,10 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
             <input
               type="date"
               value={startDate}
-              onChange={e => setStartDate(e.target.value)}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              onChange={e => { setStartDate(e.target.value); clearFieldError('startDate') }}
+              className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent', !!fieldErrors.startDate)}
             />
+            <FieldError message={fieldErrors.startDate} />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -182,10 +205,10 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
             <input
               type="date"
               value={endDate}
-              onChange={e => setEndDate(e.target.value)}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              onChange={e => { setEndDate(e.target.value); clearFieldError('endDate') }}
+              className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent', !!fieldErrors.endDate)}
             />
+            <FieldError message={fieldErrors.endDate} />
           </div>
         </div>
 
@@ -210,7 +233,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
         <div className="flex items-center gap-3 pt-1">
           <button
             type="submit"
-            disabled={loading || !name.trim() || !placeId || !scope || !startDate || !endDate}
+            disabled={loading}
             className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
           >
             {loading ? 'Creating…' : 'Create Production'}
