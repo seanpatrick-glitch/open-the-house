@@ -3,6 +3,7 @@ import { collection, doc, getDocs, query, where, writeBatch, serverTimestamp, Ti
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { EVENT_SCOPE, RECURRENCE_FREQUENCY, MAX_RECURRENCE_OCCURRENCES } from '../../models/events';
+import { withFieldError, FieldError } from '../shared/FormField';
 
 function parseLocalDate(dateStr) {
   if (!dateStr) return null;
@@ -67,6 +68,7 @@ export default function CreateEventForm({ onSuccess, onCancel }) {
   const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
   const [saving, setSaving]           = useState(false);
   const [error, setError]             = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     if (!orgId) return;
@@ -79,6 +81,21 @@ export default function CreateEventForm({ onSuccess, onCancel }) {
     if (!endDateTouched || !endDate || endDate < value) {
       setEndDate(value);
     }
+    clearFieldError('startDate');
+  }
+
+  function clearFieldError(key) {
+    setFieldErrors(prev => (prev[key] ? { ...prev, [key]: undefined } : prev));
+  }
+
+  function getMissingFieldErrors() {
+    const errors = {};
+    if (!title.trim()) errors.title = 'Title is required.';
+    if (!startDate) errors.startDate = 'Start date is required.';
+    if (!endDate) errors.endDate = 'End date is required.';
+    if (scope === EVENT_SCOPE.DEPARTMENT && !departmentId) errors.departmentId = 'Department is required.';
+    if (recurrenceEnabled && !recurrenceEndDate) errors.recurrenceEndDate = 'Repeat until date is required.';
+    return errors;
   }
 
   const startDateObj = parseLocalDate(startDate);
@@ -105,6 +122,18 @@ export default function CreateEventForm({ onSuccess, onCancel }) {
   }
 
   async function handleSubmit() {
+    const missing = getMissingFieldErrors();
+    if (Object.keys(missing).length > 0) {
+      // The department select only renders once departments exist, so if it's
+      // the missing field and none exist, there's no visible field to attach
+      // the inline error to — surface a top-level message instead.
+      if (missing.departmentId && departments.length === 0) {
+        setError('No departments exist yet to select for a department-scoped event.');
+      }
+      setFieldErrors(missing);
+      return;
+    }
+    setFieldErrors({});
     const validationError = validate();
     if (validationError) {
       setError(validationError);
@@ -173,9 +202,10 @@ export default function CreateEventForm({ onSuccess, onCancel }) {
     }
   }
 
-  const submitDisabled = saving || !title.trim() || !startDate || !endDate || endDate < startDate
-    || (scope === EVENT_SCOPE.DEPARTMENT && !departmentId)
-    || (recurrenceEnabled && (!recurrenceEndDate || recurrenceEndDate < startDate || exceedsCap));
+  const submitDisabled = saving
+    || (startDate && endDate && endDate < startDate)
+    || (recurrenceEnabled && recurrenceEndDate && recurrenceEndDate < startDate)
+    || exceedsCap;
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 max-w-lg">
@@ -184,9 +214,10 @@ export default function CreateEventForm({ onSuccess, onCancel }) {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Title <span className="text-red-500">*</span></label>
-          <input type="text" value={title} onChange={e => setTitle(e.target.value)}
+          <input type="text" value={title} onChange={e => { setTitle(e.target.value); clearFieldError('title'); }}
             placeholder="e.g. Opening Night"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500', !!fieldErrors.title)} />
+          <FieldError message={fieldErrors.title} />
         </div>
 
         <div>
@@ -200,12 +231,14 @@ export default function CreateEventForm({ onSuccess, onCancel }) {
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">Start Date <span className="text-red-500">*</span></label>
             <input type="date" value={startDate} onChange={e => handleStartDateChange(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500', !!fieldErrors.startDate)} />
+            <FieldError message={fieldErrors.startDate} />
           </div>
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">End Date <span className="text-red-500">*</span></label>
-            <input type="date" value={endDate} onChange={e => { setEndDate(e.target.value); setEndDateTouched(true); }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <input type="date" value={endDate} onChange={e => { setEndDate(e.target.value); setEndDateTouched(true); clearFieldError('endDate'); }}
+              className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500', !!fieldErrors.endDate)} />
+            <FieldError message={fieldErrors.endDate} />
           </div>
         </div>
         {endDate && startDate && endDate < startDate && (
@@ -259,13 +292,14 @@ export default function CreateEventForm({ onSuccess, onCancel }) {
         {scope === EVENT_SCOPE.DEPARTMENT && departments.length > 0 && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Department <span className="text-red-500">*</span></label>
-            <select value={departmentId} onChange={e => setDepartmentId(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <select value={departmentId} onChange={e => { setDepartmentId(e.target.value); clearFieldError('departmentId'); }}
+              className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500', !!fieldErrors.departmentId)}>
               <option value="">Select a department...</option>
               {departments.map(d => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
+            <FieldError message={fieldErrors.departmentId} />
           </div>
         )}
 
@@ -296,8 +330,9 @@ export default function CreateEventForm({ onSuccess, onCancel }) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Repeat Until <span className="text-red-500">*</span></label>
-              <input type="date" value={recurrenceEndDate} onChange={e => setRecurrenceEndDate(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <input type="date" value={recurrenceEndDate} onChange={e => { setRecurrenceEndDate(e.target.value); clearFieldError('recurrenceEndDate'); }}
+                className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500', !!fieldErrors.recurrenceEndDate)} />
+              <FieldError message={fieldErrors.recurrenceEndDate} />
             </div>
             {recurrenceEndDate && recurrenceEndDate < startDate && (
               <p className="text-sm text-red-600">Recurrence end date cannot be before the start date.</p>

@@ -3,6 +3,7 @@ import { collection, addDoc, getDocs, query, where, serverTimestamp } from 'fire
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import PersonFieldsEditor, { validatePersonFields, cleanFieldValues } from './PersonFieldsEditor';
+import { withFieldError, FieldError } from '../shared/FormField';
 
 export default function CreatePersonForm({ onSuccess, onCancel }) {
   const { userProfile } = useAuth();
@@ -14,6 +15,7 @@ export default function CreatePersonForm({ onSuccess, onCancel }) {
   const [fieldValues, setFieldValues]     = useState({});
   const [saving, setSaving]               = useState(false);
   const [error, setError]                 = useState('');
+  const [fieldErrors, setFieldErrors]     = useState({});
 
   useEffect(() => {
     if (!orgId) return;
@@ -35,22 +37,26 @@ export default function CreatePersonForm({ onSuccess, onCancel }) {
     setSelectedTypeId(typeId);
     setSelectedType(type || null);
     setFieldValues({});
+    setFieldErrors(prev => (prev.personType ? { ...prev, personType: undefined } : prev));
   }
 
   function setField(key, value) {
     setFieldValues(prev => ({ ...prev, [key]: value }));
+    if (key === 'name') {
+      setFieldErrors(prev => (prev.name ? { ...prev, name: undefined } : prev));
+    }
   }
 
   async function handleSave() {
-    if (!selectedTypeId || !selectedType) {
-      setError('Please select a person type.');
+    const errors = {};
+    if (!selectedTypeId || !selectedType) errors.personType = 'Person type is required.';
+    const nameError = validatePersonFields(fieldValues);
+    if (nameError) errors.name = nameError;
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
-    const validationError = validatePersonFields(fieldValues);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    setFieldErrors({});
     setSaving(true);
     setError('');
     try {
@@ -96,21 +102,24 @@ export default function CreatePersonForm({ onSuccess, onCancel }) {
           {personTypes.length === 0 ? (
             <p className="text-sm text-gray-400">No person types configured. Add a type in Settings first.</p>
           ) : (
-            <select
-              value={selectedTypeId}
-              onChange={e => handleTypeChange(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">Select a type...</option>
-              {personTypes.map(t => (
-                <option key={t.id} value={t.id}>{t.label}</option>
-              ))}
-            </select>
+            <>
+              <select
+                value={selectedTypeId}
+                onChange={e => handleTypeChange(e.target.value)}
+                className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500', !!fieldErrors.personType)}
+              >
+                <option value="">Select a type...</option>
+                {personTypes.map(t => (
+                  <option key={t.id} value={t.id}>{t.label}</option>
+                ))}
+              </select>
+              <FieldError message={fieldErrors.personType} />
+            </>
           )}
         </div>
 
         {selectedType && (
-          <PersonFieldsEditor personType={selectedType} fieldValues={fieldValues} setField={setField} />
+          <PersonFieldsEditor personType={selectedType} fieldValues={fieldValues} setField={setField} nameError={fieldErrors.name} />
         )}
       </div>
 
@@ -118,7 +127,7 @@ export default function CreatePersonForm({ onSuccess, onCancel }) {
 
       <div className="flex items-center gap-3 mt-6">
         <button onClick={handleSave}
-          disabled={saving || !selectedTypeId || !fieldValues.name?.trim()}
+          disabled={saving}
           className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
           {saving ? 'Saving...' : 'Save Person'}
         </button>

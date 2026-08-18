@@ -3,6 +3,8 @@
 // PersonProfileView.jsx (edit) so the two write paths can never drift
 // apart on what fields exist or how they're shaped on save.
 
+import { withFieldError, FieldError } from '../shared/FormField';
+
 export const TOGGLEABLE_LABELS = {
   address:             'Address',
   dateOfBirth:         'Date of Birth',
@@ -30,7 +32,7 @@ export function cleanFieldValues(fieldValues) {
   };
 }
 
-export default function PersonFieldsEditor({ personType, fieldValues, setField }) {
+export default function PersonFieldsEditor({ personType, fieldValues, setField, nameError }) {
   const activeToggleableFields = personType
     ? Object.entries(personType.toggleableFields || {}).filter(([, v]) => v)
     : [];
@@ -47,7 +49,8 @@ export default function PersonFieldsEditor({ personType, fieldValues, setField }
             <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
             <input type="text" value={fieldValues.name || ''} onChange={e => setField('name', e.target.value)}
               placeholder="Full name"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500', !!nameError)} />
+            <FieldError message={nameError} />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
