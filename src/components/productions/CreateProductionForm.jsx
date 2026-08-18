@@ -87,6 +87,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
       )
 
       setSuccess(true)
+      setLoading(false)
       setName('')
       setDisplayLabel('')
       setPlaceId(places[0]?.id ?? '')
