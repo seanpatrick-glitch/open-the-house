@@ -2,6 +2,12 @@
 # automatically build the app and deploy it to the beta Firebase Hosting site
 # (placespeople-beta-testing.web.app)." This is the site your beta tester uses,
 # kept separate from main so in-progress work on main never reaches them.
+#
+# Deliberately hosting:beta only — main and beta-stable share one Firebase
+# project and one Firestore database, so rules, indexes, and functions are
+# project-wide, not per-site. firebase-deploy.yml (the main-branch workflow)
+# already deploys those on every push to main; duplicating it here would risk
+# two workflows racing to deploy the same shared resources for no benefit.
 # You do NOT need to edit this file manually.
 
 name: Deploy to Firebase Hosting (beta)
