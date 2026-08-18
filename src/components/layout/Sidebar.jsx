@@ -8,22 +8,20 @@ import toast from 'react-hot-toast'
 
 const NAV_ITEMS = [
   { key: 'home',        label: 'Home',        emoji: '🏠' },
-  { key: 'messages',    label: 'Messages',    emoji: '💬' },
   { key: 'timeline',    label: 'Timeline',    emoji: '📅' },
-  { key: 'departments', label: 'Departments', emoji: '🏢' },
-  { key: 'places',      label: 'Places',      emoji: '📍' },
-  { key: 'productions', label: 'Productions', emoji: '🎭' },
-  { key: 'checkin', label: 'Check-In', emoji: '✅' },
+  { key: 'messages',    label: 'Messages',    emoji: '💬' },
   {
-    key: 'collaborators-group',
-    label: 'Collaborators',
-    emoji: '👥',
+    key: 'people-group',
+    label: 'People',
+    emoji: '🧑‍🤝‍🧑',
     children: [
-      { key: 'collaborator-list',   label: 'Collaborator List'   },
-      { key: 'invite-collaborator', label: 'Invite Collaborator' },
+      { key: 'people',            label: 'Company'      },
+      { key: 'collaborator-list', label: 'Collaborators' },
     ],
   },
-  { key: 'people', label: 'People', emoji: '🧑‍🤝‍🧑' },
+  { key: 'places',      label: 'Places',      emoji: '📍' },
+  { key: 'departments', label: 'Departments', emoji: '🏢' },
+  { key: 'productions', label: 'Productions', emoji: '🎭' },
   { key: 'settings', label: 'Settings', emoji: '⚙️' },
 ]
 
