@@ -98,6 +98,18 @@ service cloud.firestore {
              .affectedKeys().hasOnly(['role'])
         && request.resource.data.organizations[resource.data.organizations.keys()[0]].role == 'departmentHead'
         && isAdminOrSecondary(resource.data.organizations.keys()[0]);
+
+      // Admin/secondaryAdmin access revoke: may clear organizations entirely
+      // on another member's own users doc, revoking platform access for that
+      // org — nothing else on the doc may change in the same write. Scoped
+      // to the org that is this member's sole membership (this app's model
+      // is single-org-per-user, matching the promotion clause above), and
+      // only an admin/secondaryAdmin of that specific org may do it.
+      allow update: if isSignedIn()
+        && resource.data.organizations.keys().size() == 1
+        && isAdminOrSecondary(resource.data.organizations.keys()[0])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['organizations'])
+        && request.resource.data.organizations.size() == 0;
     }
 
     // ── organizations ─────────────────────────────────────────────────────────
