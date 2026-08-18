@@ -21,12 +21,16 @@ COLLECTION: organizations/{orgId}/places/{placeId}/productions/{productionId}
   openDate:      Timestamp,        // same value as startDate, read by dashboard state logic
   closeDate:     Timestamp,        // same value as endDate, read by dashboard state logic
   activeModules: {
-    fohPrep:             boolean,
-    lobbyInstall:        boolean,
-    barProgram:          boolean,
     volunteerScheduling: boolean,
-    inventory:           boolean,
-    promo:               boolean,
+    // fohPrep, lobbyInstall, barProgram, inventory, promo: DEPRECATED
+    // (2.4 cleanup). No longer written on new productions and no longer
+    // read anywhere in the app. Some pre-cleanup production documents still
+    // carry one or more of these set true (e.g. "the tempestt" in the test
+    // org) — every read site now derives its module list from a fixed
+    // known-key list (ProductionDashboard.jsx's MODULE_KEYS,
+    // ProductionsView.jsx's MODULE_LABELS) rather than from whatever keys
+    // exist on the document, so a stale true value is silently ignored, not
+    // migrated or deleted.
   },
   createdBy: string,               // uid
   createdAt: Timestamp,
