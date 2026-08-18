@@ -115,7 +115,20 @@ service cloud.firestore {
     // ── organizations ─────────────────────────────────────────────────────────
     match /organizations/{orgId} {
       allow read:  if isMember(orgId);
-      allow write: if isAdmin(orgId);
+
+      // Narrow, spoofing-resistant self-create carve-out, mirroring the users
+      // collection's self-create rule above. isAdmin(orgId)/isMember(orgId)
+      // read the requester's own users/{uid} doc for org membership — but
+      // SignupStep3.jsx creates the organizations doc BEFORE the users doc
+      // exists (the org needs an id before the user doc's organizations map
+      // can reference it), so isAdmin(orgId) can never be true at creation
+      // time. Without this, org creation is a chicken-and-egg lockout, not
+      // just an under-permissioned edge case. Scoped to binding ownerId to
+      // the requester's own uid, exactly what SignupStep3.jsx writes — not a
+      // blanket allow.
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+
+      allow update, delete: if isAdmin(orgId);
     }
 
     // ── departments ───────────────────────────────────────────────────────────

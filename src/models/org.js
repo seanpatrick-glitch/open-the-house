@@ -21,6 +21,18 @@ organizations/{orgId}
       orgs created before this change (no field written) still read as false —
       that fallback is intentional and must not become `?? true`, or every
       pre-existing org with the field unset would silently flip on.
+
+  + onboardingCompleted (boolean) — controls whether the org's original admin
+      (ownerId match) is routed into the first-run guided setup wizard instead
+      of straight to AdminDashboardView. Written explicitly as false at org
+      creation (SignupStep3.jsx) as of 2026-08-18. AuthRouter.jsx reads this
+      alongside ownerId to decide whether to show OnboardingWizard.jsx; only
+      the matching ownerId sees it, so a secondary admin invited later into
+      the same org (no ownerId match) never sees the wizard regardless of
+      this field's value. Orgs created before this change have no field at
+      all — AuthRouter.jsx treats a missing value as `true` (already onboarded)
+      via `?? true`, not `false`, since a false default would retroactively
+      surface the wizard for every pre-existing org's admin on next login.
 */
 
 export const DASHBOARD_STATES = {

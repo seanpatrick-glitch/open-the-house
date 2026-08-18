@@ -25,6 +25,7 @@ export default function SignupStep3({ firebaseUser }) {
         ownerId:   firebaseUser.uid,
         createdAt: serverTimestamp(),
         departmentsEnabled: true,
+        onboardingCompleted: false,
         subscription: {
           tier:   'house',
           status: 'trial',
