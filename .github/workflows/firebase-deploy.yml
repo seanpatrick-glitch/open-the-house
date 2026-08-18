@@ -34,10 +34,16 @@ jobs:
         uses: actions/checkout@v4
 
       # Step 2: Install Node.js
+      # Pinned to 24, matching functions/package.json's declared engines.node
+      # ("24") — the functions deploy step below loads functions/index.js
+      # locally to introspect what to deploy, and a mismatch here is the
+      # likely cause of this job's Firestore/functions deploy step failing
+      # in CI (exit code 2) while the identical command succeeded locally
+      # under Node v24. See PROJECT_STATE.md for the investigation.
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       # Step 3: Install all packages
