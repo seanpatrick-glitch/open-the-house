@@ -525,6 +525,19 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName']);
     }
 
+    // ── feedback ──────────────────────────────────────────────────────────────────
+    // In-app Bug/Feedback widget (any logged-in role, all pre-launch sites).
+    // Create is requester-pinned (createdBy must match the submitter's own
+    // uid, same anti-spoofing pattern used elsewhere in this file) rather
+    // than open to any org member write; read is admin/secondaryAdmin only,
+    // since submitted feedback may reference other members or internal
+    // details not meant for every org member to browse.
+    match /organizations/{orgId}/feedback/{feedbackId} {
+      allow create: if isMember(orgId)
+        && request.resource.data.createdBy == request.auth.uid;
+      allow read: if isAdminOrSecondary(orgId);
+    }
+
     // ── flags ─────────────────────────────────────────────────────────────────────
     match /organizations/{orgId}/flags/{flagId} {
       allow read, write: if isAdminOrSecondary(orgId);

@@ -54,6 +54,61 @@ exports.emailOnNewMessage = onDocumentCreated(
   }
 );
 
+// Alerts the Places People team when a new Bug/Feedback report is
+// submitted via the in-app widget, to organizations/{orgId}/feedback/{feedbackId}.
+// Looks up the team member's uid dynamically each time (Firestore users
+// collection, email == "seanpatrickphilibin@gmail.com") rather than
+// hardcoding it, since a hardcoded uid could go stale if that account is
+// ever recreated. Missing team account is logged, not thrown — a lookup
+// failure here must never block the feedback submission itself, which has
+// already succeeded by the time this trigger runs.
+exports.emailOnNewFeedback = onDocumentCreated(
+  "organizations/{orgId}/feedback/{feedbackId}",
+  async (event) => {
+    const feedback = event.data?.data();
+    if (!feedback) return;
+
+    const { orgId } = event.params;
+    const db = admin.firestore();
+
+    try {
+      const teamSnap = await db
+        .collection("users")
+        .where("email", "==", "seanpatrickphilibin@gmail.com")
+        .limit(1)
+        .get();
+
+      if (teamSnap.empty) {
+        logger.error("emailOnNewFeedback: no user found with the internal team email", { orgId });
+        return;
+      }
+
+      const toUid = teamSnap.docs[0].id;
+      const typeLabel = feedback.type === "bug" ? "Bug" : "Feedback";
+      const orgName = feedback.orgName || "Unknown organization";
+      const subject = `${typeLabel} report: ${orgName}`;
+      const description = feedback.description || "";
+
+      const contextLines = [
+        `Organization: ${orgName} (${orgId})`,
+        `Submitted by: ${feedback.submitterEmail || "unknown email"} (uid ${feedback.createdBy || "unknown"}), role ${feedback.submitterRole || "unknown"}`,
+        `Page: ${feedback.page || "unknown"}`,
+      ];
+
+      await db.collection("mail").add({
+        toUids: [toUid],
+        message: {
+          subject,
+          text: `${description}\n\n${contextLines.join("\n")}`,
+          html: `<p>${escapeHtml(description).replace(/\n/g, "<br>")}</p><p>${contextLines.map(escapeHtml).join("<br>")}</p>`,
+        },
+      });
+    } catch (err) {
+      logger.error("emailOnNewFeedback failed", { orgId, error: err.message });
+    }
+  }
+);
+
 // Admin-only data scrub for one organization. Deletes productions, places,
 // people, personTypes, departments, tasks, timelineTemplates, threads
 // (with messages), broadcasts, and checkins — everything a test/seed org

@@ -7,6 +7,7 @@ import AdminView from '../views/AdminView'
 import CollaboratorView from '../views/CollaboratorView'
 import PersonView from '../views/PersonView'
 import OnboardingWizard from '../components/onboarding/OnboardingWizard'
+import FeedbackWidget from '../components/shared/FeedbackWidget'
 
 // Original-admin first-run onboarding check. Only the org's original owner
 // (ownerId match on the organizations doc, set at creation in SignupStep3.jsx)
@@ -71,15 +72,28 @@ export default function AuthRouter() {
 
   if (showOnboarding) return <OnboardingWizard orgId={userProfile.orgId} />
 
-  if (userProfile.role === 'admin')             return <AdminView />
-  if (userProfile.role === 'secondaryAdmin')    return <AdminView />
-  if (userProfile.role === 'departmentHead')    return <AdminView />
-  if (userProfile.role === 'orgCollaborator')   return <CollaboratorView />
-  if (userProfile.role === 'collaborator')      return <CollaboratorView />
-  if (userProfile.role === 'venueManager')      return <AdminView />
-  if (userProfile.role === 'productionCollaborator') return <CollaboratorView />
-  if (userProfile.role === 'volunteer')         return <PersonView />
-  if (userProfile.role === 'person')            return <PersonView />
+  let view = null
+  if (userProfile.role === 'admin')             view = <AdminView />
+  if (userProfile.role === 'secondaryAdmin')    view = <AdminView />
+  if (userProfile.role === 'departmentHead')    view = <AdminView />
+  if (userProfile.role === 'orgCollaborator')   view = <CollaboratorView />
+  if (userProfile.role === 'collaborator')      view = <CollaboratorView />
+  if (userProfile.role === 'venueManager')      view = <AdminView />
+  if (userProfile.role === 'productionCollaborator') view = <CollaboratorView />
+  if (userProfile.role === 'volunteer')         view = <PersonView />
+  if (userProfile.role === 'person')            view = <PersonView />
+
+  // FeedbackWidget is mounted once here, for every recognized role, rather
+  // than duplicated inside DashboardShell/CollaboratorView/PersonView —
+  // those are three separate top-level render trees with no shared shell.
+  if (view) {
+    return (
+      <>
+        {view}
+        <FeedbackWidget />
+      </>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
