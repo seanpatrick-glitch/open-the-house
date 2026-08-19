@@ -15,6 +15,12 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null)
   const [userProfile, setUserProfile] = useState(null)  // { uid, email, orgId, role, level, scopeId }
   const [loading,     setLoading]     = useState(true)
+  // Tracks only "has Firebase told us once whether anyone is logged in" —
+  // separate from `loading`, which now also covers profile resolution and
+  // can flip back to true later (e.g. mid-signup). Gating the app's render
+  // on `loading` itself would unmount everything, including the signup
+  // steps that still need to run to make the profile resolve.
+  const [authChecked, setAuthChecked] = useState(false)
 
   function login(email, password) {
     return signInWithEmailAndPassword(auth, email, password)
@@ -33,6 +39,7 @@ export function AuthProvider({ children }) {
 
     const authUnsub = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user)
+      setAuthChecked(true)
 
       if (profileUnsub) {
         profileUnsub()
@@ -45,12 +52,15 @@ export function AuthProvider({ children }) {
         return
       }
 
+      setLoading(true)
+
       profileUnsub = onSnapshot(
         doc(db, 'users', user.uid),
         (snap) => {
           if (!snap.exists()) {
+            // Mid-signup write hasn't landed yet — stay loading and wait for
+            // this same listener to fire again once the doc is created.
             setUserProfile(null)
-            setLoading(false)
             return
           }
 
@@ -96,7 +106,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {authChecked && children}
     </AuthContext.Provider>
   )
 }

@@ -46,7 +46,6 @@ export default function SignupStep3({ firebaseUser }) {
         },
       })
 
-      await new Promise(resolve => setTimeout(resolve, 800))
       navigate('/dashboard')
     } catch (err) {
       toast.error('Could not create organization. Please try again.')

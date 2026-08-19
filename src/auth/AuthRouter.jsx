@@ -55,9 +55,17 @@ function useOriginalAdminOnboarding(userProfile) {
 }
 
 export default function AuthRouter() {
-  const { userProfile, loading } = useAuth()
+  const { currentUser, userProfile, loading } = useAuth()
   const { orgLoading, showOnboarding } = useOriginalAdminOnboarding(userProfile)
 
+  // No Firebase Auth user at all — genuinely logged out, redirect immediately.
+  if (!currentUser) {
+    return <Navigate to="/" replace />
+  }
+
+  // Authenticated but the profile hasn't resolved yet (e.g. the users/{uid}
+  // doc from signup hasn't landed via onSnapshot). Wait, don't redirect —
+  // AuthContext keeps `loading` true until the profile actually resolves.
   if (loading || orgLoading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
