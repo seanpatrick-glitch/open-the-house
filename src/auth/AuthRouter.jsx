@@ -30,19 +30,47 @@ function useOriginalAdminOnboarding(userProfile) {
     }
 
     setOrgLoading(true)
-    const unsub = onSnapshot(
-      doc(db, 'organizations', userProfile.orgId),
-      (snap) => {
-        setOrgData(snap.exists() ? snap.data() : null)
-        setOrgLoading(false)
-      },
-      (error) => {
-        console.error('AuthRouter org listener error:', error)
-        setOrgData(null)
-        setOrgLoading(false)
-      }
-    )
-    return unsub
+    let cancelled = false
+    let unsub = null
+    let retryTimer = null
+
+    // organizations/{orgId}'s read rule (isMember) does a server-side get()
+    // on the requester's own users/{uid} doc. Right after signup writes that
+    // doc, the client sees it instantly via local-write optimism, but the
+    // rule's server-side get() can still momentarily see a not-yet-propagated
+    // version and reject with permission-denied — a transient race, not a
+    // real permission problem. onSnapshot does not auto-retry after an
+    // error, so without this the listener would die permanently and the
+    // wizard would never show for an otherwise-legitimate new admin. Retry a
+    // few times before giving up for real.
+    function subscribe(attempt) {
+      unsub = onSnapshot(
+        doc(db, 'organizations', userProfile.orgId),
+        (snap) => {
+          if (cancelled) return
+          setOrgData(snap.exists() ? snap.data() : null)
+          setOrgLoading(false)
+        },
+        (error) => {
+          if (cancelled) return
+          if (error.code === 'permission-denied' && attempt < 5) {
+            retryTimer = setTimeout(() => subscribe(attempt + 1), 400)
+            return
+          }
+          console.error('AuthRouter org listener error:', error)
+          setOrgData(null)
+          setOrgLoading(false)
+        }
+      )
+    }
+
+    subscribe(0)
+
+    return () => {
+      cancelled = true
+      if (unsub) unsub()
+      if (retryTimer) clearTimeout(retryTimer)
+    }
   }, [isAdminRole, userProfile?.orgId])
 
   const showOnboarding =
