@@ -128,7 +128,18 @@ service cloud.firestore {
       // blanket allow.
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
 
-      allow update, delete: if isAdmin(orgId);
+      // Broadened from isAdmin-only to isAdminOrSecondary (2026-08-18): the
+      // Settings screen already gates its org-level controls (departments
+      // toggle, active production, dashboard override, and the new
+      // Organization name/logo card) to isAdminRole (admin OR secondaryAdmin)
+      // in the UI, but this write rule only ever allowed the 'admin' role
+      // through — a secondaryAdmin using any of those controls, including
+      // ones that predate this fix, would have hit permission-denied.
+      // Matches the same isAdmin -> isAdminOrSecondary broadening already
+      // done for departments/timelineTemplates (see Section 2, 2026-08-16
+      // Reset Organization Data entry). Delete stays admin-only.
+      allow update: if isAdminOrSecondary(orgId);
+      allow delete: if isAdmin(orgId);
     }
 
     // ── departments ───────────────────────────────────────────────────────────

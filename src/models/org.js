@@ -33,6 +33,14 @@ organizations/{orgId}
       all — AuthRouter.jsx treats a missing value as `true` (already onboarded)
       via `?? true`, not `false`, since a false default would retroactively
       surface the wizard for every pre-existing org's admin on next login.
+
+  + logoUrl (string | null, optional) — Storage download URL for the org's
+      logo, written by src/components/shared/OrgLogoUpload.jsx (Settings'
+      Organization card and the onboarding wizard's Org step both use this
+      same component) after an upload to organizations/{orgId}/logo/{filename}
+      in Storage (see storage.rules). Nullable/absent for orgs that haven't
+      set a logo yet — every read site must treat a missing field as "no
+      logo", not an error.
 */
 
 export const DASHBOARD_STATES = {

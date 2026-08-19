@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getDisplayName } from '../utils/displayName';
 import CreatePersonTypeForm from '../components/people/CreatePersonTypeForm';
 import CreateSignupTokenForm from '../components/people/CreateSignupTokenForm';
+import OrgLogoUpload from '../components/shared/OrgLogoUpload';
 import toast from 'react-hot-toast';
 
 const RESET_COLLECTION_LABELS = {
@@ -42,6 +43,9 @@ export default function SettingsView() {
   const [savingProd, setSavingProd]           = useState(false);
   const [savingOverride, setSavingOverride]   = useState(false);
   const [orgName, setOrgName]                 = useState('');
+  const [orgNameInput, setOrgNameInput]       = useState('');
+  const [savingOrgName, setSavingOrgName]     = useState(false);
+  const [logoUrl, setLogoUrl]                 = useState(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetConfirmText, setResetConfirmText] = useState('');
   const [resetting, setResetting]             = useState(false);
@@ -63,6 +67,8 @@ export default function SettingsView() {
           setActiveProdId(data.activeProdId ?? '');
           setDashboardOverride(data.dashboardStateOverride ?? '');
           setOrgName(data.name ?? '');
+          setOrgNameInput(data.name ?? '');
+          setLogoUrl(data.logoUrl ?? null);
         }
       } catch (err) {
         console.error('Error fetching org settings:', err);
@@ -146,6 +152,22 @@ export default function SettingsView() {
 
     return () => { unsub(); tokenUnsub(); };
   }, [orgId]);
+
+  async function handleSaveOrgName() {
+    const trimmed = orgNameInput.trim();
+    if (!trimmed || trimmed === orgName) return;
+    setSavingOrgName(true);
+    try {
+      await updateDoc(doc(db, 'organizations', orgId), { name: trimmed });
+      setOrgName(trimmed);
+      toast.success('Organization name updated.');
+    } catch (err) {
+      console.error('Error updating organization name:', err);
+      toast.error('Could not update organization name. Please try again.');
+    } finally {
+      setSavingOrgName(false);
+    }
+  }
 
   const handleToggle = async () => {
     if (!orgId) return;
@@ -265,6 +287,37 @@ export default function SettingsView() {
       <p className="text-sm text-gray-500 mb-8">Manage your organization configuration.</p>
 
       <div className="space-y-6">
+
+        {/* Organization */}
+        {isAdminRole && (
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-4">Organization</h2>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Organization name</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={orgNameInput}
+                  onChange={e => setOrgNameInput(e.target.value)}
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  onClick={handleSaveOrgName}
+                  disabled={savingOrgName || !orgNameInput.trim() || orgNameInput.trim() === orgName}
+                  className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                >
+                  {savingOrgName ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Logo</label>
+              <OrgLogoUpload orgId={orgId} logoUrl={logoUrl} onLogoChange={setLogoUrl} />
+            </div>
+          </div>
+        )}
 
         {/* Organization Structure */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
