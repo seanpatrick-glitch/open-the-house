@@ -13,7 +13,7 @@ import { cleanFieldValues } from '../../people/PersonFieldsEditor';
 const DEFAULT_TYPE_LABEL = 'Team Member';
 const ROLE_FIELD_ID = 'roleTitle';
 
-export default function PeopleStep({ orgId, onNext }) {
+export default function PeopleStep({ orgId, onNext, onBack }) {
   const { userProfile } = useAuth();
   const uid = userProfile?.uid;
 
@@ -180,14 +180,23 @@ export default function PeopleStep({ orgId, onNext }) {
             <p className="text-xs text-gray-400 mb-4">Add at least one person to continue.</p>
           )}
 
-          <button
-            type="button"
-            onClick={onNext}
-            disabled={!canProceed}
-            className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base"
-          >
-            Next
-          </button>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-lg transition-colors text-base"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              onClick={onNext}
+              disabled={!canProceed}
+              className="flex-1 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base"
+            >
+              Next
+            </button>
+          </div>
         </>
       )}
     </div>
