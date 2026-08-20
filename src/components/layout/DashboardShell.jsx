@@ -102,10 +102,10 @@ export default function DashboardShell() {
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
           {/* Mobile header — hamburger + logo, hidden on desktop */}
-          <header className="md:hidden flex-shrink-0 flex items-center gap-3 px-4 h-14 bg-white border-b border-gray-200">
+          <header className="md:hidden flex-shrink-0 flex items-center gap-3 px-4 h-14 bg-stage-navy border-b border-white/10">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="text-gray-600 hover:text-gray-900 transition-colors p-1 -ml-1"
+              className="text-white/70 hover:text-house-white transition-colors p-1 -ml-1"
               aria-label="Open navigation"
             >
               <svg
@@ -122,7 +122,7 @@ export default function DashboardShell() {
                 <line x1="2" y1="17" x2="20" y2="17" />
               </svg>
             </button>
-            <span className="text-gray-900 font-semibold text-base">Places People!</span>
+            <span className="text-house-white text-base">Places People!</span>
           </header>
 
           {/* Scrollable content area */}
