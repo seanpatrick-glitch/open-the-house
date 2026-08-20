@@ -7,6 +7,10 @@ html {
   scroll-behavior: smooth;
 }
 
+body {
+  font-family: 'Alice', 'Iowan Old Style', 'Palatino Linotype', serif;
+}
+
 /* Larger checkbox tap targets on mobile */
 input[type="checkbox"] {
   cursor: pointer;
