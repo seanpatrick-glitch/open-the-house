@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import Sidebar from './Sidebar'
+import badge from '../../assets/brand/monogram-circle.png'
 import InviteCollaborator from '../invites/InviteCollaborator'
 import CollaboratorRoster from '../invites/CollaboratorRoster'
 import ProductionsView from '../productions/ProductionsView'
@@ -122,6 +123,7 @@ export default function DashboardShell() {
                 <line x1="2" y1="17" x2="20" y2="17" />
               </svg>
             </button>
+            <img src={badge} alt="" className="h-6 w-auto" />
             <span className="text-house-white text-base">Places People!</span>
           </header>
 

@@ -6,6 +6,7 @@ import { auth } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import badge from '../assets/brand/monogram-circle.png'
 
 export default function Login() {
   const [email,    setEmail]    = useState('')
@@ -54,7 +55,7 @@ export default function Login() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="text-4xl mb-3">🎭</div>
+          <img src={badge} alt="Places People!" className="h-16 w-auto mx-auto mb-3" />
           <h1 className="text-3xl text-stage-navy">Places People!</h1>
         </div>
 
