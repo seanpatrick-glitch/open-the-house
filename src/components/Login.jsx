@@ -55,19 +55,19 @@ export default function Login() {
           and only reads on dark, blue, or photographic surfaces */}
       <img src={wordmark} alt="Places People! There's more to the show than just the stage" className="h-40 w-auto mb-8" />
 
-      <div className="bg-places-blue rounded-2xl shadow-2xl p-8 w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
 
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-white/85 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Email
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-white/20 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-spotlight text-base"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-places-blue text-base"
               placeholder="your@email.com"
               autoComplete="email"
             />
@@ -75,14 +75,14 @@ export default function Login() {
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-medium text-white/85">
+              <label className="block text-sm font-medium text-gray-700">
                 Password
               </label>
               <button
                 type="button"
                 onClick={handleForgotPassword}
                 disabled={sendingReset}
-                className="text-xs font-medium text-white/80 hover:text-house-white disabled:opacity-50 transition-colors"
+                className="text-xs font-medium text-spotlight hover:text-haze disabled:opacity-50 transition-colors"
               >
                 {sendingReset ? 'Sending…' : 'Forgot password?'}
               </button>
@@ -91,7 +91,7 @@ export default function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-white/20 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-spotlight text-base"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-places-blue text-base"
               placeholder="••••••••"
               autoComplete="current-password"
             />
@@ -100,19 +100,19 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-spotlight hover:bg-spotlight/90 text-stage-navy font-semibold py-3 px-4 rounded-lg transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+            className="w-full bg-places-blue hover:bg-places-blue/90 text-house-white font-semibold py-3 px-4 rounded-lg transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed mt-2"
           >
             {loading ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
 
-        <p className="text-xs text-center text-white/50 mt-6">
+        <p className="text-xs text-center text-gray-400 mt-6">
           Private access only
         </p>
 
-        <p className="text-sm text-center text-white/70 mt-4">
+        <p className="text-sm text-center text-gray-500 mt-4">
           New here?{' '}
-          <Link to="/signup" className="text-spotlight hover:text-white font-medium">
+          <Link to="/signup" className="text-spotlight hover:text-haze font-medium">
             Create account
           </Link>
         </p>
