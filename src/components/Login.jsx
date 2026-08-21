@@ -27,7 +27,19 @@ export default function Login() {
       await login(email, password)
       navigate('/dashboard')
     } catch (err) {
-      toast.error('Login failed. Check your email and password and try again.')
+      // Distinguish the actual Firebase cause instead of a single generic
+      // message — "wrong password" and "too many attempts" need different
+      // fixes, and lumping them together makes real lockouts look like
+      // typos, which is exactly what was hiding the too-many-requests case.
+      if (err.code === 'auth/too-many-requests') {
+        toast.error('Too many attempts. Firebase has temporarily locked this account — wait a few minutes, or use "Forgot password?" to regain access immediately.')
+      } else if (err.code === 'auth/user-disabled') {
+        toast.error('This account has been disabled. Contact an admin.')
+      } else if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+        toast.error('Incorrect email or password.')
+      } else {
+        toast.error(`Login failed (${err.code || 'unknown error'}). Please try again.`)
+      }
       console.error(err)
     }
     setLoading(false)
