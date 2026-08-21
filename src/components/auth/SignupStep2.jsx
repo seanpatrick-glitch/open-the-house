@@ -44,7 +44,7 @@ export default function SignupStep2({ onComplete }) {
               type="text"
               value={code}
               onChange={(e) => { setCode(e.target.value); setError('') }}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-base"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-spotlight text-base"
               placeholder="Enter your code"
               autoComplete="off"
               autoFocus
@@ -57,7 +57,7 @@ export default function SignupStep2({ onComplete }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+            className="w-full bg-spotlight hover:bg-spotlight/90 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed mt-2"
           >
             {loading ? 'Verifying…' : 'Continue'}
           </button>

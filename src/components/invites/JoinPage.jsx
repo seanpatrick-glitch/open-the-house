@@ -220,7 +220,7 @@ export default function JoinPage() {
               value={displayNameInput}
               onChange={e => setDisplayNameInput(e.target.value)}
               placeholder={pending.email}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-base"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-spotlight text-base"
               autoFocus
             />
           </div>
@@ -235,7 +235,7 @@ export default function JoinPage() {
               onChange={e => setPasswordInput(e.target.value)}
               placeholder="At least 6 characters"
               autoComplete="new-password"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-base"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-spotlight text-base"
             />
           </div>
 
@@ -249,7 +249,7 @@ export default function JoinPage() {
               onChange={e => setConfirmPasswordInput(e.target.value)}
               placeholder="Re-enter your password"
               autoComplete="new-password"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-base"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-spotlight text-base"
             />
           </div>
 
@@ -258,7 +258,7 @@ export default function JoinPage() {
           <button
             onClick={handleContinue}
             disabled={submitting}
-            className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base"
+            className="w-full bg-spotlight hover:bg-spotlight/90 disabled:opacity-50 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base"
           >
             {submitting ? 'Setting up your account…' : 'Continue'}
           </button>

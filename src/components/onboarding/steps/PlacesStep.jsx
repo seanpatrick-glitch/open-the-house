@@ -55,7 +55,7 @@ export default function PlacesStep({ onNext, onBack }) {
           type="button"
           onClick={onNext}
           disabled={!canProceed}
-          className="flex-1 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base"
+          className="flex-1 bg-spotlight hover:bg-spotlight/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base"
         >
           Next
         </button>

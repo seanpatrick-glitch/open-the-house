@@ -225,7 +225,7 @@ export default function CollaboratorView() {
   };
   const stateColors = {
     [DASHBOARD_STATES.PLANNING]:        'bg-gray-100 text-gray-600',
-    [DASHBOARD_STATES.FINAL_COUNTDOWN]: 'bg-amber-100 text-amber-700',
+    [DASHBOARD_STATES.FINAL_COUNTDOWN]: 'bg-spotlight/15 text-stage-navy',
     [DASHBOARD_STATES.LIVE]:            'bg-green-100 text-green-700',
     [DASHBOARD_STATES.POSTMORTEM]:      'bg-blue-100 text-blue-700',
   };
@@ -250,10 +250,10 @@ export default function CollaboratorView() {
                   onChange={e => setNameInput(e.target.value)}
                   placeholder={userProfile?.email}
                   autoFocus
-                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-places-blue"
                 />
                 <button onClick={handleSaveName} disabled={savingName}
-                  className="text-xs font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50 transition-colors">
+                  className="text-xs font-medium text-places-blue hover:text-places-blue/90 disabled:opacity-50 transition-colors">
                   {savingName ? 'Saving...' : 'Save'}
                 </button>
                 <button onClick={() => setEditingName(false)}
@@ -287,7 +287,7 @@ export default function CollaboratorView() {
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-sm font-semibold text-gray-700">Messages</h2>
             {unreadCount > 0 && (
-              <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-amber-500 text-white text-xs font-semibold flex items-center justify-center">
+              <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-spotlight text-stage-navy text-xs font-semibold flex items-center justify-center">
                 {unreadCount}
               </span>
             )}
@@ -295,7 +295,7 @@ export default function CollaboratorView() {
           <p className="text-xs text-gray-400 mb-4">Conversations with your team.</p>
           <button
             onClick={() => setShowMessages(true)}
-            className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+            className="text-sm font-medium text-places-blue hover:text-places-blue/90 transition-colors">
             Open Messages
           </button>
         </div>
@@ -379,7 +379,7 @@ export default function CollaboratorView() {
           {!showFlagForm ? (
             <button
               onClick={() => setShowFlagForm(true)}
-              className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+              className="text-sm font-medium text-places-blue hover:text-places-blue/90 transition-colors">
               Add a flag
             </button>
           ) : (
@@ -389,13 +389,13 @@ export default function CollaboratorView() {
                 onChange={e => setFlagNote(e.target.value)}
                 placeholder="What needs attention?"
                 rows={3}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue resize-none"
               />
               <div className="flex gap-3">
                 <button
                   onClick={handleSubmitFlag}
                   disabled={submitting || !flagNote.trim()}
-                  className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+                  className="bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
                   {submitting ? 'Submitting...' : 'Submit Flag'}
                 </button>
                 <button

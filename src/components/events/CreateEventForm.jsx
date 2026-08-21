@@ -227,7 +227,7 @@ export default function CreateEventForm({ onSuccess, onCancel, production }) {
           <label className="block text-sm font-medium text-gray-700 mb-1">Title <span className="text-red-500">*</span></label>
           <input type="text" value={title} onChange={e => { setTitle(e.target.value); clearFieldError('title'); }}
             placeholder={isShowDate ? 'e.g. Friday 8pm show' : 'e.g. Opening Night'}
-            className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500', !!fieldErrors.title)} />
+            className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue', !!fieldErrors.title)} />
           <FieldError message={fieldErrors.title} />
         </div>
 
@@ -235,20 +235,20 @@ export default function CreateEventForm({ onSuccess, onCancel, production }) {
           <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
           <textarea value={description} onChange={e => setDescription(e.target.value)}
             placeholder="Optional details" rows={2}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue resize-none" />
         </div>
 
         <div className="flex gap-3">
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">Start Date <span className="text-red-500">*</span></label>
             <input type="date" value={startDate} onChange={e => handleStartDateChange(e.target.value)}
-              className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500', !!fieldErrors.startDate)} />
+              className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue', !!fieldErrors.startDate)} />
             <FieldError message={fieldErrors.startDate} />
           </div>
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">End Date <span className="text-red-500">*</span></label>
             <input type="date" value={endDate} onChange={e => { setEndDate(e.target.value); setEndDateTouched(true); clearFieldError('endDate'); }}
-              className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500', !!fieldErrors.endDate)} />
+              className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue', !!fieldErrors.endDate)} />
             <FieldError message={fieldErrors.endDate} />
           </div>
         </div>
@@ -260,12 +260,12 @@ export default function CreateEventForm({ onSuccess, onCancel, production }) {
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">Start Time (optional)</label>
             <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue" />
           </div>
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">End Time (optional)</label>
             <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue" />
           </div>
         </div>
 
@@ -273,7 +273,7 @@ export default function CreateEventForm({ onSuccess, onCancel, production }) {
           <label className="block text-sm font-medium text-gray-700 mb-1">Location (optional)</label>
           <input type="text" value={location} onChange={e => setLocation(e.target.value)}
             placeholder="e.g. Main Stage"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue" />
         </div>
 
         {/* Scope — hidden entirely in show-date mode, where scope is always 'production' */}
@@ -306,7 +306,7 @@ export default function CreateEventForm({ onSuccess, onCancel, production }) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Department <span className="text-red-500">*</span></label>
             <select value={departmentId} onChange={e => { setDepartmentId(e.target.value); clearFieldError('departmentId'); }}
-              className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500', !!fieldErrors.departmentId)}>
+              className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-places-blue', !!fieldErrors.departmentId)}>
               <option value="">Select a department...</option>
               {departments.map(d => (
                 <option key={d.id} value={d.id}>{d.name}</option>
@@ -323,7 +323,7 @@ export default function CreateEventForm({ onSuccess, onCancel, production }) {
             <p className="text-xs text-gray-400 mt-0.5">Weekly or monthly, until an end date. Each occurrence is created as its own event.</p>
           </div>
           <button type="button" onClick={() => setRecurrenceEnabled(v => !v)}
-            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${recurrenceEnabled ? 'bg-indigo-600' : 'bg-gray-200'}`}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${recurrenceEnabled ? 'bg-places-blue' : 'bg-gray-200'}`}
             role="switch" aria-checked={recurrenceEnabled}>
             <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${recurrenceEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
           </button>
@@ -344,7 +344,7 @@ export default function CreateEventForm({ onSuccess, onCancel, production }) {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Repeat Until <span className="text-red-500">*</span></label>
               <input type="date" value={recurrenceEndDate} onChange={e => { setRecurrenceEndDate(e.target.value); clearFieldError('recurrenceEndDate'); }}
-                className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500', !!fieldErrors.recurrenceEndDate)} />
+                className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue', !!fieldErrors.recurrenceEndDate)} />
               <FieldError message={fieldErrors.recurrenceEndDate} />
             </div>
             {recurrenceEndDate && recurrenceEndDate < startDate && (
@@ -368,7 +368,7 @@ export default function CreateEventForm({ onSuccess, onCancel, production }) {
       <div className="flex items-center gap-3 mt-6">
         <button onClick={handleSubmit}
           disabled={submitDisabled}
-          className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
+          className="bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
           {saving ? 'Creating...' : isShowDate ? 'Create Show Date' : 'Create Event'}
         </button>
         <button onClick={onCancel}

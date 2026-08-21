@@ -245,7 +245,7 @@ export default function PersonView() {
                     return (
                       <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[75%] rounded-xl px-3 py-2 ${
-                          isMine ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-900'
+                          isMine ? 'bg-places-blue text-white' : 'bg-white border border-gray-200 text-gray-900'
                         }`}>
                           <p className="text-sm leading-relaxed">{msg.body}</p>
                         </div>
@@ -261,10 +261,10 @@ export default function PersonView() {
                   onChange={e => setDhNewMessage(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendDHMessage(); }}}
                   placeholder="Type a message..."
-                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue"
                 />
                 <button onClick={handleSendDHMessage} disabled={dhSending || !dhNewMessage.trim()}
-                  className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+                  className="bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
                   Send
                 </button>
               </div>
@@ -299,10 +299,10 @@ export default function PersonView() {
                   onChange={e => setNameInput(e.target.value)}
                   placeholder={userProfile?.email}
                   autoFocus
-                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-places-blue"
                 />
                 <button onClick={handleSaveName} disabled={savingName}
-                  className="text-xs font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50 transition-colors">
+                  className="text-xs font-medium text-places-blue hover:text-places-blue/90 disabled:opacity-50 transition-colors">
                   {savingName ? 'Saving...' : 'Save'}
                 </button>
                 <button onClick={() => setEditingName(false)}
@@ -334,15 +334,15 @@ export default function PersonView() {
 
         {/* Unconfirmed assignments */}
         {unconfirmedAssignments.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-            <p className="text-sm font-medium text-amber-800 mb-3">Confirm your assignments</p>
+          <div className="bg-spotlight/10 border border-spotlight/25 rounded-xl p-4">
+            <p className="text-sm font-medium text-stage-navy mb-3">Confirm your assignments</p>
             <div className="space-y-2">
               {unconfirmedAssignments.map((a, i) => (
                 <div key={i} className="flex items-center justify-between gap-3">
-                  <p className="text-sm text-amber-700">{a.label}</p>
+                  <p className="text-sm text-stage-navy">{a.label}</p>
                   <button
                     onClick={() => handleConfirmAssignment(a)}
-                    className="text-xs font-medium text-amber-700 border border-amber-300 px-3 py-1 rounded-lg hover:bg-amber-100 transition-colors flex-shrink-0">
+                    className="text-xs font-medium text-stage-navy border border-spotlight/30 px-3 py-1 rounded-lg hover:bg-spotlight/15 transition-colors flex-shrink-0">
                     Confirm
                   </button>
                 </div>
@@ -420,7 +420,7 @@ export default function PersonView() {
             className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:border-gray-300 transition-colors text-center flex items-center justify-center gap-2">
             Messages
             {unreadCount > 0 && (
-              <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-amber-500 text-white text-xs font-semibold flex items-center justify-center">
+              <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-spotlight text-stage-navy text-xs font-semibold flex items-center justify-center">
                 {unreadCount}
               </span>
             )}

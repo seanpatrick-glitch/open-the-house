@@ -163,7 +163,7 @@ export default function CheckInView({ production, event, onBack }) {
             </p>
             <button
               onClick={() => setShowQR(true)}
-              className="text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+              className="text-xs font-medium text-places-blue hover:text-places-blue/90 transition-colors"
             >
               QR Check-In
             </button>
@@ -194,7 +194,7 @@ export default function CheckInView({ production, event, onBack }) {
                     className={`flex-shrink-0 text-sm font-medium px-4 py-1.5 rounded-lg transition-colors ${
                       checkedIn
                         ? 'bg-green-100 text-green-700 cursor-default'
-                        : 'bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50'
+                        : 'bg-places-blue hover:bg-places-blue/90 text-white disabled:opacity-50'
                     }`}
                   >
                     {isSaving ? 'Saving...' : checkedIn ? 'Present' : 'Check In'}

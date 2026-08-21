@@ -220,7 +220,7 @@ export default function PersonJoinPage() {
               value={displayNameInput}
               onChange={e => setDisplayNameInput(e.target.value)}
               placeholder={pending.email}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-base"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-places-blue text-base"
               autoFocus
             />
           </div>
@@ -235,7 +235,7 @@ export default function PersonJoinPage() {
               onChange={e => setPasswordInput(e.target.value)}
               placeholder="At least 6 characters"
               autoComplete="new-password"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-base"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-places-blue text-base"
             />
           </div>
 
@@ -249,7 +249,7 @@ export default function PersonJoinPage() {
               onChange={e => setConfirmPasswordInput(e.target.value)}
               placeholder="Re-enter your password"
               autoComplete="new-password"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-base"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-places-blue text-base"
             />
           </div>
 
@@ -258,7 +258,7 @@ export default function PersonJoinPage() {
           <button
             onClick={handleContinue}
             disabled={submitting}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base"
+            className="w-full bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base"
           >
             {submitting ? 'Setting up your account...' : 'Continue'}
           </button>

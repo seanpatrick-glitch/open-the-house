@@ -300,12 +300,12 @@ export default function SettingsView() {
                   type="text"
                   value={orgNameInput}
                   onChange={e => setOrgNameInput(e.target.value)}
-                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue"
                 />
                 <button
                   onClick={handleSaveOrgName}
                   disabled={savingOrgName || !orgNameInput.trim() || orgNameInput.trim() === orgName}
-                  className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                  className="bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
                 >
                   {savingOrgName ? 'Saving…' : 'Save'}
                 </button>
@@ -333,7 +333,7 @@ export default function SettingsView() {
               onClick={handleToggle}
               disabled={saving}
               className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                departmentsEnabled ? 'bg-indigo-600' : 'bg-gray-200'
+                departmentsEnabled ? 'bg-places-blue' : 'bg-gray-200'
               } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
               role="switch"
               aria-checked={departmentsEnabled}
@@ -356,7 +356,7 @@ export default function SettingsView() {
             </div>
             <button
               onClick={() => setShowForm(true)}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              className="bg-places-blue hover:bg-places-blue/90 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
               Add Type
             </button>
@@ -383,7 +383,7 @@ export default function SettingsView() {
                       {Object.entries(type.toggleableFields || {})
                         .filter(([, v]) => v)
                         .map(([k]) => (
-                          <span key={k} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-indigo-50 text-indigo-600 capitalize">
+                          <span key={k} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-places-blue/10 text-places-blue capitalize">
                             {k.replace(/([A-Z])/g, ' $1')}
                           </span>
                         ))
@@ -412,7 +412,7 @@ export default function SettingsView() {
                             value={type.departmentId || ''}
                             onChange={e => handleAssignTypeDepartment(type.id, e.target.value)}
                             disabled={savingTypeDept === type.id}
-                            className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                            className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-places-blue disabled:opacity-50"
                           >
                             <option value="">Unassigned</option>
                             {departments.map(dept => (
@@ -433,7 +433,7 @@ export default function SettingsView() {
                           value={type.departmentHeadId || ''}
                           onChange={e => handleAssignTypeHead(type.id, e.target.value)}
                           disabled={savingTypeHead === type.id}
-                          className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                          className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-places-blue disabled:opacity-50"
                         >
                           <option value="">Unassigned</option>
                           {departmentHeads.map(dh => (
@@ -459,7 +459,7 @@ export default function SettingsView() {
             value={activeProdId}
             onChange={e => handleSetActiveProd(e.target.value)}
             disabled={savingProd}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-places-blue disabled:opacity-50"
           >
             <option value="">No active production</option>
             {productions.map(p => (
@@ -471,19 +471,19 @@ export default function SettingsView() {
         </div>
 
         {/* Dashboard State Override */}
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
-          <h2 className="text-base font-semibold text-amber-900 mb-1">Dashboard State Override</h2>
-          <p className="text-sm text-amber-800 mb-1">
+        <div className="bg-spotlight/10 border border-spotlight/25 rounded-xl p-6">
+          <h2 className="text-base font-semibold text-stage-navy mb-1">Dashboard State Override</h2>
+          <p className="text-sm text-stage-navy mb-1">
             Force the dashboard to a specific state regardless of production dates.
           </p>
-          <p className="text-xs text-amber-700 mb-4">
+          <p className="text-xs text-stage-navy mb-4">
             This overrides the computed state on the Admin, Department Head, and Collaborator dashboards until you turn it back to Auto. Most settings here are set once and left alone. This one keeps acting until you turn it off, so it is worth checking back on.
           </p>
           <select
             value={dashboardOverride}
             onChange={e => handleSetOverride(e.target.value)}
             disabled={savingOverride}
-            className="w-full border border-amber-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50"
+            className="w-full border border-spotlight/30 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-spotlight disabled:opacity-50"
           >
             <option value="">Auto (based on production dates)</option>
             <option value="planning">Planning</option>
@@ -504,7 +504,7 @@ export default function SettingsView() {
             </div>
             {!showTokenForm && (
               <button onClick={() => { setShowTokenForm(true); setNewToken(null); }}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+                className="bg-places-blue hover:bg-places-blue/90 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
                 New Link
               </button>
             )}
@@ -550,7 +550,7 @@ export default function SettingsView() {
                   </div>
                   <button
                     onClick={() => navigator.clipboard.writeText(`${window.location.origin}/signup/${orgId}/${token.id}`)}
-                    className="flex-shrink-0 text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+                    className="flex-shrink-0 text-xs font-medium text-places-blue hover:text-places-blue/90 transition-colors">
                     Copy
                   </button>
                 </div>

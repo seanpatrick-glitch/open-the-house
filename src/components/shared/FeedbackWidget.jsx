@@ -65,7 +65,7 @@ export default function FeedbackWidget() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-5 right-5 z-40 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2.5 rounded-full shadow-lg transition-colors"
+        className="fixed bottom-5 right-5 z-40 bg-places-blue hover:bg-places-blue/90 text-white text-sm font-medium px-4 py-2.5 rounded-full shadow-lg transition-colors"
       >
         Feedback
       </button>
@@ -96,7 +96,7 @@ export default function FeedbackWidget() {
                       onClick={() => setType(opt.value)}
                       className={`flex-1 text-sm font-medium py-2 rounded-lg border transition-colors ${
                         type === opt.value
-                          ? 'bg-indigo-600 border-indigo-600 text-white'
+                          ? 'bg-places-blue border-places-blue text-white'
                           : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
                       }`}
                     >
@@ -116,7 +116,7 @@ export default function FeedbackWidget() {
                   required
                   rows={4}
                   placeholder="What happened, or what would help?"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue"
                 />
               </div>
 
@@ -124,7 +124,7 @@ export default function FeedbackWidget() {
                 <button
                   type="submit"
                   disabled={submitting || !description.trim()}
-                  className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
+                  className="bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
                 >
                   {submitting ? 'Sending…' : 'Send'}
                 </button>

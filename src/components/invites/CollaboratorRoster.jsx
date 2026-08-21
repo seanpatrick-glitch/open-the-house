@@ -148,7 +148,7 @@ export default function CollaboratorRoster() {
         </div>
         <button
           onClick={() => setShowInviteForm(true)}
-          className="bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shrink-0"
+          className="bg-spotlight hover:bg-spotlight/90 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shrink-0"
         >
           + Invite Collaborator
         </button>
@@ -178,7 +178,7 @@ export default function CollaboratorRoster() {
                         {roleLabel(row.role)}
                       </span>
                       <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
-                        row.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                        row.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-spotlight/15 text-stage-navy'
                       }`}>
                         {row.status === 'active' ? 'Active' : 'Invited'}
                       </span>

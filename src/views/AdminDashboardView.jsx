@@ -280,7 +280,7 @@ function DashboardHeader({ state, activeProd, daysToOpen, isOverride }) {
 
   const stateLabels = {
     [DASHBOARD_STATES.PLANNING]:        { label: 'Planning', color: 'bg-gray-100 text-gray-600' },
-    [DASHBOARD_STATES.FINAL_COUNTDOWN]: { label: 'Final Countdown', color: 'bg-amber-100 text-amber-700' },
+    [DASHBOARD_STATES.FINAL_COUNTDOWN]: { label: 'Final Countdown', color: 'bg-spotlight/15 text-stage-navy' },
     [DASHBOARD_STATES.LIVE]:            { label: 'Live', color: 'bg-green-100 text-green-700' },
     [DASHBOARD_STATES.POSTMORTEM]:      { label: 'Postmortem', color: 'bg-blue-100 text-blue-700' },
   };

@@ -22,8 +22,8 @@ export default function ConfirmEmailScreen({
   }
 
   const accent = theme === 'indigo'
-    ? { button: 'bg-indigo-600 hover:bg-indigo-700', ring: 'focus:ring-indigo-500' }
-    : { button: 'bg-amber-600 hover:bg-amber-700', ring: 'focus:ring-amber-500' }
+    ? { button: 'bg-places-blue hover:bg-places-blue/90', ring: 'focus:ring-places-blue' }
+    : { button: 'bg-spotlight hover:bg-spotlight/90', ring: 'focus:ring-spotlight' }
 
   return (
     <div className={containerClassName}>

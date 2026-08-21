@@ -163,7 +163,7 @@ export default function InviteCollaborator() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-base"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-spotlight text-base"
               placeholder="name@email.com"
               autoComplete="off"
             />
@@ -176,7 +176,7 @@ export default function InviteCollaborator() {
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-base bg-white"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-spotlight text-base bg-white"
             >
               {ROLE_OPTIONS.map((r) => (
                 <option
@@ -203,7 +203,7 @@ export default function InviteCollaborator() {
               <select
                 value={departmentId}
                 onChange={(e) => setDepartmentId(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-base bg-white"
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-spotlight text-base bg-white"
               >
                 <option value="">Select a department…</option>
                 {departments.map((d) => (
@@ -216,7 +216,7 @@ export default function InviteCollaborator() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-spotlight hover:bg-spotlight/90 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? 'Sending…' : 'Send invite'}
           </button>
@@ -241,7 +241,7 @@ export default function InviteCollaborator() {
                     <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
                       invite.status === 'accepted'
                         ? 'bg-gray-100 text-gray-500'
-                        : 'bg-amber-100 text-amber-700'
+                        : 'bg-spotlight/15 text-stage-navy'
                     }`}>
                       {invite.status === 'accepted' ? 'Accepted' : 'Pending'}
                     </span>

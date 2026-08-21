@@ -133,7 +133,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
             value={name}
             onChange={e => { setName(e.target.value); clearFieldError('name') }}
             placeholder="e.g. The Tempest"
-            className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent', !!fieldErrors.name)}
+            className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spotlight focus:border-transparent', !!fieldErrors.name)}
           />
           <FieldError message={fieldErrors.name} />
         </div>
@@ -148,7 +148,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
             value={displayLabel}
             onChange={e => setDisplayLabel(e.target.value)}
             placeholder="e.g. Show, Event, Festival. Defaults to Production if left blank"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spotlight focus:border-transparent"
           />
         </div>
 
@@ -160,7 +160,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
           <select
             value={placeId}
             onChange={e => { setPlaceId(e.target.value); clearFieldError('placeId') }}
-            className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent', !!fieldErrors.placeId)}
+            className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-spotlight focus:border-transparent', !!fieldErrors.placeId)}
           >
             {places.map(p => (
               <option key={p.id} value={p.id}>{p.name}</option>
@@ -177,7 +177,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
           <select
             value={scope}
             onChange={e => { setScope(e.target.value); clearFieldError('scope') }}
-            className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent', !!fieldErrors.scope)}
+            className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-spotlight focus:border-transparent', !!fieldErrors.scope)}
           >
             <option value="">Select scope...</option>
             {SCOPE_OPTIONS.map(opt => (
@@ -197,7 +197,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
               type="date"
               value={startDate}
               onChange={e => { setStartDate(e.target.value); clearFieldError('startDate') }}
-              className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent', !!fieldErrors.startDate)}
+              className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spotlight focus:border-transparent', !!fieldErrors.startDate)}
             />
             <FieldError message={fieldErrors.startDate} />
           </div>
@@ -209,7 +209,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
               type="date"
               value={endDate}
               onChange={e => { setEndDate(e.target.value); clearFieldError('endDate') }}
-              className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent', !!fieldErrors.endDate)}
+              className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spotlight focus:border-transparent', !!fieldErrors.endDate)}
             />
             <FieldError message={fieldErrors.endDate} />
           </div>
@@ -223,7 +223,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
           <select
             value={status}
             onChange={e => setStatus(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-spotlight focus:border-transparent"
           >
             {STATUS_OPTIONS.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -237,7 +237,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
           <button
             type="submit"
             disabled={loading}
-            className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
+            className="bg-spotlight hover:bg-spotlight/90 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
           >
             {loading ? 'Creating…' : 'Create Production'}
           </button>

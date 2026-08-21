@@ -126,7 +126,7 @@ export default function DepartmentDetailView({ department, onBack, onViewTimelin
           <h2 className="text-base font-semibold text-gray-800">Tasks</h2>
           <button
             onClick={onViewTimeline}
-            className="text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+            className="text-xs font-medium text-places-blue hover:text-places-blue/90 transition-colors"
           >
             View in Timeline →
           </button>

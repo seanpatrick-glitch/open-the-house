@@ -80,7 +80,7 @@ export default function OrgStep({ orgId, onNext }) {
               value={name}
               onChange={e => setName(e.target.value)}
               onBlur={commitName}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spotlight"
             />
           </div>
 
@@ -94,7 +94,7 @@ export default function OrgStep({ orgId, onNext }) {
           <button
             type="button"
             onClick={handleNext}
-            className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base"
+            className="w-full bg-spotlight hover:bg-spotlight/90 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base"
           >
             Next
           </button>

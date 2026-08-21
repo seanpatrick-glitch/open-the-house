@@ -108,7 +108,7 @@ export default function CheckInTokenGenerator({ production, onClose }) {
               type="date"
               value={date}
               onChange={e => setDate(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue"
             />
           </div>
           <div className="flex gap-3">
@@ -118,7 +118,7 @@ export default function CheckInTokenGenerator({ production, onClose }) {
                 type="time"
                 value={startTime}
                 onChange={e => setStartTime(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue"
               />
             </div>
             <div className="flex-1">
@@ -127,7 +127,7 @@ export default function CheckInTokenGenerator({ production, onClose }) {
                 type="time"
                 value={endTime}
                 onChange={e => setEndTime(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue"
               />
             </div>
           </div>
@@ -136,7 +136,7 @@ export default function CheckInTokenGenerator({ production, onClose }) {
           <button
             onClick={handleGenerate}
             disabled={generating || !date || !startTime || !endTime}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium py-2 rounded-lg transition-colors"
+            className="w-full bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium py-2 rounded-lg transition-colors"
           >
             {generating ? 'Generating...' : 'Generate QR Code'}
           </button>
@@ -155,7 +155,7 @@ export default function CheckInTokenGenerator({ production, onClose }) {
           </p>
           <button
             onClick={() => setToken(null)}
-            className="text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+            className="text-sm text-places-blue hover:text-places-blue/90 font-medium transition-colors"
           >
             Generate a new code
           </button>

@@ -46,7 +46,7 @@ export default function CreatePlaceForm({ onSuccess, onCancel }) {
             onChange={e => setName(e.target.value)}
             placeholder="e.g. Main Stage, Black Box Theatre"
             required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spotlight focus:border-transparent"
           />
         </div>
 
@@ -56,7 +56,7 @@ export default function CreatePlaceForm({ onSuccess, onCancel }) {
           <button
             type="submit"
             disabled={loading || !name.trim()}
-            className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
+            className="bg-spotlight hover:bg-spotlight/90 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
           >
             {loading ? 'Saving…' : 'Save Place'}
           </button>

@@ -11,10 +11,10 @@ export default function UnreadCallout({ count, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3 hover:bg-indigo-100 transition-colors"
+      className="w-full text-left bg-places-blue/10 border border-places-blue/20 rounded-xl px-4 py-3 flex items-center justify-between gap-3 hover:bg-places-blue/15 transition-colors"
     >
-      <p className="text-sm font-medium text-indigo-800">{label}</p>
-      <span className="text-xs font-medium text-indigo-600 flex-shrink-0">View →</span>
+      <p className="text-sm font-medium text-stage-navy">{label}</p>
+      <span className="text-xs font-medium text-places-blue flex-shrink-0">View →</span>
     </button>
   );
 }

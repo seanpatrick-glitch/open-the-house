@@ -88,7 +88,7 @@ export default function SignupStep3({ firebaseUser }) {
               type="text"
               value={venueName}
               onChange={(e) => setVenueName(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-base"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-spotlight text-base"
               placeholder="e.g. The Grand Theatre"
               autoFocus
             />
@@ -96,7 +96,7 @@ export default function SignupStep3({ firebaseUser }) {
 
           <button
             type="submit"
-            className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base mt-2"
+            className="w-full bg-spotlight hover:bg-spotlight/90 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base mt-2"
           >
             Create organization
           </button>

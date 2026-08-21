@@ -9,7 +9,7 @@ import CsvImportForm from '../components/people/CsvImportForm';
 import PersonProfileView from './PersonProfileView';
 
 const STATUS_STYLES = {
-  [PERSON_STATUS.APPLIED]:    'bg-amber-100 text-amber-700',
+  [PERSON_STATUS.APPLIED]:    'bg-spotlight/15 text-stage-navy',
   [PERSON_STATUS.WAITLISTED]: 'bg-purple-100 text-purple-700',
   [PERSON_STATUS.ACTIVE]:     'bg-green-100 text-green-700',
   [PERSON_STATUS.INACTIVE]:   'bg-gray-100 text-gray-500',
@@ -130,7 +130,7 @@ export default function PeopleView({ onNavigate, navState }) {
           {!showForm && !showCsvImport && (
             <button
               onClick={() => setShowForm(true)}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              className="bg-places-blue hover:bg-places-blue/90 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
               Add Person
             </button>
@@ -173,7 +173,7 @@ export default function PeopleView({ onNavigate, navState }) {
                 onClick={() => setTypeFilter('all')}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   typeFilter === 'all'
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-places-blue text-white'
                     : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
                 }`}
               >
@@ -185,7 +185,7 @@ export default function PeopleView({ onNavigate, navState }) {
                   onClick={() => setTypeFilter(type.id)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     typeFilter === type.id
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-places-blue text-white'
                       : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
                   }`}
                 >

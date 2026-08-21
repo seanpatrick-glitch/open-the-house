@@ -158,25 +158,25 @@ export default function SelfSignupPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
               <input type="text" value={fieldValues.name || ''} onChange={e => setField('name', e.target.value)}
                 placeholder="Full name"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input type="email" value={fieldValues.email || ''} onChange={e => setField('email', e.target.value)}
                 placeholder="email@example.com"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
               <input type="tel" value={fieldValues.phone || ''} onChange={e => setField('phone', e.target.value)}
                 placeholder="Phone number"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Emergency Contact</label>
               <input type="text" value={fieldValues.emergencyContact || ''} onChange={e => setField('emergencyContact', e.target.value)}
                 placeholder="Name and phone number"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue" />
             </div>
 
             {activeToggleable.map(([key]) => (
@@ -185,7 +185,7 @@ export default function SelfSignupPage() {
                 <input type={key === 'dateOfBirth' ? 'date' : 'text'}
                   value={fieldValues[key] || ''}
                   onChange={e => setField(key, e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue" />
               </div>
             ))}
 
@@ -197,17 +197,17 @@ export default function SelfSignupPage() {
                 {field.type === 'text' && (
                   <input type="text" value={fieldValues[field.fieldId] || ''}
                     onChange={e => setField(field.fieldId, e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue" />
                 )}
                 {field.type === 'date' && (
                   <input type="date" value={fieldValues[field.fieldId] || ''}
                     onChange={e => setField(field.fieldId, e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue" />
                 )}
                 {field.type === 'select' && (
                   <select value={fieldValues[field.fieldId] || ''}
                     onChange={e => setField(field.fieldId, e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-places-blue">
                     <option value="">Select...</option>
                     {(field.options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
                   </select>
@@ -255,7 +255,7 @@ export default function SelfSignupPage() {
           {error && <p className="text-sm text-red-600 mt-4">{error}</p>}
 
           <button onClick={handleSubmit} disabled={saving || !fieldValues.name?.trim()}
-            className="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
+            className="mt-6 w-full bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
             {saving ? 'Submitting...' : 'Submit'}
           </button>
         </div>

@@ -85,7 +85,7 @@ export default function OrgLogoUpload({ orgId, logoUrl, onLogoChange }) {
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className="text-sm font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50 transition-colors text-left"
+          className="text-sm font-medium text-places-blue hover:text-places-blue/90 disabled:opacity-50 transition-colors text-left"
         >
           {uploading ? 'Uploading…' : logoUrl ? 'Replace logo' : 'Upload logo'}
         </button>

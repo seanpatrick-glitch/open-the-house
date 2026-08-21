@@ -142,7 +142,7 @@ export default function BroadcastForm({ onClose, initialScope, initialDepartment
                 onClick={() => { setScopeType(opt.key); setDepartmentId(''); }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   scopeType === opt.key
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-places-blue text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}>
                 {opt.label}
@@ -155,7 +155,7 @@ export default function BroadcastForm({ onClose, initialScope, initialDepartment
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
             <select value={departmentId} onChange={e => setDepartmentId(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-places-blue">
               <option value="">Select department...</option>
               {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
@@ -166,7 +166,7 @@ export default function BroadcastForm({ onClose, initialScope, initialDepartment
           <label className="block text-sm font-medium text-gray-700 mb-1">Subject <span className="text-red-500">*</span></label>
           <input type="text" value={subject} onChange={e => setSubject(e.target.value)}
             placeholder="e.g. Tech week schedule update"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue" />
         </div>
 
         <div>
@@ -174,7 +174,7 @@ export default function BroadcastForm({ onClose, initialScope, initialDepartment
           <textarea value={body} onChange={e => setBody(e.target.value)}
             placeholder="Your message..."
             rows={4}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue resize-none" />
         </div>
 
         <p className="text-xs text-gray-400">
@@ -187,7 +187,7 @@ export default function BroadcastForm({ onClose, initialScope, initialDepartment
       <div className="flex items-center gap-3 mt-6">
         <button onClick={handleSend}
           disabled={sending || !subject.trim() || !body.trim() || (scopeType === 'department' && !departmentId)}
-          className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
+          className="bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
           {sending ? 'Sending...' : `Send to ${recipients.length} ${recipients.length === 1 ? 'person' : 'people'}`}
         </button>
         <button onClick={onClose}

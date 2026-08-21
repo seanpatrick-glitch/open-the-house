@@ -62,7 +62,7 @@ export default function SignupStep1({ onComplete }) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-base"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-spotlight text-base"
               placeholder="your@email.com"
               autoComplete="email"
             />
@@ -76,7 +76,7 @@ export default function SignupStep1({ onComplete }) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-base"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-spotlight text-base"
               placeholder="••••••••"
               autoComplete="new-password"
             />
@@ -90,7 +90,7 @@ export default function SignupStep1({ onComplete }) {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-base"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-spotlight text-base"
               placeholder="••••••••"
               autoComplete="new-password"
             />
@@ -99,7 +99,7 @@ export default function SignupStep1({ onComplete }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+            className="w-full bg-spotlight hover:bg-spotlight/90 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed mt-2"
           >
             {loading ? 'Creating account…' : 'Continue'}
           </button>

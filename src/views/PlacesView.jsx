@@ -148,7 +148,7 @@ export default function PlacesView() {
                       {Object.entries(prod.activeModules)
                         .filter(([, v]) => v)
                         .map(([k]) => (
-                          <span key={k} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-indigo-50 text-indigo-600 capitalize">
+                          <span key={k} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-places-blue/10 text-places-blue capitalize">
                             {k}
                           </span>
                         ))}
@@ -173,7 +173,7 @@ export default function PlacesView() {
         </div>
         <button
           onClick={() => setShowAddPlace(s => !s)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          className="bg-places-blue hover:bg-places-blue/90 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           Add a Place
         </button>

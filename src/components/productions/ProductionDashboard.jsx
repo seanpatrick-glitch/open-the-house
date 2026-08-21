@@ -12,7 +12,7 @@ import toast from 'react-hot-toast'
 
 const STATUS_STYLES = {
   'planning':    'bg-gray-100 text-gray-600',
-  'in-progress': 'bg-amber-100 text-amber-700',
+  'in-progress': 'bg-spotlight/15 text-stage-navy',
   'open':        'bg-green-100 text-green-700',
   'closed':      'bg-gray-100 text-gray-500',
 }
@@ -247,7 +247,7 @@ export default function ProductionDashboard({ production, places, onBack, backLa
                   rounded-xl border px-4 py-3 flex items-center gap-3 w-full text-left
                   transition-colors
                   ${isActive
-                    ? 'bg-amber-50 border-amber-300 hover:bg-amber-100'
+                    ? 'bg-spotlight/10 border-spotlight/30 hover:bg-spotlight/15'
                     : 'bg-white border-gray-200 hover:bg-gray-50'}
                   ${isToggling ? 'opacity-50 cursor-wait' : 'cursor-pointer'}
                 `}
@@ -260,7 +260,7 @@ export default function ProductionDashboard({ production, places, onBack, backLa
                 />
                 <span
                   className={`text-sm font-medium transition-colors ${
-                    isActive ? 'text-amber-800' : 'text-gray-400'
+                    isActive ? 'text-stage-navy' : 'text-gray-400'
                   }`}
                 >
                   {MODULE_LABELS[key]}
@@ -303,7 +303,7 @@ export default function ProductionDashboard({ production, places, onBack, backLa
                     return (
                       <tr key={task.id}
                         onClick={() => setSelectedTask(isSelected ? null : task)}
-                        className={`cursor-pointer transition-colors ${isSelected ? 'bg-indigo-50' : 'hover:bg-gray-50'}`}>
+                        className={`cursor-pointer transition-colors ${isSelected ? 'bg-places-blue/10' : 'hover:bg-gray-50'}`}>
                         <td className="px-4 py-3 font-medium text-gray-900">{task.title}</td>
                         <td className="px-4 py-3 text-gray-600">
                           {task.primaryAssigneeUid
@@ -339,7 +339,7 @@ export default function ProductionDashboard({ production, places, onBack, backLa
           <h2 className="text-base font-semibold text-gray-800">Roster</h2>
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { section: 'people' } }))}
-            className="text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+            className="text-xs font-medium text-places-blue hover:text-places-blue/90 transition-colors"
           >
             Manage in People →
           </button>

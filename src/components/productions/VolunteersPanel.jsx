@@ -135,7 +135,7 @@ export default function VolunteersPanel({ production, roster }) {
         <h2 className="text-base font-semibold text-gray-800">Volunteer Shifts</h2>
         <button
           onClick={() => setShowCreateForm(s => !s)}
-          className="text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+          className="text-xs font-medium text-places-blue hover:text-places-blue/90 transition-colors"
         >
           {showCreateForm ? 'Cancel' : '+ New Shift'}
         </button>
@@ -147,35 +147,35 @@ export default function VolunteersPanel({ production, roster }) {
             <label className="block text-xs font-medium text-gray-600 mb-1">Shift Name</label>
             <input type="text" value={name} onChange={e => setName(e.target.value)}
               placeholder="e.g. Ushers - Matinee"
-              className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue" />
           </div>
           <div className="flex gap-3">
             <div className="flex-1">
               <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
               <input type="date" value={date} onChange={e => setDate(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue" />
             </div>
             <div className="flex-1">
               <label className="block text-xs font-medium text-gray-600 mb-1">Slots</label>
               <input type="number" min="1" value={slots} onChange={e => setSlots(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue" />
             </div>
           </div>
           <div className="flex gap-3">
             <div className="flex-1">
               <label className="block text-xs font-medium text-gray-600 mb-1">Start Time (optional)</label>
               <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue" />
             </div>
             <div className="flex-1">
               <label className="block text-xs font-medium text-gray-600 mb-1">End Time (optional)</label>
               <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue" />
             </div>
           </div>
           {error && <p className="text-xs text-red-600">{error}</p>}
           <button onClick={handleCreateShift} disabled={saving || !name.trim() || !date || !slots}
-            className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors">
+            className="bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors">
             {saving ? 'Creating...' : 'Create Shift'}
           </button>
         </div>
@@ -207,7 +207,7 @@ export default function VolunteersPanel({ production, roster }) {
                       {shift.startTime && ` · ${formatTime(shift.startTime)}${shift.endTime ? ` – ${formatTime(shift.endTime)}` : ''}`}
                     </p>
                   </div>
-                  <span className={`flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${assignedCount >= shift.slots ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                  <span className={`flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${assignedCount >= shift.slots ? 'bg-green-100 text-green-700' : 'bg-spotlight/15 text-stage-navy'}`}>
                     {assignedCount} / {shift.slots} filled
                   </span>
                 </button>
@@ -234,14 +234,14 @@ export default function VolunteersPanel({ production, roster }) {
                     ) : (
                       <div className="flex gap-2">
                         <select value={addPersonId} onChange={e => setAddPersonId(e.target.value)}
-                          className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                          className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-places-blue">
                           <option value="">Select a volunteer...</option>
                           {availablePeople.map(p => (
                             <option key={p.id} value={p.id}>{getDisplayName(p) || 'No name'}</option>
                           ))}
                         </select>
                         <button onClick={() => handleAssign(shift)} disabled={!addPersonId}
-                          className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors">
+                          className="bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors">
                           Assign
                         </button>
                       </div>

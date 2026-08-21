@@ -11,7 +11,7 @@ import PersonFieldsEditor, { TOGGLEABLE_LABELS, validatePersonFields, cleanField
 import toast from 'react-hot-toast';
 
 const STATUS_STYLES = {
-  [PERSON_STATUS.APPLIED]:    'bg-amber-100 text-amber-700',
+  [PERSON_STATUS.APPLIED]:    'bg-spotlight/15 text-stage-navy',
   [PERSON_STATUS.WAITLISTED]: 'bg-purple-100 text-purple-700',
   [PERSON_STATUS.ACTIVE]:     'bg-green-100 text-green-700',
   [PERSON_STATUS.INACTIVE]:   'bg-gray-100 text-gray-500',
@@ -217,7 +217,7 @@ export default function PersonProfileView({ personId, onBack }) {
           <div className="text-right">
             <button
               onClick={() => setShowInviteForm(true)}
-              className="inline-flex items-center gap-1.5 border border-indigo-200 text-indigo-600 hover:bg-indigo-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              className="inline-flex items-center gap-1.5 border border-places-blue/20 text-places-blue hover:bg-places-blue/10 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
               <span aria-hidden="true">🔗</span> Give {getDisplayName(person) || 'this person'} a login
             </button>
@@ -249,13 +249,13 @@ export default function PersonProfileView({ personId, onBack }) {
       )}
 
       {editing ? (
-        <div className="bg-white border border-indigo-200 rounded-xl p-5 mb-4">
+        <div className="bg-white border border-places-blue/20 rounded-xl p-5 mb-4">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Edit Person</h2>
           <PersonFieldsEditor personType={personType} fieldValues={editFieldValues} setField={setEditField} />
           {editError && <p className="text-sm text-red-600 mt-4">{editError}</p>}
           <div className="flex items-center gap-3 mt-5">
             <button onClick={handleSaveEdit} disabled={savingEdit}
-              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
+              className="bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
               {savingEdit ? 'Saving...' : 'Save'}
             </button>
             <button onClick={() => setEditing(false)}
@@ -272,7 +272,7 @@ export default function PersonProfileView({ personId, onBack }) {
               <h2 className="text-sm font-semibold text-gray-700">Contact Information</h2>
               {canEdit && (
                 <button onClick={startEditing}
-                  className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+                  className="text-sm font-medium text-places-blue hover:text-places-blue/90 transition-colors">
                   Edit
                 </button>
               )}
@@ -326,10 +326,10 @@ export default function PersonProfileView({ personId, onBack }) {
 
       {/* Internal section — staff only */}
       {isStaff && (
-        <div className="bg-white border border-amber-200 rounded-xl p-5 mb-4">
+        <div className="bg-white border border-spotlight/25 rounded-xl p-5 mb-4">
           <div className="flex items-center gap-2 mb-4">
             <h2 className="text-sm font-semibold text-gray-700">Internal</h2>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-spotlight/15 text-stage-navy">
               Staff only
             </span>
           </div>
@@ -346,7 +346,7 @@ export default function PersonProfileView({ personId, onBack }) {
                 role="switch"
                 aria-checked={!!person.staff}
                 className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
-                  person.staff ? 'bg-indigo-600' : 'bg-gray-200'
+                  person.staff ? 'bg-places-blue' : 'bg-gray-200'
                 }`}
               >
                 <span
@@ -375,10 +375,10 @@ export default function PersonProfileView({ personId, onBack }) {
                 onChange={e => setTagInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag(); }}}
                 placeholder="Add a tag..."
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue"
               />
               <button onClick={addTag} disabled={!tagInput.trim()}
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-40 transition-colors">
+                className="text-sm font-medium text-places-blue hover:text-places-blue/90 disabled:opacity-40 transition-colors">
                 Add
               </button>
             </div>
@@ -391,12 +391,12 @@ export default function PersonProfileView({ personId, onBack }) {
               onChange={e => setNotes(e.target.value)}
               placeholder="Internal notes visible to staff only..."
               rows={3}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue resize-none"
             />
           </div>
 
           <button onClick={saveInternalData} disabled={savingInternal}
-            className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            className="bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
             {savingInternal ? 'Saving...' : internalSaved ? 'Saved' : 'Save Internal Data'}
           </button>
         </div>

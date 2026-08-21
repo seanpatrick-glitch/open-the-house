@@ -171,7 +171,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
                 type="button"
                 onClick={createDepartment}
                 disabled={loading}
-                className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                className="bg-spotlight hover:bg-spotlight/90 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
               >
                 Confirm
               </button>
@@ -205,7 +205,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
             value={name}
             onChange={e => { setName(e.target.value); setFieldErrors(prev => (prev.name ? { ...prev, name: undefined } : prev)) }}
             placeholder="e.g. Front of House"
-            className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent', !!fieldErrors.name)}
+            className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spotlight focus:border-transparent', !!fieldErrors.name)}
           />
           <FieldError message={fieldErrors.name} />
         </div>
@@ -220,7 +220,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
             onChange={e => setDescription(e.target.value)}
             placeholder="Optional description"
             rows={3}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spotlight focus:border-transparent resize-none"
           />
         </div>
 
@@ -255,7 +255,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
               value={departmentHeadUid}
               onChange={e => setDepartmentHeadUid(e.target.value)}
               disabled={!!headEmail.trim()}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-50"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-spotlight focus:border-transparent disabled:opacity-50 disabled:bg-gray-50"
             >
               <option value="">Assign later</option>
               {orgUsers.map(u => (
@@ -276,7 +276,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
             onChange={e => setHeadEmail(e.target.value)}
             placeholder="head@email.com"
             autoComplete="off"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spotlight focus:border-transparent"
           />
         </div>
 
@@ -286,7 +286,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
           <button
             type="submit"
             disabled={loading || usersLoading}
-            className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
+            className="bg-spotlight hover:bg-spotlight/90 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
           >
             {loading ? 'Creating…' : 'Create Department'}
           </button>

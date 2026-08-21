@@ -173,7 +173,7 @@ export default function MessagingView({ orgUsers }) {
           <h2 className="text-sm font-semibold text-gray-900">Messages</h2>
           <button
             onClick={() => setShowNewThread(true)}
-            className="text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+            className="text-xs font-medium text-places-blue hover:text-places-blue/90 transition-colors"
           >
             New
           </button>
@@ -182,7 +182,7 @@ export default function MessagingView({ orgUsers }) {
         {showNewThread && (
           <div className="p-4 border-b border-gray-200 space-y-2 bg-gray-50">
             <select value={newRecipientUid} onChange={e => setNewRecipientUid(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-places-blue">
               <option value="">Select recipient...</option>
               {orgUsers.filter(u => u.uid !== uid).map(u => (
                 <option key={u.uid} value={u.uid}>
@@ -192,10 +192,10 @@ export default function MessagingView({ orgUsers }) {
             </select>
             <input type="text" value={newSubject} onChange={e => setNewSubject(e.target.value)}
               placeholder="Subject"
-              className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-places-blue" />
             <div className="flex gap-2">
               <button onClick={handleCreateThread} disabled={sending || !newSubject.trim() || !newRecipientUid}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-medium py-1.5 rounded-lg transition-colors">
+                className="flex-1 bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-xs font-medium py-1.5 rounded-lg transition-colors">
                 Start
               </button>
               <button onClick={() => setShowNewThread(false)}
@@ -219,7 +219,7 @@ export default function MessagingView({ orgUsers }) {
               const otherHasName = hasDisplayName(other);
               return (
                 <button key={thread.id} onClick={() => setSelectedThread(thread)}
-                  className={`w-full text-left p-4 transition-colors ${selected ? 'bg-indigo-50' : 'hover:bg-gray-50'}`}>
+                  className={`w-full text-left p-4 transition-colors ${selected ? 'bg-places-blue/10' : 'hover:bg-gray-50'}`}>
                   <div className="flex items-start justify-between gap-2">
                     <p
                       className={`text-xs truncate ${
@@ -239,7 +239,7 @@ export default function MessagingView({ orgUsers }) {
                   {thread.lastMessagePreview && (
                     <p className="text-xs text-gray-400 mt-0.5 truncate">{thread.lastMessagePreview}</p>
                   )}
-                  {unread && <div className="w-2 h-2 rounded-full bg-indigo-600 mt-1" />}
+                  {unread && <div className="w-2 h-2 rounded-full bg-places-blue mt-1" />}
                 </button>
               );
             })
@@ -264,9 +264,9 @@ export default function MessagingView({ orgUsers }) {
               const isMine = msg.senderUid === uid;
               return (
                 <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[75%] rounded-xl px-3 py-2 ${isMine ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-900'}`}>
+                  <div className={`max-w-[75%] rounded-xl px-3 py-2 ${isMine ? 'bg-places-blue text-white' : 'bg-gray-100 text-gray-900'}`}>
                     <p className="text-sm leading-relaxed">{msg.body}</p>
-                    <p className={`text-xs mt-1 ${isMine ? 'text-indigo-200' : 'text-gray-400'}`}>
+                    <p className={`text-xs mt-1 ${isMine ? 'text-white/60' : 'text-gray-400'}`}>
                       {formatMessageTime(msg.sentAt)}
                     </p>
                   </div>
@@ -283,10 +283,10 @@ export default function MessagingView({ orgUsers }) {
                 onChange={e => setNewMessage(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }}}
                 placeholder="Type a message..."
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue"
               />
               <button onClick={handleSendMessage} disabled={sending || !newMessage.trim()}
-                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+                className="bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
                 Send
               </button>
             </div>

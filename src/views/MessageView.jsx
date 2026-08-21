@@ -48,7 +48,7 @@ export default function MessageView({ navState }) {
           onClick={toggleBroadcast}
           className={`text-sm font-medium px-4 py-2 rounded-lg border transition-colors ${
             showBroadcast
-              ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+              ? 'bg-places-blue/10 border-places-blue/20 text-places-blue/90'
               : 'border-gray-200 text-gray-600 hover:text-gray-900'
           }`}
         >

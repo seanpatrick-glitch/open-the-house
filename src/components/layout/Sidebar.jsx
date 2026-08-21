@@ -160,7 +160,7 @@ export default function Sidebar({ activeSection, onNavigate, sidebarOpen }) {
                 </span>
                 <span className="flex-1 leading-snug">{item.label}</span>
                 {item.key === 'messages' && unreadCount > 0 && (
-                  <span className="flex-shrink-0 min-w-[1.25rem] h-5 px-1.5 rounded-full bg-spotlight text-house-white text-xs font-semibold flex items-center justify-center">
+                  <span className="flex-shrink-0 min-w-[1.25rem] h-5 px-1.5 rounded-full bg-spotlight text-stage-navy text-xs font-semibold flex items-center justify-center">
                     {unreadCount}
                   </span>
                 )}
