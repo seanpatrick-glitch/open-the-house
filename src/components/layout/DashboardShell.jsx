@@ -123,7 +123,7 @@ export default function DashboardShell() {
                 <line x1="2" y1="17" x2="20" y2="17" />
               </svg>
             </button>
-            <img src={wordmark} alt="Places People!" className="h-6 w-auto" />
+            <img src={wordmark} alt="Places People!" className="h-9 w-auto" />
           </header>
 
           {/* Scrollable content area */}
