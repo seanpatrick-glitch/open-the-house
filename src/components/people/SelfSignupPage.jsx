@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useParams } from 'react-router-dom';
+import wordmark from '../../assets/brand/wordmark-mark.png';
 
 const TOGGLEABLE_LABELS = {
   address:             'Address',
@@ -143,11 +144,11 @@ export default function SelfSignupPage() {
   const customFields = personType?.customFields || [];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-stage-navy flex flex-col items-center justify-center px-4 py-12">
+      <img src={wordmark} alt="Places People!" className="h-14 w-auto mb-6" />
       <div className="w-full max-w-lg">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Places People!</h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-white/70">
             Fill out the form below to register as a {token?.typeLabel || 'member'}.
           </p>
         </div>

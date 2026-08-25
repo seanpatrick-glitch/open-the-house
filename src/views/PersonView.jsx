@@ -7,6 +7,7 @@ import { getOrCreateDHThread } from '../utils/messaging';
 import { getDisplayName } from '../utils/displayName';
 import UnreadCallout from '../components/messaging/UnreadCallout';
 import toast from 'react-hot-toast';
+import wordmark from '../assets/brand/wordmark-mark.png';
 
 function formatDate(ts) {
   if (!ts) return '';
@@ -278,16 +279,16 @@ export default function PersonView() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-4">
+      <div className="bg-stage-navy border-b border-white/10 px-4 py-4">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <div>
-            <h1 className="text-base font-semibold text-gray-900">Places People!</h1>
+            <img src={wordmark} alt="Places People!" className="h-6 w-auto" />
             {nextTask ? (
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-xs text-white/60 mt-1.5">
                 Next up: {nextTask.title}, due {formatDate(nextTask.dueByDate)}
               </p>
             ) : (
-              <p className="text-xs text-gray-500 mt-0.5">No tasks due</p>
+              <p className="text-xs text-white/60 mt-1.5">No tasks due</p>
             )}
           </div>
           <div className="flex items-center gap-3">
@@ -299,28 +300,28 @@ export default function PersonView() {
                   onChange={e => setNameInput(e.target.value)}
                   placeholder={userProfile?.email}
                   autoFocus
-                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-places-blue"
+                  className="bg-white/10 border border-white/20 rounded px-2 py-1 text-xs text-house-white focus:outline-none focus:ring-1 focus:ring-places-blue"
                 />
                 <button onClick={handleSaveName} disabled={savingName}
                   className="text-xs font-medium text-places-blue hover:text-places-blue/90 disabled:opacity-50 transition-colors">
                   {savingName ? 'Saving...' : 'Save'}
                 </button>
                 <button onClick={() => setEditingName(false)}
-                  className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+                  className="text-xs text-white/50 hover:text-white/80 transition-colors">
                   Cancel
                 </button>
               </div>
             ) : (
               <button
                 onClick={() => { setNameInput(userProfile?.displayName || ''); setEditingName(true); }}
-                className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-xs text-white/60 hover:text-white/90 transition-colors"
                 title="Click to edit display name"
               >
                 {getDisplayName(userProfile)}
               </button>
             )}
             <button onClick={logout}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+              className="text-xs text-white/50 hover:text-white/80 transition-colors">
               Sign out
             </button>
           </div>

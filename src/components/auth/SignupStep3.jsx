@@ -3,6 +3,7 @@ import { collection, doc, addDoc, setDoc, serverTimestamp } from 'firebase/fires
 import { db } from '../../firebase'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import wordmark from '../../assets/brand/wordmark-mark.png'
 
 export default function SignupStep3({ firebaseUser }) {
   const [venueName, setVenueName] = useState('')
@@ -71,12 +72,11 @@ export default function SignupStep3({ firebaseUser }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-stage-navy flex flex-col items-center justify-center px-4">
+      <img src={wordmark} alt="Places People!" className="h-14 w-auto mb-6" />
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="text-4xl mb-3">🎭</div>
-          <h1 className="text-3xl font-bold text-gray-900">Places People!</h1>
-          <p className="text-gray-500 mt-2 text-sm">Set up your organization</p>
+          <p className="text-gray-500 text-sm">Set up your organization</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

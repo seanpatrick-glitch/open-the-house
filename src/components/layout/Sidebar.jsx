@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useUnread } from '../../contexts/UnreadContext'
 import { getDisplayName } from '../../utils/displayName'
 import toast from 'react-hot-toast'
-import badge from '../../assets/brand/monogram-circle.png'
+import wordmark from '../../assets/brand/wordmark-mark.png'
 
 const NAV_ITEMS = [
   { key: 'home',        label: 'Home',        emoji: '🏠' },
@@ -94,12 +94,7 @@ export default function Sidebar({ activeSection, onNavigate, sidebarOpen }) {
     >
       {/* Logo + user info */}
       <div className="flex-shrink-0 px-5 pt-6 pb-5 border-b border-white/10">
-        <div className="flex items-center gap-2.5">
-          <img src={badge} alt="" className="h-8 w-auto flex-shrink-0" />
-          <p className="text-house-white text-xl leading-tight tracking-tight">
-            Places People!
-          </p>
-        </div>
+        <img src={wordmark} alt="Places People!" className="h-9 w-auto" />
         {editingName ? (
           <div className="mt-3 space-y-1.5">
             <input
@@ -151,7 +146,7 @@ export default function Sidebar({ activeSection, onNavigate, sidebarOpen }) {
                   isLeafActive
                     ? 'bg-places-blue text-house-white'
                     : parentLit
-                      ? 'bg-white/10 text-house-white'
+                      ? 'bg-places-blue/20 text-house-white'
                       : 'text-white/70 hover:bg-white/10 hover:text-house-white',
                 ].join(' ')}
               >
