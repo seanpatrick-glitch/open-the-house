@@ -40,8 +40,14 @@ export default function OrgLogoUpload({ orgId, logoUrl, onLogoChange }) {
       await updateDoc(doc(db, 'organizations', orgId), { logoUrl: url });
       onLogoChange?.(url);
     } catch (err) {
+      // Surface the real Firebase error code instead of one generic message
+      // (mirrors Login.jsx's auth-error handling) — this bug has been
+      // reported live as an unexplained failure with bucket/rules/CORS all
+      // ruled out by direct testing, so the next failure needs to say
+      // *what* actually failed (permission-denied, unauthorized, quota,
+      // network, ...) instead of hiding it behind "please try again".
       console.error('OrgLogoUpload upload error:', err);
-      toast.error('Could not upload logo. Please try again.');
+      toast.error(`Could not upload logo (${err.code || err.message || 'unknown error'}). Please try again.`);
     } finally {
       setUploading(false);
     }
@@ -54,7 +60,7 @@ export default function OrgLogoUpload({ orgId, logoUrl, onLogoChange }) {
       onLogoChange?.(null);
     } catch (err) {
       console.error('OrgLogoUpload remove error:', err);
-      toast.error('Could not remove logo. Please try again.');
+      toast.error(`Could not remove logo (${err.code || err.message || 'unknown error'}). Please try again.`);
     } finally {
       setUploading(false);
     }
