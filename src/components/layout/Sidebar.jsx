@@ -93,8 +93,8 @@ export default function Sidebar({ activeSection, onNavigate, sidebarOpen }) {
       ].join(' ')}
     >
       {/* Logo + user info */}
-      <div className="flex-shrink-0 px-5 pt-6 pb-5 border-b border-white/10">
-        <img src={wordmark} alt="Places People!" className="h-14 w-auto" />
+      <div className="flex-shrink-0 px-5 pt-6 pb-5 border-b border-white/10 flex justify-center">
+        <img src={wordmark} alt="Places People!" className="h-16 w-auto" />
         {editingName ? (
           <div className="mt-3 space-y-1.5">
             <input
