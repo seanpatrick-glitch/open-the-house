@@ -7,6 +7,7 @@ import { getDisplayName } from '../utils/displayName';
 import CreatePersonTypeForm from '../components/people/CreatePersonTypeForm';
 import CreateSignupTokenForm from '../components/people/CreateSignupTokenForm';
 import OrgLogoUpload from '../components/shared/OrgLogoUpload';
+import PageHeader from '../components/shared/PageHeader';
 import toast from 'react-hot-toast';
 
 const RESET_COLLECTION_LABELS = {
@@ -283,7 +284,7 @@ export default function SettingsView() {
 
   return (
     <div className="p-6 max-w-2xl">
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">Settings</h1>
+      <PageHeader title="Settings" />
       <p className="text-sm text-gray-500 mb-8">Manage your organization configuration.</p>
 
       <div className="space-y-6">

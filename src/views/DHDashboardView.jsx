@@ -7,6 +7,7 @@ import { DASHBOARD_STATES } from '../models/org';
 import { differenceInDays, startOfDay, endOfDay, addDays } from 'date-fns';
 import UnreadCallout from '../components/messaging/UnreadCallout';
 import UpcomingDatesWidget, { mergeUpcoming, UPCOMING_LIMIT } from '../components/dashboard/UpcomingDatesWidget';
+import PageHeader from '../components/shared/PageHeader';
 import toast from 'react-hot-toast';
 
 function goToMessages() {
@@ -301,15 +302,14 @@ export default function DHDashboardView() {
 
   return (
     <div className="p-6 max-w-6xl">
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-1">
-          <h1 className="text-2xl font-bold text-gray-900">{headers[dashState]}</h1>
+      <PageHeader title={headers[dashState]}>
+        <div className="flex items-center gap-3 mt-4">
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color}`}>
             {descriptor ? `${label} (${descriptor})` : label}
           </span>
+          {deptName && <p className="text-sm text-white/70">{deptName}</p>}
         </div>
-        {deptName && <p className="text-sm text-gray-500">{deptName}</p>}
-      </div>
+      </PageHeader>
 
       {unreadCount > 0 && (
         <div className="mb-6">

@@ -7,6 +7,7 @@ import { getDisplayName } from '../utils/displayName';
 import CreatePersonForm from '../components/people/CreatePersonForm';
 import CsvImportForm from '../components/people/CsvImportForm';
 import PersonProfileView from './PersonProfileView';
+import PageHeader from '../components/shared/PageHeader';
 
 const STATUS_STYLES = {
   [PERSON_STATUS.APPLIED]:    'bg-spotlight/15 text-stage-navy',
@@ -90,9 +91,9 @@ export default function PeopleView({ onNavigate, navState }) {
 
   return (
     <div className="p-6 max-w-5xl">
+      <PageHeader title="People" />
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">People</h1>
           <p className="text-sm text-gray-500">Everyone your organization coordinates, in one place.</p>
           <p className="text-xs text-gray-400 mt-1">
             People are your org's contacts, cast, crew, and vendors who don't need to sign in.

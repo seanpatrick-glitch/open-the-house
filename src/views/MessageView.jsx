@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import MessagingView from '../components/messaging/MessagingView';
 import BroadcastForm from '../components/messaging/BroadcastForm';
+import PageHeader from '../components/shared/PageHeader';
 
 export default function MessageView({ navState }) {
   const { userProfile } = useAuth();
@@ -39,9 +40,9 @@ export default function MessageView({ navState }) {
 
   return (
     <div className="p-6 max-w-6xl h-full">
+      <PageHeader title="Messages" />
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Messages</h1>
           <p className="text-sm text-gray-500">Conversations with your team.</p>
         </div>
         <button

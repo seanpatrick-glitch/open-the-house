@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import CreatePlaceForm from '../components/productions/CreatePlaceForm';
 import ProductionDashboard from '../components/productions/ProductionDashboard';
 import toast from 'react-hot-toast';
+import PageHeader from '../components/shared/PageHeader';
 
 export default function PlacesView() {
   const { userProfile } = useAuth();
@@ -166,9 +167,9 @@ export default function PlacesView() {
   // Place list view
   return (
     <div className="p-6 max-w-4xl">
+      <PageHeader title="Places" />
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Places</h1>
           <p className="text-sm text-gray-500">Your venues and the productions happening in them.</p>
         </div>
         <button

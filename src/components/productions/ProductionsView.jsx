@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import CreatePlaceForm from './CreatePlaceForm'
 import CreateProductionForm from './CreateProductionForm'
 import ProductionDashboard from './ProductionDashboard'
+import PageHeader from '../shared/PageHeader'
 import toast from 'react-hot-toast'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -186,7 +187,7 @@ export default function ProductionsView() {
   if (places.length === 0) {
     return (
       <div className="space-y-6 max-w-lg">
-        <h1 className="text-2xl font-bold text-gray-900">Productions</h1>
+        <PageHeader title="Productions" bleed={false} />
 
         {showPlaceForm ? (
           <CreatePlaceForm
@@ -224,8 +225,8 @@ export default function ProductionsView() {
     <div className="space-y-6 max-w-4xl">
 
       {/* Header — Create Production always visible when places exist */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Productions</h1>
+      <PageHeader title="Productions" bleed={false} />
+      <div className="flex items-center justify-end">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowPlaceForm(true)}

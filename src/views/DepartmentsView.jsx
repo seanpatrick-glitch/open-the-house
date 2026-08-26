@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import CreateDepartmentForm from '../components/departments/CreateDepartmentForm';
 import DepartmentDetailView from '../components/departments/DepartmentDetailView';
+import PageHeader from '../components/shared/PageHeader';
 
 export default function DepartmentsView({ onNavigate }) {
   const { userProfile } = useAuth();
@@ -106,9 +107,9 @@ export default function DepartmentsView({ onNavigate }) {
 
   return (
     <div className="p-6 max-w-4xl">
+      <PageHeader title="Departments" />
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Departments</h1>
           <p className="text-sm text-gray-500">Organize your venues, productions, and people by team.</p>
         </div>
         <button
