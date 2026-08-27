@@ -41,7 +41,7 @@ export default function OrgLogoUpload({ orgId, logoUrl, onLogoChange }) {
       onLogoChange?.(url);
     } catch (err) {
       console.error('OrgLogoUpload upload error:', err);
-      toast.error('Could not upload logo. Please try again.');
+      toast.error(`Could not upload logo (${err.code || 'unknown error'}). Please try again.`);
     } finally {
       setUploading(false);
     }
@@ -54,7 +54,7 @@ export default function OrgLogoUpload({ orgId, logoUrl, onLogoChange }) {
       onLogoChange?.(null);
     } catch (err) {
       console.error('OrgLogoUpload remove error:', err);
-      toast.error('Could not remove logo. Please try again.');
+      toast.error(`Could not remove logo (${err.code || 'unknown error'}). Please try again.`);
     } finally {
       setUploading(false);
     }
