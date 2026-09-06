@@ -14,6 +14,28 @@ import toast from 'react-hot-toast';
 
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // matches storage.rules' underSizeLimit()
 
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// storage.rules' isAdminOrSecondary()/isMember() do the same cross-service
+// firestore.get() on users/{uid} that AuthRouter.jsx's org listener already
+// hit a race for (see its permission-denied retry): right after a write to
+// that doc, the rule's server-side get() can momentarily still see a
+// not-yet-propagated version and reject a genuinely-authorized upload with
+// storage/unauthorized. Retry a few times before surfacing the failure.
+async function uploadWithRetry(fileRef, file, attempt = 0) {
+  try {
+    await uploadBytes(fileRef, file);
+  } catch (err) {
+    if (err?.code === 'storage/unauthorized' && attempt < 5) {
+      await wait(400);
+      return uploadWithRetry(fileRef, file, attempt + 1);
+    }
+    throw err;
+  }
+}
+
 export default function OrgLogoUpload({ orgId, logoUrl, onLogoChange }) {
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef(null);
@@ -35,7 +57,7 @@ export default function OrgLogoUpload({ orgId, logoUrl, onLogoChange }) {
     setUploading(true);
     try {
       const fileRef = ref(storage, `organizations/${orgId}/logo/${file.name}`);
-      await uploadBytes(fileRef, file);
+      await uploadWithRetry(fileRef, file);
       const url = await getDownloadURL(fileRef);
       await updateDoc(doc(db, 'organizations', orgId), { logoUrl: url });
       onLogoChange?.(url);
