@@ -36,6 +36,7 @@ export default function Sidebar({ activeSection, onNavigate, sidebarOpen }) {
   const unreadCount = useUnread()
   const orgId = userProfile?.orgId
   const [departmentsEnabled, setDepartmentsEnabled] = useState(false)
+  const [orgName, setOrgName] = useState('')
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput]     = useState('')
   const [savingName, setSavingName]   = useState(false)
@@ -62,6 +63,7 @@ export default function Sidebar({ activeSection, onNavigate, sidebarOpen }) {
     const unsubscribe = onSnapshot(orgRef, (snap) => {
       if (snap.exists()) {
         setDepartmentsEnabled(snap.data().departmentsEnabled ?? false)
+        setOrgName(snap.data().name ?? '')
       }
     })
     return () => unsubscribe()
@@ -93,8 +95,11 @@ export default function Sidebar({ activeSection, onNavigate, sidebarOpen }) {
       ].join(' ')}
     >
       {/* Logo + user info */}
-      <div className="flex-shrink-0 px-5 pt-6 pb-5 border-b border-white/10 flex justify-center">
+      <div className="flex-shrink-0 px-5 pt-6 pb-5 border-b border-white/10 flex flex-col items-center">
         <img src={wordmark} alt="Places People!" className="h-16 w-auto" />
+        {orgName && (
+          <p className="font-mono text-house-white text-sm font-semibold mt-2 truncate text-center">{orgName}</p>
+        )}
         {editingName ? (
           <div className="mt-3 space-y-1.5">
             <input

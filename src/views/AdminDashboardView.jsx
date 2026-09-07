@@ -57,6 +57,7 @@ export default function AdminDashboardView() {
   const [activeProd, setActiveProd]       = useState(null);
   const [daysToOpen, setDaysToOpen]       = useState(null);
   const [isOverride, setIsOverride]       = useState(false);
+  const [orgName, setOrgName]             = useState('');
   const [loading, setLoading]             = useState(true);
 
   // State-specific data
@@ -79,6 +80,7 @@ export default function AdminDashboardView() {
         if (!orgSnap.exists()) { setLoading(false); return; }
 
         const orgData  = orgSnap.data();
+        setOrgName(orgData.name ?? '');
         const override = orgData.dashboardStateOverride ?? null;
         const compositeId = orgData.activeProdId ?? null;
 
@@ -247,6 +249,7 @@ export default function AdminDashboardView() {
         activeProd={activeProd}
         daysToOpen={daysToOpen}
         isOverride={isOverride}
+        orgName={orgName}
       />
       {unreadCount > 0 && (
         <div className="mb-6">
@@ -269,7 +272,7 @@ export default function AdminDashboardView() {
   );
 }
 
-function DashboardHeader({ state, activeProd, daysToOpen, isOverride }) {
+function DashboardHeader({ state, activeProd, daysToOpen, isOverride, orgName }) {
   const prodName = activeProd?.name || 'your next production';
 
   const headers = {
@@ -290,7 +293,7 @@ function DashboardHeader({ state, activeProd, daysToOpen, isOverride }) {
   const descriptor = getStateDescriptor(state, isOverride);
 
   return (
-    <PageHeader title={headers[state]}>
+    <PageHeader title={headers[state]} kicker={orgName || undefined}>
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-4 ${color}`}>
         {descriptor ? `${label} (${descriptor})` : label}
       </span>
