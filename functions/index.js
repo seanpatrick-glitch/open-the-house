@@ -57,9 +57,12 @@ exports.emailOnNewMessage = onDocumentCreated(
 // Alerts the Places People team when a new Bug/Feedback report is
 // submitted via the in-app widget, to organizations/{orgId}/feedback/{feedbackId}.
 // Looks up the team member's uid dynamically each time (Firestore users
-// collection, email == "seanpatrickphilibin@gmail.com") rather than
-// hardcoding it, since a hardcoded uid could go stale if that account is
-// ever recreated. Missing team account is logged, not thrown — a lookup
+// collection, email == "seanphilibin@yahoo.com" — the actual live admin
+// account; a previous version queried seanpatrickphilibin@gmail.com, an
+// account that was never created, so every feedback alert silently
+// no-op'd from 2026-08-18 through 2026-09-07) rather than hardcoding a
+// uid, since a hardcoded uid could go stale if that account is ever
+// recreated. Missing team account is logged, not thrown — a lookup
 // failure here must never block the feedback submission itself, which has
 // already succeeded by the time this trigger runs.
 exports.emailOnNewFeedback = onDocumentCreated(
@@ -74,7 +77,7 @@ exports.emailOnNewFeedback = onDocumentCreated(
     try {
       const teamSnap = await db
         .collection("users")
-        .where("email", "==", "seanpatrickphilibin@gmail.com")
+        .where("email", "==", "seanphilibin@yahoo.com")
         .limit(1)
         .get();
 
