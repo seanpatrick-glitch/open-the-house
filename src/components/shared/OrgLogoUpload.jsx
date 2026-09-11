@@ -14,6 +14,28 @@ import toast from 'react-hot-toast';
 
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // matches storage.rules' underSizeLimit()
 
+// storage.rules' isAdminOrSecondary()/isMember() do the same cross-service
+// firestore.get() on the requester's own users/{uid} doc that AuthRouter.jsx's
+// org listener already had to work around (see that file for the full
+// writeup): right after signup or an admin/secondaryAdmin role change, the
+// rule's server-side get() can momentarily see a not-yet-propagated version
+// of that doc and reject a genuinely-authorized upload with storage/unauthorized.
+// Retry a few times before surfacing it as a real failure.
+async function uploadWithRetry(fileRef, file, maxAttempts = 5, delayMs = 400) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      await uploadBytes(fileRef, file);
+      return;
+    } catch (err) {
+      if (err.code === 'storage/unauthorized' && attempt < maxAttempts - 1) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 export default function OrgLogoUpload({ orgId, logoUrl, onLogoChange }) {
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef(null);
@@ -35,7 +57,7 @@ export default function OrgLogoUpload({ orgId, logoUrl, onLogoChange }) {
     setUploading(true);
     try {
       const fileRef = ref(storage, `organizations/${orgId}/logo/${file.name}`);
-      await uploadBytes(fileRef, file);
+      await uploadWithRetry(fileRef, file);
       const url = await getDownloadURL(fileRef);
       await updateDoc(doc(db, 'organizations', orgId), { logoUrl: url });
       onLogoChange?.(url);
