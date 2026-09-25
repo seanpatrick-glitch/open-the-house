@@ -1,14 +1,22 @@
+// MemberView — the single dashboard for base-level access: every role that
+// is neither Admin nor Department Head (see src/models/roles.js). Built from
+// the former CollaboratorView (production status, messages, org timeline,
+// flags) plus PersonView's personal sections (My Tasks, My Schedule), which
+// it replaces. Routed by Role only — never by taxonomy Group.
+
 import { useState, useEffect } from 'react';
 import {
-  collection, query, where, orderBy, onSnapshot,
+  collection, query, where, orderBy, onSnapshot, limit,
   getDocs, addDoc, updateDoc, serverTimestamp, doc, getDoc
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useUnreadCount } from '../hooks/useUnreadCount';
 import { DASHBOARD_STATES } from '../models/org';
 import { differenceInDays } from 'date-fns';
 import { getDisplayName } from '../utils/displayName';
+import { callableErrorMessage } from '../utils/callableError';
 import UnreadCallout from '../components/messaging/UnreadCallout';
 import MessagingView from '../components/messaging/MessagingView';
 import toast from 'react-hot-toast';
@@ -33,7 +41,16 @@ function formatDate(ts) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export default function CollaboratorView() {
+// Short day format for personal task due dates ("Fri, Oct 3").
+function formatDay(ts) {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+const OPEN_TASK_STATUSES = ['not_started', 'in_progress', 'overdue'];
+
+export default function MemberView() {
   const { userProfile, logout } = useAuth();
   const orgId = userProfile?.orgId;
   const uid   = userProfile?.uid;
@@ -47,6 +64,12 @@ export default function CollaboratorView() {
   const [peopleCount, setPeopleCount]   = useState(0);
   const [flags, setFlags]               = useState([]);
   const [tasks, setTasks]               = useState([]);
+
+  // Personal sections: tasks assigned to or shared with this login, and the
+  // assignments on the People record linked to it (if any).
+  const [myTasks, setMyTasks]           = useState([]);
+  const [personRecord, setPersonRecord] = useState(null);
+  const [confirmingRef, setConfirmingRef] = useState(null);
 
   const [showMessages, setShowMessages] = useState(false);
   const [orgUsers, setOrgUsers]         = useState([]);
@@ -66,6 +89,9 @@ export default function CollaboratorView() {
     try {
       await updateDoc(doc(db, 'users', uid), { displayName });
       await updateDoc(doc(db, 'organizations', orgId, 'members', uid), { displayName });
+      if (personRecord?.id) {
+        await updateDoc(doc(db, 'organizations', orgId, 'people', personRecord.id), { displayName });
+      }
       setEditingName(false);
     } catch (err) {
       console.error('Save display name error:', err);
@@ -117,7 +143,7 @@ export default function CollaboratorView() {
         );
         setPeopleCount(peopleSnap.size);
       } catch (err) {
-        console.error('CollaboratorView load error:', err);
+        console.error('MemberView load error:', err);
         toast.error('Could not load your dashboard. Please refresh and try again.');
       } finally {
         setLoading(false);
@@ -147,7 +173,7 @@ export default function CollaboratorView() {
       q,
       snap => setFlags(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
       err => {
-        console.error('CollaboratorView flags subscription error:', err);
+        console.error('MemberView flags subscription error:', err);
         toast.error('Could not load flags. Please refresh and try again.');
       }
     );
@@ -166,6 +192,72 @@ export default function CollaboratorView() {
     );
     return onSnapshot(q, snap => setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
   }, [orgId, loading]);
+
+  // The People record linked to this login, for My Schedule.
+  useEffect(() => {
+    if (!orgId || !uid) return;
+    return onSnapshot(
+      query(collection(db, 'organizations', orgId, 'people'), where('accountUid', '==', uid), limit(1)),
+      snap => setPersonRecord(snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }),
+      err => console.error('MemberView person record error:', err)
+    );
+  }, [orgId, uid]);
+
+  // My Tasks — open tasks this login is assigned to or contributing on. Two
+  // queries (Firestore can't OR these fields), merged and de-duplicated; each
+  // keeps its own latest result so a task leaving one query drops out.
+  useEffect(() => {
+    if (!orgId || !uid) return;
+    const latest = { assigned: [], contributor: [] };
+    const publish = () => {
+      const merged = new Map();
+      [...latest.assigned, ...latest.contributor].forEach(t => merged.set(t.id, t));
+      setMyTasks([...merged.values()].sort((a, b) =>
+        (a.dueByDate?.toMillis?.() ?? 0) - (b.dueByDate?.toMillis?.() ?? 0)
+      ));
+    };
+    const onError = err => console.error('MemberView my tasks error:', err);
+    const toTasks = snap => snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    const unsubAssigned = onSnapshot(
+      query(
+        collection(db, 'tasks'),
+        where('orgId', '==', orgId),
+        where('currentAssigneeUid', '==', uid),
+        where('status', 'in', OPEN_TASK_STATUSES),
+        orderBy('dueByDate', 'asc')
+      ),
+      snap => { latest.assigned = toTasks(snap); publish(); },
+      onError
+    );
+    const unsubContributor = onSnapshot(
+      query(
+        collection(db, 'tasks'),
+        where('orgId', '==', orgId),
+        where('contributorUids', 'array-contains', uid),
+        where('status', 'in', OPEN_TASK_STATUSES),
+        orderBy('dueByDate', 'asc')
+      ),
+      snap => { latest.contributor = toTasks(snap); publish(); },
+      onError
+    );
+    return () => { unsubAssigned(); unsubContributor(); };
+  }, [orgId, uid]);
+
+  // Confirmation is written server-side: rules can't limit an edit of the
+  // assignments array to one entry's confirmed flag.
+  async function handleConfirmAssignment(assignment) {
+    setConfirmingRef(assignment.refId);
+    try {
+      const confirmAssignment = httpsCallable(functions, 'confirmAssignment');
+      await confirmAssignment({ orgId, refId: assignment.refId });
+    } catch (err) {
+      console.error('Confirm assignment error:', err);
+      toast.error(callableErrorMessage(err, 'Could not confirm assignment. Please try again.'));
+    } finally {
+      setConfirmingRef(null);
+    }
+  }
 
   async function handleSubmitFlag() {
     if (!flagNote.trim()) return;
@@ -218,6 +310,13 @@ export default function CollaboratorView() {
   }
 
   const prodName = activeProd?.name || 'upcoming production';
+  const nextTask = myTasks[0] ?? null;
+  const assignments = personRecord?.assignments || [];
+  const unconfirmedAssignments = assignments.filter(a => !a.confirmed);
+  const confirmedAssignments   = assignments.filter(a => a.confirmed);
+  // Org-wide timeline, minus anything already listed under My Tasks.
+  const myTaskIds = new Set(myTasks.map(t => t.id));
+  const orgTasks  = tasks.filter(t => !myTaskIds.has(t.id));
   const stateLabels = {
     [DASHBOARD_STATES.PLANNING]:        'Planning',
     [DASHBOARD_STATES.FINAL_COUNTDOWN]: 'Final Countdown',
@@ -236,11 +335,18 @@ export default function CollaboratorView() {
       {/* Header */}
       <div className="bg-stage-navy border-b border-white/10 px-4 py-4">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src={wordmark} alt="Places People!" className="h-6 w-auto" />
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${stateColors[dashState]}`}>
-              {stateLabels[dashState]}
-            </span>
+          <div>
+            <div className="flex items-center gap-3">
+              <img src={wordmark} alt="Places People!" className="h-6 w-auto" />
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${stateColors[dashState]}`}>
+                {stateLabels[dashState]}
+              </span>
+            </div>
+            {nextTask && (
+              <p className="text-xs text-white/60 mt-1.5">
+                Next up: {nextTask.title}, due {formatDay(nextTask.dueByDate)}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-3">
             {editingName ? (
@@ -282,6 +388,92 @@ export default function CollaboratorView() {
 
         {/* Unread messages */}
         <UnreadCallout count={unreadCount} onClick={() => setShowMessages(true)} />
+
+        {/* Unconfirmed assignments */}
+        {unconfirmedAssignments.length > 0 && (
+          <div className="bg-spotlight/10 border border-spotlight/25 rounded-xl p-4">
+            <p className="text-sm font-medium text-stage-navy mb-3">Confirm your assignments</p>
+            <div className="space-y-2">
+              {unconfirmedAssignments.map((a, i) => (
+                <div key={`${a.refId}-${i}`} className="flex items-center justify-between gap-3">
+                  <p className="text-sm text-stage-navy">{a.label}</p>
+                  <button
+                    onClick={() => handleConfirmAssignment(a)}
+                    disabled={confirmingRef === a.refId}
+                    className="text-xs font-medium text-stage-navy border border-spotlight/30 px-3 py-1 rounded-lg hover:bg-spotlight/15 disabled:opacity-50 transition-colors flex-shrink-0">
+                    {confirmingRef === a.refId ? 'Confirming...' : 'Confirm'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* My Tasks */}
+        <div>
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">My Tasks</h2>
+          {myTasks.length === 0 ? (
+            <div className="bg-white border border-gray-200 rounded-xl p-6 text-center">
+              <p className="text-sm text-gray-400">No tasks assigned to you right now.</p>
+            </div>
+          ) : (
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="divide-y divide-gray-100">
+                {myTasks.map(task => (
+                  <div key={task.id} className="px-4 py-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{task.title}</p>
+                        {task.description && (
+                          <p className="text-xs text-gray-400 mt-0.5 truncate">{task.description}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-xs text-gray-400">{formatDay(task.dueByDate)}</span>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          task.status === 'overdue'     ? 'bg-red-100 text-red-700' :
+                          task.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                          'bg-gray-100 text-gray-600'
+                        }`}>
+                          {task.status === 'overdue' ? 'Overdue' :
+                           task.status === 'in_progress' ? 'In progress' : 'Not started'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* My Schedule */}
+        <div>
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">My Schedule</h2>
+          {confirmedAssignments.length === 0 ? (
+            <div className="bg-white border border-gray-200 rounded-xl p-6 text-center">
+              <p className="text-sm text-gray-400">
+                {unconfirmedAssignments.length > 0
+                  ? 'Confirm your assignments above to see them here.'
+                  : 'No productions or venues assigned yet.'}
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="divide-y divide-gray-100">
+                {confirmedAssignments.map((a, i) => (
+                  <div key={`${a.refId}-${i}`} className="px-4 py-3 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{a.label}</p>
+                      <p className="text-xs text-gray-400 capitalize">{a.type}</p>
+                    </div>
+                    <span className="text-xs font-medium text-green-600">Confirmed</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Messages entry point */}
         <div className="bg-white border border-gray-200 rounded-xl p-5">
@@ -333,12 +525,12 @@ export default function CollaboratorView() {
         </div>
 
         {/* Tasks visible to all */}
-        {tasks.length > 0 && (
+        {orgTasks.length > 0 && (
           <div>
             <h2 className="text-sm font-semibold text-gray-700 mb-3">Timeline</h2>
             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
               <div className="divide-y divide-gray-100">
-                {tasks.map(task => (
+                {orgTasks.map(task => (
                   <div key={task.id} className="px-4 py-3 flex items-center justify-between gap-4">
                     <p className="text-sm font-medium text-gray-900 truncate">{task.title}</p>
                     <div className="flex items-center gap-2 flex-shrink-0">

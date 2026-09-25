@@ -1,8 +1,8 @@
 // FeedbackWidget.jsx — floating Bug/Feedback widget, visible on every
 // dashboard for any logged-in user regardless of role. Mounted once in
 // AuthRouter.jsx (not duplicated per view) since DashboardShell (admin/
-// secondaryAdmin/departmentHead/venueManager), CollaboratorView, and
-// PersonView are three separate top-level render trees with no shared
+// secondaryAdmin/departmentHead/venueManager) and MemberView (every
+// base-level role) are separate top-level render trees with no shared
 // shell of their own. Writes to organizations/{orgId}/feedback/{feedbackId}
 // (see firestore.rules), which emailOnNewFeedback (functions/index.js)
 // alerts the team about.

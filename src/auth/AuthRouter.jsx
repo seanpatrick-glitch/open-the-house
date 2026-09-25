@@ -4,11 +4,10 @@ import { doc, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import AdminView from '../views/AdminView'
-import CollaboratorView from '../views/CollaboratorView'
-import PersonView from '../views/PersonView'
+import MemberView from '../views/MemberView'
 import OnboardingWizard from '../components/onboarding/OnboardingWizard'
 import FeedbackWidget from '../components/shared/FeedbackWidget'
-import { ACCESS, PERSON_DASHBOARD_ROLES, accessLevel } from '../models/roles'
+import { ACCESS, accessLevel } from '../models/roles'
 
 // Original-admin first-run onboarding check. Only the org's original owner
 // (ownerId match on the organizations doc, set at creation in SignupStep3.jsx)
@@ -116,12 +115,12 @@ export default function AuthRouter() {
   if (access === ACCESS.ADMIN || access === ACCESS.DEPARTMENT_HEAD) {
     view = <AdminView />
   } else if (access === ACCESS.BASE) {
-    view = PERSON_DASHBOARD_ROLES.has(userProfile.role) ? <PersonView /> : <CollaboratorView />
+    view = <MemberView />
   }
 
   // FeedbackWidget is mounted once here, for every recognized role, rather
-  // than duplicated inside DashboardShell/CollaboratorView/PersonView —
-  // those are three separate top-level render trees with no shared shell.
+  // than duplicated inside DashboardShell/MemberView — those are separate
+  // top-level render trees with no shared shell.
   if (view) {
     return (
       <>

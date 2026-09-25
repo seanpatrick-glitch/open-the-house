@@ -8,8 +8,8 @@
 //
 // The canonical role lives at users/{uid}.organizations[orgId].role and is
 // written only by Cloud Functions (acceptInvite, setMemberRole,
-// revokeMember). functions/roles.js mirrors this list for the server — keep
-// the two in sync.
+// revokeMember). functions/roles.js mirrors this list for the server, and
+// firestore.rules' isBaseLevel() lists the base roles — keep all three in sync.
 
 export const ACCESS = {
   ADMIN:           'admin',
@@ -28,10 +28,6 @@ export const ROLE_ACCESS = {
   person:                 ACCESS.BASE,
   volunteer:              ACCESS.BASE,
 }
-
-// Base-level roles that still land on PersonView rather than
-// CollaboratorView. Goes away when the two base-level dashboards merge.
-export const PERSON_DASHBOARD_ROLES = new Set(['person', 'volunteer'])
 
 export function accessLevel(role) {
   return ROLE_ACCESS[role] ?? null
