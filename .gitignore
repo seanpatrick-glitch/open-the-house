@@ -6,3 +6,5 @@ dist
 *.local
 firebase-debug.log
 .claude/worktrees/
+firestore-debug.log
+ui-debug.log
