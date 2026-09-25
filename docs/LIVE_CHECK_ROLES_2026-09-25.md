@@ -43,7 +43,7 @@ Use test accounts. Each step says what you should see.
 ## 8. Things that should still work
 - [ ] Editing your display name (sidebar) saves.
 - [ ] Switching the Timeline view saves as your preference.
-- [ ] "Give [name] a login" on a People record → accept → Person dashboard. For someone who already has access, accepting links the record and keeps their current dashboard.
+- [ ] "Give [name] a login" on a People record → accept → the everyone-else dashboard (section 9). For someone who already has access, accepting links the record and keeps their current dashboard.
 
 ## 9. One dashboard for everyone else (step 3)
 Every account that isn't an admin or Department Head now lands on the same dashboard.
