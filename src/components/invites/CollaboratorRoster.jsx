@@ -129,7 +129,7 @@ export default function CollaboratorRoster() {
       <div className="space-y-4">
         <button onClick={() => setShowInviteForm(false)}
           className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1">
-          ← Back to Collaborators
+          ← Back to Your People
         </button>
         <InviteCollaborator />
       </div>
@@ -140,17 +140,16 @@ export default function CollaboratorRoster() {
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Collaborators</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Your People</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Everyone with platform access to this organization. Collaborators sign in and use the app directly,
-            unlike People, who are org contacts your team coordinates without needing a login.
+            Everyone with access to this organization, plus invites still waiting to be accepted.
           </p>
         </div>
         <button
           onClick={() => setShowInviteForm(true)}
           className="bg-spotlight hover:bg-spotlight/90 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shrink-0"
         >
-          + Invite Collaborator
+          + Invite someone
         </button>
       </div>
 

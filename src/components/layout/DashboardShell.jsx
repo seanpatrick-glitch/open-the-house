@@ -24,7 +24,7 @@ const SECTION_LABELS = {
   productions:         'Productions',
   departments:         'Departments',
   'volunteer-list':    'Volunteer List',
-  'collaborator-list': 'Collaborator List',
+  'collaborator-list': 'Your People',
   places:              'Places',
   people:              'People',
   settings:            'Settings',
