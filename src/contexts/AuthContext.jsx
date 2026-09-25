@@ -4,6 +4,11 @@ import React, { createContext, useContext, useState, useEffect } from 'react'
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { auth, db } from '../firebase'
+import { captureOrgParam, pickActiveOrg } from '../utils/activeOrg'
+
+// Read ?org= (e.g. from a message email link) once, at load, before the
+// ProtectedRoute redirect to the login screen drops the query string.
+captureOrgParam()
 
 const AuthContext = createContext()
 
@@ -73,7 +78,9 @@ export function AuthProvider({ children }) {
             return
           }
 
-          const orgId = Object.keys(orgs)[0]
+          // A user can belong to several orgs — see utils/activeOrg.js for
+          // how the one they're working in is chosen.
+          const orgId = pickActiveOrg(user.uid, orgs)
           const membership = orgs[orgId]
 
           setUserProfile({
