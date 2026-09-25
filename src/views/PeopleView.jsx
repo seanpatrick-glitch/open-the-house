@@ -91,7 +91,7 @@ export default function PeopleView({ onNavigate, navState }) {
 
   return (
     <div className="p-6 max-w-5xl">
-      <PageHeader title="People" />
+      <PageHeader title="Company" />
       <div className="flex items-center justify-between mb-6">
         <div>
           <p className="text-sm text-gray-500">Everyone your organization coordinates, in one place.</p>
