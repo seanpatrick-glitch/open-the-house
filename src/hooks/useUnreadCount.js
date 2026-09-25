@@ -3,7 +3,7 @@
 // Thread participants are stored as two scalar fields (participantA/participantB,
 // not a `participants` array), each with its own boolean read flag
 // (participantARead/participantBRead). Every other query against this collection
-// in the codebase (messaging.js, MessagingView.jsx, PersonView.jsx) runs two
+// in the codebase (e.g. MessagingView.jsx) runs two
 // parallel queries — one per participant slot — and merges client-side; this
 // hook follows the same pattern.
 

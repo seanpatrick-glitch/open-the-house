@@ -91,14 +91,10 @@ export default function PeopleView({ onNavigate, navState }) {
 
   return (
     <div className="p-6 max-w-5xl">
-      <PageHeader title="People" />
+      <PageHeader title="Company" />
       <div className="flex items-center justify-between mb-6">
         <div>
           <p className="text-sm text-gray-500">Everyone your organization coordinates, in one place.</p>
-          <p className="text-xs text-gray-400 mt-1">
-            People are your org's contacts, cast, crew, and vendors who don't need to sign in.
-            Giving someone a login instead? Invite them as a Collaborator from the sidebar.
-          </p>
         </div>
         <div className="flex items-center gap-2">
           {personTypes.length > 0 && !showForm && !showCsvImport && (
@@ -241,7 +237,7 @@ export default function PeopleView({ onNavigate, navState }) {
                         ) : person.accountStatus === 'invited' ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Invited</span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">No account</span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Not invited yet</span>
                         )}
                       </td>
                     </tr>
@@ -275,7 +271,7 @@ export default function PeopleView({ onNavigate, navState }) {
                       ) : person.accountStatus === 'invited' ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Invited</span>
                       ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">No account</span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Not invited yet</span>
                       )}
                     </div>
                   </button>

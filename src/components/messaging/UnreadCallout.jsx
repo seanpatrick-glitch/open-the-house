@@ -1,6 +1,6 @@
 // UnreadCallout — dashboard card prompting the user to check unread messages.
 // Presentational only: caller supplies the count and the navigation handler,
-// since DashboardShell-hosted views and standalone views (PersonView) reach
+// since DashboardShell-hosted views and standalone views (MemberView) reach
 // Messages through different mechanisms.
 
 export default function UnreadCallout({ count, onClick }) {

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:roles": "npx -y firebase-tools@14 emulators:exec --only auth,firestore,functions --project demo-oth \"node tests/emulator/role-flows.test.mjs\""
   },
   "dependencies": {
     "date-fns": "^4.4.0",

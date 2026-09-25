@@ -4,10 +4,10 @@ import { doc, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import AdminView from '../views/AdminView'
-import CollaboratorView from '../views/CollaboratorView'
-import PersonView from '../views/PersonView'
+import MemberView from '../views/MemberView'
 import OnboardingWizard from '../components/onboarding/OnboardingWizard'
 import FeedbackWidget from '../components/shared/FeedbackWidget'
+import { ACCESS, accessLevel } from '../models/roles'
 
 // Original-admin first-run onboarding check. Only the org's original owner
 // (ownerId match on the organizations doc, set at creation in SignupStep3.jsx)
@@ -108,20 +108,19 @@ export default function AuthRouter() {
 
   if (showOnboarding) return <OnboardingWizard orgId={userProfile.orgId} />
 
+  // Routing reads Role (access) only — see src/models/roles.js. DashboardShell
+  // then picks the Admin or Department Head home screen inside AdminView.
+  const access = accessLevel(userProfile.role)
   let view = null
-  if (userProfile.role === 'admin')             view = <AdminView />
-  if (userProfile.role === 'secondaryAdmin')    view = <AdminView />
-  if (userProfile.role === 'departmentHead')    view = <AdminView />
-  if (userProfile.role === 'orgCollaborator')   view = <CollaboratorView />
-  if (userProfile.role === 'collaborator')      view = <CollaboratorView />
-  if (userProfile.role === 'venueManager')      view = <AdminView />
-  if (userProfile.role === 'productionCollaborator') view = <CollaboratorView />
-  if (userProfile.role === 'volunteer')         view = <PersonView />
-  if (userProfile.role === 'person')            view = <PersonView />
+  if (access === ACCESS.ADMIN || access === ACCESS.DEPARTMENT_HEAD) {
+    view = <AdminView />
+  } else if (access === ACCESS.BASE) {
+    view = <MemberView />
+  }
 
   // FeedbackWidget is mounted once here, for every recognized role, rather
-  // than duplicated inside DashboardShell/CollaboratorView/PersonView —
-  // those are three separate top-level render trees with no shared shell.
+  // than duplicated inside DashboardShell/MemberView — those are separate
+  // top-level render trees with no shared shell.
   if (view) {
     return (
       <>

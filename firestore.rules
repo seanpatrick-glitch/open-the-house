@@ -49,16 +49,13 @@ service cloud.firestore {
         && userDoc().organizations[orgId].role == 'person';
     }
 
-    function isOrgCollaborator(orgId) {
-      return isMember(orgId) && userDoc().organizations[orgId].role == 'orgCollaborator';
-    }
-
-    // Covers all three roles AuthRouter sends to CollaboratorView (orgCollaborator,
-    // collaborator, productionCollaborator) — used where a grant must apply to
-    // whichever of the three a given account has, not just 'orgCollaborator'.
-    function isAnyCollaborator(orgId) {
+    // Base-level access: every role that is neither Admin nor Department Head,
+    // i.e. everyone AuthRouter sends to MemberView. Mirrors the 'base' entries
+    // in src/models/roles.js and functions/roles.js — keep all three in sync.
+    // Access only: never a stand-in for taxonomy Group.
+    function isBaseLevel(orgId) {
       return isMember(orgId)
-        && userDoc().organizations[orgId].role in ['orgCollaborator', 'collaborator', 'productionCollaborator'];
+        && userDoc().organizations[orgId].role in ['orgCollaborator', 'productionCollaborator', 'collaborator', 'person', 'volunteer'];
     }
 
     // Is the requesting user an active staff-toggled Person class member?
@@ -76,40 +73,27 @@ service cloud.firestore {
     // ── users ─────────────────────────────────────────────────────────────────
     // Any signed-in user can read any user doc (required for org member lookups
     // in CreateDepartmentForm and similar screens).
-    // A user may write only their own doc.
+    //
+    // organizations (every membership and role) is written only by Cloud
+    // Functions — acceptInvite, setMemberRole, revokeMember — which run with
+    // admin privileges and bypass these rules. No client may change it, so
+    // nobody can grant themselves a role and the role can't drift from the
+    // members doc or department.departmentHeadUid.
     match /users/{userId} {
       allow read:   if isSignedIn();
-      allow create: if isSignedIn() && uid() == userId;
-      allow update: if isSignedIn() && uid() == userId;
 
-      // Admin/secondaryAdmin department-head promotion: an org admin may set
-      // organizations[orgId].role to 'departmentHead' on another member's own
-      // users doc — nothing else. Scoped to exactly that one field and that
-      // one value so this can't be used to grant any other role or touch any
-      // other field. Needed because CreateDepartmentForm's "assign an existing
-      // member as DH" dropdown promotes someone other than the requester,
-      // which the self-write rule above can't cover.
-      allow update: if isSignedIn()
-        && resource.data.organizations.keys().size() == 1
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['organizations'])
-        && request.resource.data.organizations.keys() == resource.data.organizations.keys()
-        && request.resource.data.organizations[resource.data.organizations.keys()[0]]
-             .diff(resource.data.organizations[resource.data.organizations.keys()[0]])
-             .affectedKeys().hasOnly(['role'])
-        && request.resource.data.organizations[resource.data.organizations.keys()[0]].role == 'departmentHead'
-        && isAdminOrSecondary(resource.data.organizations.keys()[0]);
+      // Signup (SignupStep3.jsx) only: a new org's owner creates their own
+      // users doc with exactly one membership — admin of the org they just
+      // created, whose ownerId is them. Invitees' users docs are created by
+      // acceptInvite.
+      allow create: if isSignedIn() && uid() == userId
+        && request.resource.data.organizations.keys().size() == 1
+        && request.resource.data.organizations[request.resource.data.organizations.keys()[0]].role == 'admin'
+        && get(/databases/$(database)/documents/organizations/$(request.resource.data.organizations.keys()[0])).data.ownerId == uid();
 
-      // Admin/secondaryAdmin access revoke: may clear organizations entirely
-      // on another member's own users doc, revoking platform access for that
-      // org — nothing else on the doc may change in the same write. Scoped
-      // to the org that is this member's sole membership (this app's model
-      // is single-org-per-user, matching the promotion clause above), and
-      // only an admin/secondaryAdmin of that specific org may do it.
-      allow update: if isSignedIn()
-        && resource.data.organizations.keys().size() == 1
-        && isAdminOrSecondary(resource.data.organizations.keys()[0])
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['organizations'])
-        && request.resource.data.organizations.size() == 0;
+      // Self-edit: profile fields only.
+      allow update: if isSignedIn() && uid() == userId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'preferredTimelineView']);
     }
 
     // ── organizations ─────────────────────────────────────────────────────────
@@ -294,7 +278,7 @@ service cloud.firestore {
       // Department Head: read all, write only their assigned type
       allow read: if isDepartmentHead(orgId);
 
-      // Any org member: read access (needed for CollaboratorView's active-people
+      // Any org member: read access (needed for MemberView's active-people
       // count and similar org-wide read-only views; matches the broad isMember()
       // grant already used for organizations/{orgId} and .../members).
       allow read: if isMember(orgId);
@@ -313,14 +297,13 @@ service cloud.firestore {
       allow create: if request.resource.data.status == 'applied'
         && request.resource.data.createdBy == 'self-signup';
 
-      // Account linking: allow update of accountUid, accountStatus, and displayName
-      // together via the token flow (join-time display name capture)
-      allow update: if isSignedIn()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['accountUid', 'accountStatus', 'displayName'])
-        && resource.data.accountUid == null;
+      // Account linking (accountUid/accountStatus) happens server-side in
+      // acceptInvite when a person-join invite is accepted — no client clause.
 
-      // Linked Person class: self-edit display name only, after account linking
-      allow update: if isActivePerson(orgId)
+      // Linked record: any member may edit the display name on the People
+      // record linked to their own login (MemberView's name edit), nothing else.
+      // Assignment confirmation goes through the confirmAssignment function.
+      allow update: if isMember(orgId)
         && resource.data.accountUid == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName']);
     }
@@ -378,8 +361,9 @@ service cloud.firestore {
       allow get:    if true;
       allow list:   if isAdminOrSecondary(orgId);
       allow create: if isAdminOrSecondary(orgId);
-      allow update: if isAdminOrSecondary(orgId)
-        || (isSignedIn() && resource.data.email == request.auth.token.email);
+      // Invitees never write their own invite (they could otherwise change its
+      // role before accepting). acceptInvite marks it accepted server-side.
+      allow update: if isAdminOrSecondary(orgId);
       allow delete: if isAdminOrSecondary(orgId);
     }
 
@@ -388,8 +372,8 @@ service cloud.firestore {
       allow get:    if true;
       allow list:   if isStaffLevel(orgId);
       allow create: if isAdminOrSecondary(orgId);
-      allow update: if isAdminOrSecondary(orgId)
-        || (isSignedIn() && resource.data.email == request.auth.token.email);
+      // Marked accepted server-side by acceptInvite, never by the invitee.
+      allow update: if isAdminOrSecondary(orgId);
       allow delete: if isAdminOrSecondary(orgId);
     }
 
@@ -477,18 +461,11 @@ service cloud.firestore {
         && (resource.data.participantA == request.auth.uid
             || resource.data.participantB == request.auth.uid);
 
-      allow read, write: if isActivePerson(orgId)
+      allow read, write: if isBaseLevel(orgId)
         && (resource.data.participantA == request.auth.uid
             || resource.data.participantB == request.auth.uid);
 
-      allow create: if isActivePerson(orgId)
-        && request.resource.data.participantA == request.auth.uid;
-
-      allow read, write: if isAnyCollaborator(orgId)
-        && (resource.data.participantA == request.auth.uid
-            || resource.data.participantB == request.auth.uid);
-
-      allow create: if isAnyCollaborator(orgId)
+      allow create: if isBaseLevel(orgId)
         && request.resource.data.participantA == request.auth.uid;
 
       match /messages/{messageId} {
@@ -498,11 +475,7 @@ service cloud.firestore {
           && (get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantA == request.auth.uid
               || get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantB == request.auth.uid);
 
-        allow read, write: if isActivePerson(orgId)
-          && (get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantA == request.auth.uid
-              || get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantB == request.auth.uid);
-
-        allow read, write: if isAnyCollaborator(orgId)
+        allow read, write: if isBaseLevel(orgId)
           && (get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantA == request.auth.uid
               || get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantB == request.auth.uid);
       }
@@ -518,7 +491,8 @@ service cloud.firestore {
     match /organizations/{orgId}/members/{memberId} {
       allow read: if isMember(orgId);
       allow write: if isAdminOrSecondary(orgId);
-      allow create: if isSignedIn() && request.auth.uid == memberId;
+      // No self-create: a member's own doc is created by acceptInvite along
+      // with their membership.
 
       // Self-edit display name only, after initial creation
       allow update: if isMember(orgId) && request.auth.uid == memberId
@@ -542,10 +516,8 @@ service cloud.firestore {
     match /organizations/{orgId}/flags/{flagId} {
       allow read, write: if isAdminOrSecondary(orgId);
 
-      allow create: if isOrgCollaborator(orgId)
+      allow create: if isBaseLevel(orgId)
         && request.resource.data.flaggedBy == request.auth.uid;
-      allow read: if isOrgCollaborator(orgId)
-        && resource.data.flaggedBy == request.auth.uid;
 
       allow create: if isDepartmentHead(orgId)
         && request.resource.data.flaggedBy == request.auth.uid;
@@ -553,11 +525,8 @@ service cloud.firestore {
         && (resource.data.targetUid == request.auth.uid
             || resource.data.departmentId == null);
 
-      allow create: if isActivePerson(orgId)
-        && request.resource.data.flaggedBy == request.auth.uid;
-
       // Any org member: read access, matching the isMember() grant already
-      // used for organizations/{orgId}/people. CollaboratorView's
+      // used for organizations/{orgId}/people. MemberView's
       // admin-elevated flags query isn't scoped to flaggedBy, so the
       // per-role grants above can't satisfy it on their own.
       allow read: if isMember(orgId);

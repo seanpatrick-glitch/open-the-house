@@ -75,7 +75,7 @@ export default function PersonInviteForm({ person, onSuccess, onCancel }) {
       </div>
       <p className="text-sm text-gray-500 mb-4">
         Send a secure sign-in link to <span className="font-medium text-gray-700">{email || 'no email on file'}</span>.
-        They will create an account linked directly to this People record, not a general Collaborator invite.
+        They will create an account linked directly to this record.
       </p>
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}

@@ -17,7 +17,7 @@ const NAV_ITEMS = [
     emoji: '🧑‍🤝‍🧑',
     children: [
       { key: 'people',            label: 'Company'      },
-      { key: 'collaborator-list', label: 'Collaborators' },
+      { key: 'collaborator-list', label: 'Your People'   },
     ],
   },
   { key: 'places',      label: 'Places',      emoji: '📍' },

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
-import { collection, doc, onSnapshot, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore'
-import { db } from '../../firebase'
+import { collection, doc, onSnapshot, deleteDoc } from 'firebase/firestore'
+import { httpsCallable } from 'firebase/functions'
+import { db, functions } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { getDisplayName } from '../../utils/displayName'
+import { callableErrorMessage } from '../../utils/callableError'
 import InviteCollaborator from './InviteCollaborator'
 import toast from 'react-hot-toast'
 
@@ -110,15 +112,16 @@ export default function CollaboratorRoster() {
   async function handleRevokeMember(row) {
     setRevoking(prev => new Set([...prev, row.uid]))
     try {
-      const batch = writeBatch(db)
-      batch.delete(doc(db, 'organizations', orgId, 'members', row.uid))
-      batch.update(doc(db, 'users', row.uid), { organizations: {} })
-      await batch.commit()
+      // Server-side: removes this org's membership only, leaving any other
+      // org the person belongs to untouched, and clears any department they
+      // headed here.
+      const revokeMember = httpsCallable(functions, 'revokeMember')
+      await revokeMember({ orgId, uid: row.uid })
       toast.success(`Removed ${row.name}'s access.`)
       setConfirmTarget(null)
     } catch (err) {
       console.error('Revoke member error:', err)
-      toast.error('Could not remove access. Please try again.')
+      toast.error(callableErrorMessage(err, 'Could not remove access. Please try again.'))
     } finally {
       setRevoking(prev => { const next = new Set(prev); next.delete(row.uid); return next })
     }
@@ -129,7 +132,7 @@ export default function CollaboratorRoster() {
       <div className="space-y-4">
         <button onClick={() => setShowInviteForm(false)}
           className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1">
-          ← Back to Collaborators
+          ← Back to Your People
         </button>
         <InviteCollaborator />
       </div>
@@ -140,17 +143,16 @@ export default function CollaboratorRoster() {
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Collaborators</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Your People</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Everyone with platform access to this organization. Collaborators sign in and use the app directly,
-            unlike People, who are org contacts your team coordinates without needing a login.
+            Everyone with access to this organization, plus invites still waiting to be accepted.
           </p>
         </div>
         <button
           onClick={() => setShowInviteForm(true)}
           className="bg-spotlight hover:bg-spotlight/90 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shrink-0"
         >
-          + Invite Collaborator
+          + Invite someone
         </button>
       </div>
 

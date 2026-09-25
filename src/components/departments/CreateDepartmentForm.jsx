@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { collection, doc, getDocs, serverTimestamp, writeBatch, Timestamp, getDoc } from 'firebase/firestore'
 import { sendSignInLinkToEmail } from 'firebase/auth'
-import { db, auth } from '../../firebase'
+import { httpsCallable } from 'firebase/functions'
+import { db, auth, functions } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { getDisplayName } from '../../utils/displayName'
 import { getInviteActionCodeSettings } from '../../utils/invites'
+import { callableErrorMessage } from '../../utils/callableError'
 import { withFieldError, FieldError } from '../shared/FormField'
 import toast from 'react-hot-toast'
 
@@ -51,6 +53,19 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
     }
     setFieldErrors({})
 
+    // An email that already belongs to a member is a direct promotion, not an
+    // invite: accepting an invite as an existing member used to fail.
+    const trimmedHeadEmail = headEmail.trim().toLowerCase()
+    const emailMatch = trimmedHeadEmail
+      ? orgUsers.find(u => (u.email || '').trim().toLowerCase() === trimmedHeadEmail)
+      : null
+    if (emailMatch) {
+      setDepartmentHeadUid(emailMatch.uid)
+      setHeadEmail('')
+      setShowHeadConfirm(true)
+      return
+    }
+
     // Assigning an existing member directly is a real promotion, not just a
     // label — confirm before it fires rather than firing on the same click
     // that also creates the department.
@@ -77,29 +92,15 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
         name:                name.trim(),
         description:         description.trim(),
         colorCode,
-        // An email invite takes precedence over picking an existing member directly.
-        departmentHeadUid:   trimmedEmail ? null : (departmentHeadUid || null),
+        // Never written directly: setMemberRole (existing member, below) or
+        // acceptInvite (email invite) sets it server-side along with the role.
+        departmentHeadUid:   null,
         departmentHeadEmail: trimmedEmail || null,
         orgId,
         active:              true,
         createdAt:           serverTimestamp(),
         createdBy:           uid,
       })
-
-      // Assigning an existing member directly promotes them to Department Head —
-      // update their member doc and their canonical role (users/{uid}, what
-      // AuthRouter and firestore.rules actually key routing/permissions off of)
-      // in the same batch, so the assignment takes effect immediately rather
-      // than leaving the member doc looking right while routing stays broken.
-      if (!trimmedEmail && departmentHeadUid) {
-        batch.update(doc(db, 'organizations', orgId, 'members', departmentHeadUid), {
-          role:         'departmentHead',
-          departmentId: deptRef.id,
-        })
-        batch.update(doc(db, 'users', departmentHeadUid), {
-          [`organizations.${orgId}.role`]: 'departmentHead',
-        })
-      }
 
       if (trimmedEmail) {
         const orgSnap = await getDoc(doc(db, 'organizations', orgId))
@@ -132,6 +133,25 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
       if (trimmedEmail) {
         await sendSignInLinkToEmail(auth, trimmedEmail, getInviteActionCodeSettings(orgId, deptRef.id))
         window.localStorage.setItem('emailForSignIn', trimmedEmail)
+      }
+
+      // Assigning an existing member promotes them to Department Head. The
+      // role, their member doc, and this department's head are written
+      // together server-side, the only place role is ever written.
+      if (!trimmedEmail && departmentHeadUid) {
+        try {
+          const setMemberRole = httpsCallable(functions, 'setMemberRole')
+          await setMemberRole({ orgId, uid: departmentHeadUid, role: 'departmentHead', departmentId: deptRef.id })
+        } catch (err) {
+          // The department itself was created — report the promotion failure
+          // without failing the form, so resubmitting can't duplicate it.
+          console.error('CreateDepartmentForm setMemberRole:', err)
+          toast.error(
+            `${name.trim()} was created, but ${getDisplayName(selectedHead) || 'that member'} could not be made its Department Head. ` +
+            callableErrorMessage(err, 'You can assign them from Your People > Invite someone.'),
+            { duration: 10000 }
+          )
+        }
       }
 
       setSuccess(true)

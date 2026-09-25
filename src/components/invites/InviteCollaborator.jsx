@@ -8,9 +8,12 @@ import {
   where,
   onSnapshot,
 } from 'firebase/firestore'
-import { db } from '../../firebase'
+import { httpsCallable } from 'firebase/functions'
+import { db, functions } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { sendCollaboratorInvite } from '../../utils/collaboratorInvites'
+import { getDisplayName } from '../../utils/displayName'
+import { callableErrorMessage } from '../../utils/callableError'
 import toast from 'react-hot-toast'
 
 const ROLE_OPTIONS = [
@@ -52,6 +55,7 @@ export default function InviteCollaborator() {
   const [submitting,   setSubmitting]   = useState(false)
   const [invites,      setInvites]      = useState([])
   const [loadingList,  setLoadingList]  = useState(true)
+  const [existingMember, setExistingMember] = useState(null) // member doc when the email already has access
 
   useEffect(() => {
     if (!userProfile?.orgId) return
@@ -94,6 +98,13 @@ export default function InviteCollaborator() {
     fetchDepartments()
   }, [userProfile?.orgId])
 
+  function resetForm() {
+    setEmail('')
+    setRole('orgCollaborator')
+    setDepartmentId('')
+    setExistingMember(null)
+  }
+
   async function handleCreateInvite(e) {
     e.preventDefault()
 
@@ -108,25 +119,65 @@ export default function InviteCollaborator() {
     }
 
     setSubmitting(true)
+    const trimmedEmail = email.trim()
 
     try {
+      // Someone who already has access gets their access changed directly
+      // (handleChangeAccess) instead of an invite: accepting an invite as an
+      // existing member used to fail, and an old invite could later undo a
+      // newer change.
+      const membersSnap = await getDocs(collection(db, 'organizations', userProfile.orgId, 'members'))
+      const match = membersSnap.docs
+        .map((d) => ({ uid: d.id, ...d.data() }))
+        .find((m) => (m.email || '').trim().toLowerCase() === trimmedEmail.toLowerCase())
+
+      if (match) {
+        if (match.uid === userProfile.uid) {
+          toast.error("That's your own email address.")
+        } else if (match.role === role && (role !== 'departmentHead' || match.departmentId === departmentId)) {
+          toast(`${getDisplayName(match) || match.email} already has that access.`)
+        } else {
+          setExistingMember(match)
+        }
+        setSubmitting(false)
+        return
+      }
+
       await sendCollaboratorInvite({
         orgId: userProfile.orgId,
         uid: userProfile.uid,
-        email: email.trim(),
+        email: trimmedEmail,
         role,
         departmentId: role === 'departmentHead' ? departmentId : null,
       })
 
-      setEmail('')
-      setRole('orgCollaborator')
-      setDepartmentId('')
-      toast.success('Invite sent to ' + email.trim())
+      resetForm()
+      toast.success('Invite sent to ' + trimmedEmail)
     } catch (err) {
       toast.error('Could not send invite. Please try again.')
       console.error(err)
     }
 
+    setSubmitting(false)
+  }
+
+  async function handleChangeAccess() {
+    if (!existingMember) return
+    setSubmitting(true)
+    try {
+      const setMemberRole = httpsCallable(functions, 'setMemberRole')
+      await setMemberRole({
+        orgId: userProfile.orgId,
+        uid: existingMember.uid,
+        role,
+        departmentId: role === 'departmentHead' ? departmentId : null,
+      })
+      toast.success(`${getDisplayName(existingMember) || existingMember.email} now has ${ROLE_LABELS[role] || role} access.`)
+      resetForm()
+    } catch (err) {
+      console.error('InviteCollaborator setMemberRole:', err)
+      toast.error(callableErrorMessage(err, 'Could not change access. Please try again.'))
+    }
     setSubmitting(false)
   }
 
@@ -147,9 +198,6 @@ export default function InviteCollaborator() {
         <p className="text-gray-500 text-sm mt-1">
           Send an email invite. The person will receive a secure sign-in link.
         </p>
-        <p className="text-xs text-gray-400 mt-1">
-          Collaborators sign in and use the app directly. For contacts who don't need a login, add them as People instead.
-        </p>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -162,7 +210,7 @@ export default function InviteCollaborator() {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setExistingMember(null) }}
               className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-spotlight text-base"
               placeholder="name@email.com"
               autoComplete="off"
@@ -175,7 +223,7 @@ export default function InviteCollaborator() {
             </label>
             <select
               value={role}
-              onChange={(e) => setRole(e.target.value)}
+              onChange={(e) => { setRole(e.target.value); setExistingMember(null) }}
               className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-spotlight text-base bg-white"
             >
               {ROLE_OPTIONS.map((r) => (
@@ -202,7 +250,7 @@ export default function InviteCollaborator() {
               </label>
               <select
                 value={departmentId}
-                onChange={(e) => setDepartmentId(e.target.value)}
+                onChange={(e) => { setDepartmentId(e.target.value); setExistingMember(null) }}
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-spotlight text-base bg-white"
               >
                 <option value="">Select a department…</option>
@@ -213,13 +261,44 @@ export default function InviteCollaborator() {
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full bg-spotlight hover:bg-spotlight/90 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {submitting ? 'Sending…' : 'Send invite'}
-          </button>
+          {existingMember ? (
+            <div className="rounded-lg border border-places-blue/20 bg-places-blue/5 p-4 space-y-3">
+              <p className="text-sm text-gray-900">
+                {getDisplayName(existingMember) || existingMember.email} already has access
+                as {ROLE_LABELS[existingMember.role] || existingMember.role}. Change their access
+                to {ROLE_LABELS[role] || role}
+                {role === 'departmentHead' && departments.find((d) => d.id === departmentId)
+                  ? ` for ${departments.find((d) => d.id === departmentId).name}`
+                  : ''}? No invite email is sent.
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleChangeAccess}
+                  disabled={submitting}
+                  className="bg-spotlight hover:bg-spotlight/90 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                >
+                  {submitting ? 'Saving…' : 'Change access'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExistingMember(null)}
+                  disabled={submitting}
+                  className="text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full bg-spotlight hover:bg-spotlight/90 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? 'Sending…' : 'Send invite'}
+            </button>
+          )}
         </form>
       </div>
 

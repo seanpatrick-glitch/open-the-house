@@ -105,7 +105,7 @@ export default function InvitesStep({ orgId, onFinish, onBack, finishing }) {
     setSending(false);
 
     if (failures > 0) {
-      setError(`${failures} of ${toSend.length} invite(s) could not be sent. You can invite them later from Collaborators.`);
+      setError(`${failures} of ${toSend.length} invite(s) could not be sent. You can invite them later from Your People.`);
     }
 
     onFinish();
@@ -117,7 +117,7 @@ export default function InvitesStep({ orgId, onFinish, onBack, finishing }) {
     <div>
       <h2 className="text-xl font-semibold text-gray-900 mb-1">Invite your team</h2>
       <p className="text-gray-500 text-sm mb-6">
-        Send sign-in invites to people who need to use the app directly. You can always invite more later.
+        Send sign-in invites to your team. You can always invite more later.
       </p>
 
       {loadingRows ? (

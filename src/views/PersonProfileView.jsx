@@ -222,7 +222,7 @@ export default function PersonProfileView({ personId, onBack }) {
               <span aria-hidden="true">🔗</span> Give {getDisplayName(person) || 'this person'} a login
             </button>
             <p className="text-xs text-gray-400 mt-1 max-w-xs">
-              Links a login to this specific record. Not the same as inviting a new Collaborator.
+              Links a login to this specific record.
             </p>
           </div>
         )}
