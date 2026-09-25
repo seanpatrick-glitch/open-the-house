@@ -76,40 +76,27 @@ service cloud.firestore {
     // ── users ─────────────────────────────────────────────────────────────────
     // Any signed-in user can read any user doc (required for org member lookups
     // in CreateDepartmentForm and similar screens).
-    // A user may write only their own doc.
+    //
+    // organizations (every membership and role) is written only by Cloud
+    // Functions — acceptInvite, setMemberRole, revokeMember — which run with
+    // admin privileges and bypass these rules. No client may change it, so
+    // nobody can grant themselves a role and the role can't drift from the
+    // members doc or department.departmentHeadUid.
     match /users/{userId} {
       allow read:   if isSignedIn();
-      allow create: if isSignedIn() && uid() == userId;
-      allow update: if isSignedIn() && uid() == userId;
 
-      // Admin/secondaryAdmin department-head promotion: an org admin may set
-      // organizations[orgId].role to 'departmentHead' on another member's own
-      // users doc — nothing else. Scoped to exactly that one field and that
-      // one value so this can't be used to grant any other role or touch any
-      // other field. Needed because CreateDepartmentForm's "assign an existing
-      // member as DH" dropdown promotes someone other than the requester,
-      // which the self-write rule above can't cover.
-      allow update: if isSignedIn()
-        && resource.data.organizations.keys().size() == 1
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['organizations'])
-        && request.resource.data.organizations.keys() == resource.data.organizations.keys()
-        && request.resource.data.organizations[resource.data.organizations.keys()[0]]
-             .diff(resource.data.organizations[resource.data.organizations.keys()[0]])
-             .affectedKeys().hasOnly(['role'])
-        && request.resource.data.organizations[resource.data.organizations.keys()[0]].role == 'departmentHead'
-        && isAdminOrSecondary(resource.data.organizations.keys()[0]);
+      // Signup (SignupStep3.jsx) only: a new org's owner creates their own
+      // users doc with exactly one membership — admin of the org they just
+      // created, whose ownerId is them. Invitees' users docs are created by
+      // acceptInvite.
+      allow create: if isSignedIn() && uid() == userId
+        && request.resource.data.organizations.keys().size() == 1
+        && request.resource.data.organizations[request.resource.data.organizations.keys()[0]].role == 'admin'
+        && get(/databases/$(database)/documents/organizations/$(request.resource.data.organizations.keys()[0])).data.ownerId == uid();
 
-      // Admin/secondaryAdmin access revoke: may clear organizations entirely
-      // on another member's own users doc, revoking platform access for that
-      // org — nothing else on the doc may change in the same write. Scoped
-      // to the org that is this member's sole membership (this app's model
-      // is single-org-per-user, matching the promotion clause above), and
-      // only an admin/secondaryAdmin of that specific org may do it.
-      allow update: if isSignedIn()
-        && resource.data.organizations.keys().size() == 1
-        && isAdminOrSecondary(resource.data.organizations.keys()[0])
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['organizations'])
-        && request.resource.data.organizations.size() == 0;
+      // Self-edit: profile fields only.
+      allow update: if isSignedIn() && uid() == userId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'preferredTimelineView']);
     }
 
     // ── organizations ─────────────────────────────────────────────────────────
@@ -313,11 +300,8 @@ service cloud.firestore {
       allow create: if request.resource.data.status == 'applied'
         && request.resource.data.createdBy == 'self-signup';
 
-      // Account linking: allow update of accountUid, accountStatus, and displayName
-      // together via the token flow (join-time display name capture)
-      allow update: if isSignedIn()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['accountUid', 'accountStatus', 'displayName'])
-        && resource.data.accountUid == null;
+      // Account linking (accountUid/accountStatus) happens server-side in
+      // acceptInvite when a person-join invite is accepted — no client clause.
 
       // Linked Person class: self-edit display name only, after account linking
       allow update: if isActivePerson(orgId)
@@ -378,8 +362,9 @@ service cloud.firestore {
       allow get:    if true;
       allow list:   if isAdminOrSecondary(orgId);
       allow create: if isAdminOrSecondary(orgId);
-      allow update: if isAdminOrSecondary(orgId)
-        || (isSignedIn() && resource.data.email == request.auth.token.email);
+      // Invitees never write their own invite (they could otherwise change its
+      // role before accepting). acceptInvite marks it accepted server-side.
+      allow update: if isAdminOrSecondary(orgId);
       allow delete: if isAdminOrSecondary(orgId);
     }
 
@@ -388,8 +373,8 @@ service cloud.firestore {
       allow get:    if true;
       allow list:   if isStaffLevel(orgId);
       allow create: if isAdminOrSecondary(orgId);
-      allow update: if isAdminOrSecondary(orgId)
-        || (isSignedIn() && resource.data.email == request.auth.token.email);
+      // Marked accepted server-side by acceptInvite, never by the invitee.
+      allow update: if isAdminOrSecondary(orgId);
       allow delete: if isAdminOrSecondary(orgId);
     }
 
@@ -518,7 +503,8 @@ service cloud.firestore {
     match /organizations/{orgId}/members/{memberId} {
       allow read: if isMember(orgId);
       allow write: if isAdminOrSecondary(orgId);
-      allow create: if isSignedIn() && request.auth.uid == memberId;
+      // No self-create: a member's own doc is created by acceptInvite along
+      // with their membership.
 
       // Self-edit display name only, after initial creation
       allow update: if isMember(orgId) && request.auth.uid == memberId
