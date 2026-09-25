@@ -14,6 +14,7 @@ import DHDashboardView from '../../views/DHDashboardView';
 import PlacesView from '../../views/PlacesView';
 import { useAuth } from '../../contexts/AuthContext';
 import { UnreadProvider } from '../../contexts/UnreadContext';
+import { ACCESS, accessLevel } from '../../models/roles';
 
 // Section key → human-readable label for placeholder screens
 // Lobby, Bar Program, Inventory, and Promo entries removed (2026-08-17) —
@@ -42,7 +43,7 @@ function PlaceholderSection({ section }) {
 
 function SectionContent({ section, onNavigate, userProfile, navState }) {
   if (section === 'home') {
-    if (userProfile?.role === 'departmentHead') return <DHDashboardView />;
+    if (accessLevel(userProfile?.role) === ACCESS.DEPARTMENT_HEAD) return <DHDashboardView />;
     return <AdminDashboardView />;
   }
   if (section === 'messages')            return <MessageView navState={navState} />
