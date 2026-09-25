@@ -541,3 +541,50 @@ exports.revokeMember = onCall(async (request) => {
     return { removed: true };
   });
 });
+
+// A member confirms one of their own production/venue assignments from
+// MemberView's My Schedule. Assignments live in an array on the People
+// record, and rules can't limit an array edit to one entry's confirmed flag,
+// so the flip happens here: only the People record linked to the caller,
+// only the named assignment, only confirmed/confirmedAt.
+exports.confirmAssignment = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Sign in required.");
+
+  const orgId = requireString(request.data?.orgId, "orgId");
+  const refId = requireString(request.data?.refId, "refId");
+
+  const db = admin.firestore();
+  const userSnap = await db.doc(`users/${uid}`).get();
+  if (!userSnap.exists || !userSnap.data().organizations?.[orgId]) {
+    throw new HttpsError("permission-denied", "You're not a member of this organization.");
+  }
+
+  const peopleSnap = await db.collection(`organizations/${orgId}/people`)
+    .where("accountUid", "==", uid)
+    .limit(1)
+    .get();
+  if (peopleSnap.empty) {
+    throw new HttpsError("not-found", "No People record is linked to your account.");
+  }
+  const personRef = peopleSnap.docs[0].ref;
+
+  return db.runTransaction(async (tx) => {
+    const personSnap = await tx.get(personRef);
+    if (!personSnap.exists || personSnap.data().accountUid !== uid) {
+      throw new HttpsError("not-found", "No People record is linked to your account.");
+    }
+    const assignments = personSnap.data().assignments || [];
+    const index = assignments.findIndex((a) => a.refId === refId);
+    if (index === -1) {
+      throw new HttpsError("not-found", "That assignment is no longer on your record.");
+    }
+    if (!assignments[index].confirmed) {
+      const updated = assignments.map((a, i) =>
+        i === index ? { ...a, confirmed: true, confirmedAt: new Date().toISOString() } : a
+      );
+      tx.update(personRef, { assignments: updated });
+    }
+    return { confirmed: true };
+  });
+});

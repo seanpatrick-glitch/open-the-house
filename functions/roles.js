@@ -1,5 +1,6 @@
 // Server-side mirror of src/models/roles.js: every stored role value and the
-// access level it grants. Keep the two lists in sync.
+// access level it grants. firestore.rules' isBaseLevel() also lists the base
+// roles. Keep all three in sync.
 //
 // Role is access only. It is never derived from a person's taxonomy Group
 // (Company / Your People / Collaborators) — see "People taxonomy and access

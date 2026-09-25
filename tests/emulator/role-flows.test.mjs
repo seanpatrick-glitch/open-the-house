@@ -3,7 +3,9 @@
 // and checks every path behind the 2026-09-25 DH misrouting fix — invites
 // for new and existing members, a second org keeping the first, promotions
 // and stale invites, person-record links keeping access, one-org revokes, and
-// that no client can write a role.
+// that no client can write a role. Also covers the base-level dashboard
+// (MemberView): every base-level role can flag and message, and members
+// confirm only their own assignments.
 //
 // Run from the repo root:  npm run test:roles
 // Needs: Java 11+ (Firestore emulator), and `npm install` in both the repo
@@ -204,6 +206,65 @@ await test('acceptInvite: wrong email is refused', async () => {
 await test('acceptInvite: expired invite is refused', async () => {
   await invite(orgB, 'invB-expired', { email: 'alice@example.com', role: 'orgCollaborator', expiresAt: Timestamp.fromMillis(Date.now() - 1000) })
   await expectCode(alice.call('acceptInvite', { orgId: orgB, inviteId: 'invB-expired' }), 'failed-precondition')
+})
+
+// ── base-level dashboard (MemberView) access ──
+const seedMember = async (who, role) => {
+  await adb.doc(`users/${who.uid}`).set({ email: who.email, organizations: { [orgA]: { role } } })
+  await adb.doc(`organizations/${orgA}/members/${who.uid}`).set({ uid: who.uid, email: who.email, role })
+}
+const vic = await signUp('vic@example.com')          // legacy 'volunteer' role
+const prue = await signUp('prue@example.com')        // productionCollaborator
+await seedMember(vic, 'volunteer')
+await seedMember(prue, 'productionCollaborator')
+
+await test('MemberView: a productionCollaborator can flag a note for Admin', async () => {
+  await addDoc(collection(prue.db, 'organizations', orgA, 'flags'), {
+    orgId: orgA, note: 'Need more chairs', flaggedBy: prue.uid, targetUid: null, departmentId: null,
+    status: 'open', elevatedToAdmin: true, createdAt: serverTimestamp(),
+  })
+})
+await test('MemberView: a flag cannot be raised in someone else\'s name', async () => {
+  await expectDenied(addDoc(collection(prue.db, 'organizations', orgA, 'flags'), {
+    orgId: orgA, note: 'x', flaggedBy: vic.uid, status: 'open', elevatedToAdmin: true, createdAt: serverTimestamp(),
+  }))
+})
+await test('MemberView: a volunteer can start a thread and send a message', async () => {
+  const threadRef = await addDoc(collection(vic.db, 'organizations', orgA, 'threads'), {
+    orgId: orgA, participantA: vic.uid, participantB: ownerA.uid, subject: 'Hi',
+    createdAt: serverTimestamp(), lastMessageAt: serverTimestamp(), lastMessagePreview: '',
+    broadcastId: null, participantARead: true, participantBRead: false,
+  })
+  await addDoc(collection(vic.db, 'organizations', orgA, 'threads', threadRef.id, 'messages'), {
+    senderUid: vic.uid, body: 'Hello', sentAt: serverTimestamp(), readAt: null,
+  })
+})
+
+await adb.doc(`organizations/${orgA}/people/pPrue`).set({
+  accountUid: prue.uid, accountStatus: 'active', displayName: 'Prue',
+  assignments: [
+    { refId: 'prodX', type: 'production', label: 'Tempest', confirmed: false },
+    { refId: 'placeY', type: 'place', label: 'Main Stage', confirmed: false },
+  ],
+})
+await test('confirmAssignment: a member confirms one of their own assignments; the others are untouched', async () => {
+  await prue.call('confirmAssignment', { orgId: orgA, refId: 'prodX' })
+  const [a, b] = (await adb.doc(`organizations/${orgA}/people/pPrue`).get()).data().assignments
+  assert.equal(a.confirmed, true); assert.ok(a.confirmedAt)
+  assert.equal(b.confirmed, false)
+})
+await test('confirmAssignment: refused without a People record linked to the caller', async () => {
+  await expectCode(vic.call('confirmAssignment', { orgId: orgA, refId: 'prodX' }), 'not-found')
+})
+await test('confirmAssignment: refused for an org the caller does not belong to', async () => {
+  await expectCode(prue.call('confirmAssignment', { orgId: orgB, refId: 'prodX' }), 'permission-denied')
+})
+await test('rules: a member can rename their own linked People record, and nothing else on it', async () => {
+  await updateDoc(doc(prue.db, 'organizations', orgA, 'people', 'pPrue'), { displayName: 'Prue P.' })
+  await expectDenied(updateDoc(doc(prue.db, 'organizations', orgA, 'people', 'pPrue'), { assignments: [] }))
+})
+await test('rules: a member cannot rename someone else\'s People record', async () => {
+  await expectDenied(updateDoc(doc(vic.db, 'organizations', orgA, 'people', 'pPrue'), { displayName: 'Hacked' }))
 })
 
 // ── revoke one org only ──

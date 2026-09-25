@@ -49,16 +49,13 @@ service cloud.firestore {
         && userDoc().organizations[orgId].role == 'person';
     }
 
-    function isOrgCollaborator(orgId) {
-      return isMember(orgId) && userDoc().organizations[orgId].role == 'orgCollaborator';
-    }
-
-    // Covers all three roles AuthRouter sends to CollaboratorView (orgCollaborator,
-    // collaborator, productionCollaborator) — used where a grant must apply to
-    // whichever of the three a given account has, not just 'orgCollaborator'.
-    function isAnyCollaborator(orgId) {
+    // Base-level access: every role that is neither Admin nor Department Head,
+    // i.e. everyone AuthRouter sends to MemberView. Mirrors the 'base' entries
+    // in src/models/roles.js and functions/roles.js — keep all three in sync.
+    // Access only: never a stand-in for taxonomy Group.
+    function isBaseLevel(orgId) {
       return isMember(orgId)
-        && userDoc().organizations[orgId].role in ['orgCollaborator', 'collaborator', 'productionCollaborator'];
+        && userDoc().organizations[orgId].role in ['orgCollaborator', 'productionCollaborator', 'collaborator', 'person', 'volunteer'];
     }
 
     // Is the requesting user an active staff-toggled Person class member?
@@ -281,7 +278,7 @@ service cloud.firestore {
       // Department Head: read all, write only their assigned type
       allow read: if isDepartmentHead(orgId);
 
-      // Any org member: read access (needed for CollaboratorView's active-people
+      // Any org member: read access (needed for MemberView's active-people
       // count and similar org-wide read-only views; matches the broad isMember()
       // grant already used for organizations/{orgId} and .../members).
       allow read: if isMember(orgId);
@@ -303,8 +300,10 @@ service cloud.firestore {
       // Account linking (accountUid/accountStatus) happens server-side in
       // acceptInvite when a person-join invite is accepted — no client clause.
 
-      // Linked Person class: self-edit display name only, after account linking
-      allow update: if isActivePerson(orgId)
+      // Linked record: any member may edit the display name on the People
+      // record linked to their own login (MemberView's name edit), nothing else.
+      // Assignment confirmation goes through the confirmAssignment function.
+      allow update: if isMember(orgId)
         && resource.data.accountUid == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName']);
     }
@@ -462,18 +461,11 @@ service cloud.firestore {
         && (resource.data.participantA == request.auth.uid
             || resource.data.participantB == request.auth.uid);
 
-      allow read, write: if isActivePerson(orgId)
+      allow read, write: if isBaseLevel(orgId)
         && (resource.data.participantA == request.auth.uid
             || resource.data.participantB == request.auth.uid);
 
-      allow create: if isActivePerson(orgId)
-        && request.resource.data.participantA == request.auth.uid;
-
-      allow read, write: if isAnyCollaborator(orgId)
-        && (resource.data.participantA == request.auth.uid
-            || resource.data.participantB == request.auth.uid);
-
-      allow create: if isAnyCollaborator(orgId)
+      allow create: if isBaseLevel(orgId)
         && request.resource.data.participantA == request.auth.uid;
 
       match /messages/{messageId} {
@@ -483,11 +475,7 @@ service cloud.firestore {
           && (get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantA == request.auth.uid
               || get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantB == request.auth.uid);
 
-        allow read, write: if isActivePerson(orgId)
-          && (get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantA == request.auth.uid
-              || get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantB == request.auth.uid);
-
-        allow read, write: if isAnyCollaborator(orgId)
+        allow read, write: if isBaseLevel(orgId)
           && (get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantA == request.auth.uid
               || get(/databases/$(database)/documents/organizations/$(orgId)/threads/$(threadId)).data.participantB == request.auth.uid);
       }
@@ -528,10 +516,8 @@ service cloud.firestore {
     match /organizations/{orgId}/flags/{flagId} {
       allow read, write: if isAdminOrSecondary(orgId);
 
-      allow create: if isOrgCollaborator(orgId)
+      allow create: if isBaseLevel(orgId)
         && request.resource.data.flaggedBy == request.auth.uid;
-      allow read: if isOrgCollaborator(orgId)
-        && resource.data.flaggedBy == request.auth.uid;
 
       allow create: if isDepartmentHead(orgId)
         && request.resource.data.flaggedBy == request.auth.uid;
@@ -539,11 +525,8 @@ service cloud.firestore {
         && (resource.data.targetUid == request.auth.uid
             || resource.data.departmentId == null);
 
-      allow create: if isActivePerson(orgId)
-        && request.resource.data.flaggedBy == request.auth.uid;
-
       // Any org member: read access, matching the isMember() grant already
-      // used for organizations/{orgId}/people. CollaboratorView's
+      // used for organizations/{orgId}/people. MemberView's
       // admin-elevated flags query isn't scoped to flaggedBy, so the
       // per-role grants above can't satisfy it on their own.
       allow read: if isMember(orgId);
