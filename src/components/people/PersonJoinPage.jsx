@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { isSignInWithEmailLink, signInWithEmailLink, updatePassword } from 'firebase/auth';
-import { doc, getDoc, updateDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
-import { auth, db } from '../../firebase';
+import { isSignInWithEmailLink, signInWithEmailLink, getAdditionalUserInfo, updatePassword } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
+import { auth, db, functions } from '../../firebase';
+import { requestActiveOrg } from '../../utils/activeOrg';
+import { callableErrorMessage } from '../../utils/callableError';
 import ConfirmEmailScreen from '../invites/ConfirmEmailScreen';
 
 export default function PersonJoinPage() {
   const navigate  = useNavigate();
   const [status, setStatus] = useState('loading');
   const [error,  setError]  = useState('');
-  const [pending, setPending] = useState(null); // { uid, email, orgId, tokenId, personId, personName }
+  const [pending, setPending] = useState(null); // { email, orgId, tokenId, isNewUser }
+  const [joined, setJoined] = useState(false); // acceptInvite succeeded; only the password step can remain
   const [displayNameInput, setDisplayNameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
@@ -50,13 +54,15 @@ export default function PersonJoinPage() {
 
       // Sign in with email link
       const credential = await signInWithEmailLink(auth, email, window.location.href);
-      const uid        = credential.user.uid;
+      // Someone who already has an account (in this org or another) keeps
+      // their password — only a brand-new account sets one here.
+      const isNewUser  = getAdditionalUserInfo(credential)?.isNewUser ?? true;
 
       window.localStorage.removeItem('personInviteEmail');
       window.localStorage.removeItem('personInviteOrgId');
       window.localStorage.removeItem('personInviteTokenId');
 
-      setPending({ uid, email, orgId, tokenId, personId: token.personId });
+      setPending({ email, orgId, tokenId, isNewUser });
       setStatus('form');
     } catch (err) {
       console.error('PersonJoinPage error:', err);
@@ -94,89 +100,54 @@ export default function PersonJoinPage() {
 
   async function handleContinue() {
     if (!pending) return;
+    const { orgId, tokenId, isNewUser } = pending;
 
-    if (!passwordInput || passwordInput.length < 6) {
-      setFormError('Password must be at least 6 characters.');
-      return;
-    }
-    if (passwordInput !== confirmPasswordInput) {
-      setFormError('Passwords do not match.');
-      return;
+    if (isNewUser) {
+      if (!passwordInput || passwordInput.length < 6) {
+        setFormError('Password must be at least 6 characters.');
+        return;
+      }
+      if (passwordInput !== confirmPasswordInput) {
+        setFormError('Passwords do not match.');
+        return;
+      }
     }
 
     setFormError('');
     setSubmitting(true);
-    const { uid, email, orgId, tokenId, personId } = pending;
-    const displayName = displayNameInput.trim() || email;
 
-    try {
-      await updatePassword(auth.currentUser, passwordInput);
-
-      const batch = writeBatch(db);
-
-      // Link uid to person document
-      batch.update(
-        doc(db, 'organizations', orgId, 'people', personId),
-        {
-          accountUid:    uid,
-          accountStatus: 'active',
-          displayName,
-        }
-      );
-
-      batch.set(doc(db, 'users', uid), {
-        name:      email,
-        email,
-        displayName,
-        createdAt: serverTimestamp(),
-        organizations: {
-          [orgId]: {
-            role:     'person',
-            joinedAt: serverTimestamp(),
-          },
-        },
-      });
-
-      batch.set(
-        doc(db, 'organizations', orgId, 'members', uid),
-        {
-          uid,
-          email,
-          displayName,
-          role:             'person',
-          personClass:      true,
-          personId,
-          provisionalAdmin: false,
-          departmentId:     null,
-          joinedAt:         serverTimestamp(),
-          invitedBy:        null,
-          accountStatus:    'confirmed',
-        }
-      );
-
-      await batch.commit();
-
-      // Mark token accepted
-      await updateDoc(
-        doc(db, 'organizations', orgId, 'personInviteTokens', tokenId),
-        {
-          accepted:   true,
-          acceptedAt: serverTimestamp(),
-        }
-      );
-
-      navigate('/dashboard');
-    } catch (err) {
-      console.error('PersonJoinPage submit error:', err);
-      if (err.code === 'auth/weak-password') {
-        setFormError('That password is too weak. Please choose a stronger one.');
+    // acceptInvite links this People record to the login and writes the
+    // membership server-side. Someone who is already a member of this org
+    // keeps their current role; linking a record never changes access.
+    if (!joined) {
+      try {
+        requestActiveOrg(orgId);
+        const acceptInvite = httpsCallable(functions, 'acceptInvite');
+        await acceptInvite({ orgId, tokenId, displayName: displayNameInput.trim() });
+        setJoined(true);
+      } catch (err) {
+        console.error('PersonJoinPage acceptInvite error:', err);
+        setError(callableErrorMessage(err, 'Something went wrong. Please try again or contact your coordinator.'));
+        setStatus('error');
         setSubmitting(false);
         return;
       }
-      setError('Something went wrong. Please try again or contact your coordinator.');
-      setStatus('error');
-      setSubmitting(false);
     }
+
+    if (isNewUser) {
+      try {
+        await updatePassword(auth.currentUser, passwordInput);
+      } catch (err) {
+        console.error('PersonJoinPage password error:', err);
+        setFormError(err.code === 'auth/weak-password'
+          ? 'You have joined, but that password is too weak. Please choose a stronger one.'
+          : 'You have joined, but your password could not be saved. Please try again.');
+        setSubmitting(false);
+        return;
+      }
+    }
+
+    navigate('/dashboard');
   }
 
   if (status === 'loading') {
@@ -208,6 +179,11 @@ export default function PersonJoinPage() {
           <div className="text-center mb-6">
             <h1 className="text-xl font-bold text-gray-900">Almost there</h1>
             <p className="text-gray-500 mt-2 text-sm">You're joining as {pending.email}.</p>
+            {!pending.isNewUser && (
+              <p className="text-gray-500 mt-2 text-sm">
+                You already have a Places People account, so there's no password to set.
+              </p>
+            )}
           </div>
 
           <div className="space-y-1 mb-4">
@@ -225,33 +201,37 @@ export default function PersonJoinPage() {
             />
           </div>
 
-          <div className="space-y-1 mb-4">
-            <label className="block text-sm font-medium text-gray-700">
-              Set a password
-            </label>
-            <input
-              type="password"
-              value={passwordInput}
-              onChange={e => setPasswordInput(e.target.value)}
-              placeholder="At least 6 characters"
-              autoComplete="new-password"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-places-blue text-base"
-            />
-          </div>
+          {pending.isNewUser && (
+            <>
+              <div className="space-y-1 mb-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  Set a password
+                </label>
+                <input
+                  type="password"
+                  value={passwordInput}
+                  onChange={e => setPasswordInput(e.target.value)}
+                  placeholder="At least 6 characters"
+                  autoComplete="new-password"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-places-blue text-base"
+                />
+              </div>
 
-          <div className="space-y-1 mb-6">
-            <label className="block text-sm font-medium text-gray-700">
-              Confirm password
-            </label>
-            <input
-              type="password"
-              value={confirmPasswordInput}
-              onChange={e => setConfirmPasswordInput(e.target.value)}
-              placeholder="Re-enter your password"
-              autoComplete="new-password"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-places-blue text-base"
-            />
-          </div>
+              <div className="space-y-1 mb-6">
+                <label className="block text-sm font-medium text-gray-700">
+                  Confirm password
+                </label>
+                <input
+                  type="password"
+                  value={confirmPasswordInput}
+                  onChange={e => setConfirmPasswordInput(e.target.value)}
+                  placeholder="Re-enter your password"
+                  autoComplete="new-password"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-places-blue text-base"
+                />
+              </div>
+            </>
+          )}
 
           {formError && <p className="text-sm text-red-600 mb-4">{formError}</p>}
 

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
-import { collection, doc, onSnapshot, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore'
-import { db } from '../../firebase'
+import { collection, doc, onSnapshot, deleteDoc } from 'firebase/firestore'
+import { httpsCallable } from 'firebase/functions'
+import { db, functions } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { getDisplayName } from '../../utils/displayName'
+import { callableErrorMessage } from '../../utils/callableError'
 import InviteCollaborator from './InviteCollaborator'
 import toast from 'react-hot-toast'
 
@@ -110,15 +112,16 @@ export default function CollaboratorRoster() {
   async function handleRevokeMember(row) {
     setRevoking(prev => new Set([...prev, row.uid]))
     try {
-      const batch = writeBatch(db)
-      batch.delete(doc(db, 'organizations', orgId, 'members', row.uid))
-      batch.update(doc(db, 'users', row.uid), { organizations: {} })
-      await batch.commit()
+      // Server-side: removes this org's membership only, leaving any other
+      // org the person belongs to untouched, and clears any department they
+      // headed here.
+      const revokeMember = httpsCallable(functions, 'revokeMember')
+      await revokeMember({ orgId, uid: row.uid })
       toast.success(`Removed ${row.name}'s access.`)
       setConfirmTarget(null)
     } catch (err) {
       console.error('Revoke member error:', err)
-      toast.error('Could not remove access. Please try again.')
+      toast.error(callableErrorMessage(err, 'Could not remove access. Please try again.'))
     } finally {
       setRevoking(prev => { const next = new Set(prev); next.delete(row.uid); return next })
     }

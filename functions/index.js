@@ -371,6 +371,14 @@ exports.acceptInvite = onCall(async (request) => {
         throw new HttpsError("failed-precondition", "This People record is already linked to another account.");
       }
     } else {
+      // The owner has no members doc, so an invite can reach them; it must
+      // never change their access.
+      if (existingMembership) {
+        const orgSnap = await tx.get(db.doc(`organizations/${orgId}`));
+        if (orgSnap.exists && orgSnap.data().ownerId === uid) {
+          throw new HttpsError("failed-precondition", "You own this organization, so an invite can't change your access.");
+        }
+      }
       role = invite.role;
       if (!isValidRole(role)) {
         throw new HttpsError("failed-precondition", "This invite has an unrecognized role. Ask your admin to send a new one.");
