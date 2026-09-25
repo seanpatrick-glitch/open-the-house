@@ -45,7 +45,15 @@ Use test accounts. Each step says what you should see.
 - [ ] Switching the Timeline view saves as your preference.
 - [ ] "Give [name] a login" on a People record → accept → Person dashboard. For someone who already has access, accepting links the record and keeps their current dashboard.
 
-## 9. Security spot-check (optional)
+## 9. One dashboard for everyone else (step 3)
+Every account that isn't an admin or Department Head now lands on the same dashboard.
+- [ ] Sign in as an Org Collaborator **and** as a Person-record login ("Give [name] a login"). Both see the same dashboard: Next up, My Tasks, My Schedule, Messages, Production Status, Timeline, and Flag a note for Admin.
+- [ ] Assign a task to one of them (Timeline) → it shows under **My Tasks** and in the header's "Next up".
+- [ ] Give the Person-record login an assignment (Company → their record → Assignments) → it appears under **Confirm your assignments** → Confirm → it moves to **My Schedule**. This button never worked before.
+- [ ] As a Production Collaborator: **Flag a note for Admin** → submits; the admin sees it.
+- [ ] Messages → New → message anyone in the org (Person logins could only reach their DH before).
+
+## 10. Security spot-check (optional)
 As a collaborator, in the browser devtools console, try writing your own role to `admin` on your `users` doc. It should fail with **permission denied**.
 
 ## If something fails
