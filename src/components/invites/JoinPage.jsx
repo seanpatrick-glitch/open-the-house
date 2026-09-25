@@ -17,7 +17,7 @@ export default function JoinPage() {
   const navigate = useNavigate()
   const [status, setStatus] = useState('loading')
   const [error,  setError]  = useState('')
-  const [pending, setPending] = useState(null) // { email, invite, orgId, inviteId, isNewUser }
+  const [pending, setPending] = useState(null) // { email, invite, orgId, inviteId, needsPassword }
   const [joined, setJoined] = useState(false) // acceptInvite succeeded; only the password step can remain
   const [displayNameInput, setDisplayNameInput] = useState('')
   const [passwordInput, setPasswordInput] = useState('')
@@ -36,8 +36,10 @@ export default function JoinPage() {
       const credential = await signInWithEmailLink(auth, email, window.location.href)
       window.localStorage.removeItem('emailForSignIn')
       // Someone who already has an account (in this org or another) keeps
-      // their password — only a brand-new account sets one here.
-      const isNewUser = getAdditionalUserInfo(credential)?.isNewUser ?? true
+      // their password. A new login sets one — as does a login created by an
+      // earlier, abandoned visit to an invite link, which has no users doc.
+      const userSnap = await getDoc(doc(db, 'users', credential.user.uid))
+      const needsPassword = (getAdditionalUserInfo(credential)?.isNewUser ?? true) || !userSnap.exists()
 
       let invite = null
 
@@ -63,7 +65,7 @@ export default function JoinPage() {
         return
       }
 
-      setPending({ email, invite, orgId, inviteId, isNewUser })
+      setPending({ email, invite, orgId, inviteId, needsPassword })
       setStatus('form')
     } catch (err) {
       console.error('JoinPage error:', err)
@@ -101,9 +103,9 @@ export default function JoinPage() {
 
   async function handleContinue() {
     if (!pending) return
-    const { orgId, inviteId, isNewUser } = pending
+    const { orgId, inviteId, needsPassword } = pending
 
-    if (isNewUser) {
+    if (needsPassword) {
       if (!passwordInput || passwordInput.length < 6) {
         setFormError('Password must be at least 6 characters.')
         return
@@ -135,7 +137,7 @@ export default function JoinPage() {
       }
     }
 
-    if (isNewUser) {
+    if (needsPassword) {
       try {
         await updatePassword(auth.currentUser, passwordInput)
       } catch (err) {
@@ -183,14 +185,14 @@ export default function JoinPage() {
             <p className="text-gray-500 mt-2 text-sm">
               You're joining {pending.invite.orgName || 'this organization'} as {pending.email}.
             </p>
-            {!pending.isNewUser && (
+            {!pending.needsPassword && (
               <p className="text-gray-500 mt-2 text-sm">
                 You already have a Places People account, so there's no password to set.
               </p>
             )}
           </div>
 
-          {pending.isNewUser && !joined && (
+          {pending.needsPassword && !joined && (
             <div className="space-y-1 mb-4">
               <label className="block text-sm font-medium text-gray-700">
                 Display name (optional, defaults to your name)
@@ -206,7 +208,7 @@ export default function JoinPage() {
             </div>
           )}
 
-          {pending.isNewUser && (
+          {pending.needsPassword && (
             <>
               <div className="space-y-1 mb-4">
                 <label className="block text-sm font-medium text-gray-700">
