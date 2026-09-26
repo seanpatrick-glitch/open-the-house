@@ -4,6 +4,7 @@
 > Prompted by: Sean's "Architectural End State: Data Model Constraints" prompt, which asked for a search of the codebase for anything that conflicts with the target data model. Written as a chat reply to Sean, so it speaks to "you" and "your doc".
 > Code references (file:line) are as of commit 2ac9a7a. Line numbers drift as files change. The docs/PROJECT_STATE.md line numbers in section 8 below changed in the same commit that added this file.
 > Decided after this audit, on 2026-09-26, and recorded in PROJECT_STATE.md Sections 3 and 7, which win wherever they differ from this doc: roles are cut to three stored values, admin, departmentHead and base (shown as "Member"). Project types are production, festival, season and series; series replaces singleEvent, so question 2 in section 9 no longer applies. Events keep one type and one name, and an Event's productionId may be null (question 3). The Volunteers module becomes the Shifts module, which will break during the Places migration and be rebuilt after it (part of question 7). A festival holds each show as its own Production (question 8). The docs-only commit suggested at the end of this audit is the commit that added this file.
+> Corrected later the same day: `yourPeople` is defined as "core operational leads" only, adopting the recommendation in section 3. The same person may appear on both the Production Team and Cast lists within one Production, and the app doesn't enforce separation (see question 4). A Production stores one projectId and belongs to exactly one parent Project.
 
 ---
 
@@ -69,7 +70,7 @@ The Group field doesn't exist yet. Where it will live is already decided (on the
 
 **My pushback:** the shift module is a working feature, not a taxonomy label. Volunteer front-of-house staffing is core for community theater, and Orlando Fringe's volunteer coordinator is on your pending contact list. I'd keep the module and rename it "Shifts" if you want no "volunteer" wording at all.
 
-Your `yourPeople` definition also mentions "department heads", which is a Role. If that wording ends up in on-screen help text, admins will mix up the two fields. I'd say "core operational leads" on its own.
+Your `yourPeople` definition also used Role wording. If that wording ends up in on-screen help text, admins will mix up the two fields. I'd say "core operational leads" on its own. **Updated 2026-09-26:** adopted. `yourPeople` is now defined as "core operational leads" only.
 
 ## 4. Role field
 | Finding | Type | Where |
@@ -146,7 +147,7 @@ Two wording checks:
 1. **Cut roles from 9 to 3?** I'd say yes. `secondaryAdmin` becomes `admin`; the org owner is still identified separately. `venueManager` needs a decision. If you later want someone's access limited to one production, that can use the scope fields every membership already has, not a new role name.
 2. **What does a `singleEvent` Project contain?** Your doc doesn't say. My read: a mostly empty Production record, so "Events live within a Production" stays true everywhere.
 3. **Events with no Production:** board meetings and staff calls are real for your Company group. I'd allow Events without a Production rather than invent fake Productions to hold them.
-4. **Team and Cast as lists on the Production**, replacing the assignment list on each person? One catch: the database can't search inside lists of person-and-role pairs. Answering "which productions am I on" needs a separate plain list of person IDs. "Never on both lists" has to be checked in the app, because the rules can't do it.
+4. **Team and Cast as lists on the Production**, replacing the assignment list on each person? One catch: the database can't search inside lists of person-and-role pairs. Answering "which productions am I on" needs a separate plain list of person IDs. **Updated 2026-09-26:** the same person may now appear on both lists within one Production, and the app doesn't enforce separation, so there's no both-lists check to build.
 5. **Opening, closing and preview nights** would exist both as Production dates and as show-date Events. I'd make the Production dates the source of truth and create the performance Events from them.
 6. **The task `phase` tag:** remove it and work out a task's phase from the Production's phase date ranges (my preference, since hand-tagged phases drift), or keep it under a different name?
 7. **Volunteers module:** keep it, rename it "Shifts", or remove it? And which Group do volunteers belong to?

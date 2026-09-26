@@ -1,7 +1,7 @@
 # Places People! — Project State
 > Single source of truth for all Claude sessions. Read this first on every sync.
 > Last updated: 2026-09-26
-> Updated by: Claude Code (Data model end state locked and recorded, docs only, no code. Section 3: new "Data model (locked 2026-09-26)" block replaces the venue-first hierarchy and the old role list; Project is the top-level container with four types, and roles are cut to admin, departmentHead and base, shown as "Member". Section 7: the Venue/Production question marked RESOLVED and the audit's open questions listed. Full audit: docs/DATA_MODEL_AUDIT_2026-09-26.md. Section 8 archived in a batch of 5. Committed on branch claude/stoic-meitner-3l1foo, not yet merged to main. Still pending from 2026-09-25: the live check, docs/LIVE_CHECK_ROLES_2026-09-25.md. Drive copy not updated from this cloud session.)
+> Updated by: Claude Code (Data model end state locked and recorded, docs only, no code. Corrected later the same day: yourPeople is "core operational leads" only, a person may be on both Team and Cast within one Production, and a Production has exactly one parent Project (one projectId). Section 3: new "Data model (locked 2026-09-26)" block replaces the venue-first hierarchy and the old role list; Project is the top-level container with four types, and roles are cut to admin, departmentHead and base, shown as "Member". Section 7: the Venue/Production question marked RESOLVED and the audit's open questions listed. Full audit: docs/DATA_MODEL_AUDIT_2026-09-26.md. Section 8 archived in a batch of 5. Committed on branch claude/stoic-meitner-3l1foo, not yet merged to main. Still pending from 2026-09-25: the live check, docs/LIVE_CHECK_ROLES_2026-09-25.md. Drive copy not updated from this cloud session.)
 
 ---
 
@@ -228,7 +228,7 @@ Also still open:
 **Data model (locked 2026-09-26):**
 Decided by Sean on 2026-09-26. Replaces the July 12 venue-first hierarchy, the rule that a Venue is a real container, and the seven-role list; the replaced wording is in commit 2ac9a7a. Nothing in this block is built yet: see "Start here" at the top of this section, and docs/DATA_MODEL_AUDIT_2026-09-26.md for every place today's code differs.
 
-Hierarchy: Organization → Project → Production. Places and People are org-level records that a Production references by ID.
+Hierarchy: Organization → Project → Production. Every Production belongs to exactly one parent Project. Places and People are org-level records that a Production references by ID.
 
 Project, the top-level container for all work:
 - Identity (title, description, status) plus a `type` field.
@@ -241,6 +241,7 @@ Project, the top-level container for all work:
 - No `seriesType` field. The container type does the work.
 
 Production record, always the same shape:
+- Parent: one `projectId`. A Production belongs to exactly one parent Project, never more than one (locked 2026-09-26).
 - Identity: title, description, status.
 - Dates: firstRehearsal, openingNight, closingNight, previewNights (array). The range runs from first rehearsal through closing night, not just the performance run.
 - Phases: array of named date ranges (for example pre-production, rehearsal, tech, run).
@@ -248,7 +249,7 @@ Production record, always the same shape:
 - Production Team: array of person and role pairings (director, stage manager, designers).
 - Cast: array of person and role pairings (actor, understudy).
 - Every field is always present in the schema, and any field may be empty, including at creation. No field is ever conditional on the Project type. What's filled in varies by org and by how far along the production is.
-- Team and Cast are always separate lists. A person never appears on both within one Production. Across Productions, the same person can hold any role.
+- Team and Cast are always separate lists, but the same person may appear on both within one Production. It's rare but valid: a director who also performs, a stage manager who doubles in the ensemble. The app does not enforce separation between the two lists. Across Productions, the same person can hold any role.
 
 Places:
 - Anywhere the org does work: rented theaters, rehearsal rooms, offices, black boxes, borrowed spaces. Never assume a permanent home venue; most orgs rent.
@@ -259,7 +260,7 @@ Department: optional and org-level (the departmentsEnabled setting), unchanged. 
 
 People: Group and Role are two separate fields (see "People taxonomy and access separation" just below).
 - Group is taxonomy only, set by an Admin on the per-org People record. Exactly three values:
-  - `yourPeople`: department heads, core operational leads.
+  - `yourPeople`: core operational leads.
   - `company`: year-round staff, board members, permanent org members.
   - `collaborators`: contractors, guest directors, designers, artists brought in per production.
 - Role is access only, stored at `users/{uid}.organizations[orgId].role` and written only by the Cloud Functions. Exactly three values: `admin`, `departmentHead`, `base`. Show "Member" on screen wherever `base` appears. `departmentHead` keeps its name in code and on screen.
@@ -489,11 +490,12 @@ New `src/components/productions/ShowDatesPanel.jsx` lists show-date events for a
   - Team and Cast on the Production record: do they replace people.assignments[] as the one source of truth? Check-in rosters, MemberView's Confirm your assignments and My Schedule, and the confirmAssignment function all read assignments[] today. Firestore can't query inside arrays of objects, so "which productions am I on" also needs a flat list of person IDs beside Team and Cast.
   - Opening, closing and preview nights: are the Production date fields or the performance Events the source of truth? Recommended: the Production fields, with performance Events generated from them.
   - The task phase tag (planning, production, wrap; it drives the Postmortem dashboard): retire it and derive a task's phase from Production.phases (recommended), or keep it under a new name?
-  - Can one Production belong to more than one container (for example a season and a series), and can containers nest? This decides whether a Production stores one parent Project ID or a list.
+  - Can one Production belong to more than one container (for example a season and a series), and can containers nest? This decides whether a Production stores one parent Project ID or a list. RESOLVED 2026-09-26 (first part, decided by Sean): a Production stores one projectId and belongs to exactly one parent Project; locked. Still open, narrower: can one Project sit inside another (for example a series inside a season)? The locked model has Projects containing only Productions, so the default is no.
   - Event location: a Place ID, free text, or both?
   - Where do Departments sit relative to Projects and Productions? Today they are org-level and linked to neither.
   - Should templates produce Deadlines, Tasks, or both?
   - Can one person hold two roles on the same list (for example Director and Choreographer)?
+- RESOLVED 2026-09-26 (later, corrections decided by Sean): (1) `yourPeople` is defined as "core operational leads" only. departmentHead is a Role and yourPeople is a Group; many people with the departmentHead role will also be in yourPeople, but the connection is coincidental, not structural. (2) The same person may appear on both the Production Team and Cast lists within one Production (rare but valid, for example a director who also performs). The app does not enforce separation, which lifts the earlier rule. (3) A Production stores one projectId and belongs to exactly one parent Project; locked. Section 3's "Data model (locked 2026-09-26)" block is updated to match.
 
 ---
 
@@ -501,6 +503,7 @@ New `src/components/productions/ShowDatesPanel.jsx` lists show-date events for a
 
 > Most recent first. Archived in batches of 5 (see the Section 8 archive rule in Section 10).
 
+- 2026-09-26 (later): Three corrections to the data model lock, decided by Sean, docs only (no code). (1) The yourPeople Group is now "core operational leads" only; the Role wording was removed from its definition because departmentHead is a Role, and Group and Role are never derived from each other. (2) The rule that a person can't appear on both the Production Team and Cast lists within one Production is lifted; the app does not enforce separation. (3) A Production stores one projectId and belongs to exactly one parent Project. This is now stated in Section 3; it had been listed as an open question in Section 7, which is now marked RESOLVED except for the narrower question of whether one Project can sit inside another. docs/DATA_MODEL_AUDIT_2026-09-26.md updated where it touched the same points (its header, its section 3 yourPeople note, and question 4 in its section 9). Section 8 is at 6 entries, so no archive needed. Committed on branch claude/stoic-meitner-3l1foo, not yet merged to main. Drive copy not updated from this cloud session.
 - 2026-09-26: Data model end state locked by Sean and recorded, docs only (no code). Section 3: a new "Data model (locked 2026-09-26)" block replaces the July 12 venue-first hierarchy, the Venue-as-container rule and the seven-role list (the replaced wording is in commit 2ac9a7a). Project is the top-level container with four types (production, festival, season, series); Productions sit inside Projects and reference org-level Places by ID; the Production record has a fixed shape; Group has three values; roles are cut to three stored values (admin, departmentHead, base, shown as "Member"); Events, Deadlines and Tasks stay separate types, with a nullable production reference on Events; the Shifts module is rebuilt after the Places migration; departmentHead keeps its name. Also in Section 3: legacy role mentions removed from the implementation notes, a Start here pointer added at the top, and UPDATE lines added to the Events and Production modules notes. Section 7: the Venue/Production re-confirmation item marked RESOLVED, the July 12 seven-role item marked SUPERSEDED, the lock recorded, and the audit's still-open schema questions listed. New docs/DATA_MODEL_AUDIT_2026-09-26.md holds the full code audit (conflicts, Places audit, the file list for moving productions out of Places). Adding this entry brought Section 8 to 10, so the 5 oldest moved to the Changelog Archive. Committed on branch claude/stoic-meitner-3l1foo, not yet merged to main. Drive copies of this file and the archive not updated from this cloud session.
 - 2026-09-25 (latest): Steps 1-3 merged via PR #3 and deployed 2026-09-25 20:17 UTC; the CI run's Firestore rules and functions steps passed, and acceptInvite, setMemberRole, revokeMember and confirmAssignment were created. Live check docs/LIVE_CHECK_ROLES_2026-09-25.md not yet run. Full handoff for the next session: docs/HANDOFF_2026-09-25_ROLES.md. New gap found: the org owner has no members doc (see the handoff, section 5), not yet fixed. Step 3 detail: Every base-level role now lands on one dashboard, MemberView (the former CollaboratorView plus "Next up", Confirm your assignments, My Tasks and My Schedule); PersonView was removed. New isBaseLevel() rule helper lets every base-level role message and flag. New confirmAssignment function fixes the Confirm button, which had never worked. Regression test is now 34/34. Beta routing is now the agreed three dashboards by Role. Post-deploy checks added to docs/LIVE_CHECK_ROLES_2026-09-25.md (section 9). Remaining from the Sep 25 build order: the taxonomy layer (Group field) and the org switcher.
 - 2026-09-25 (later): Step 2 built on branch claude/dreamy-davinci-gceawd, not yet merged or deployed. Merged main's size cleanup into the branch (state-file conflicts resolved, keeping main's locked taxonomy principle as canonical). Company page header now reads "Company" to match its nav item. Role and membership writes moved server-side (acceptInvite, setMemberRole, revokeMember) and firestore.rules locked so no client can write a role, closing the reopened DH misrouting paths B/C/D and the self-promote-to-admin hole (Section 2). Multi-org foundation: memberships are added and removed one org at a time, the active org is chosen deliberately, and message emails carry ?org=. One shared role list drives routing. Routing outcome is unchanged per role; base-level still splits Collaborator/Person until step 3. Emulator-tested 26/26 plus a 7-scenario check of the active-org picker; build passes. Not browser-tested and not live: after merge, run docs/LIVE_CHECK_ROLES_2026-09-25.md. Next: step 3, merging the base-level dashboards (CollaboratorView as the base plus My Tasks/My Schedule, confirmed by Sean). Same session, added after: the emulator run is now committed as tests/emulator/role-flows.test.mjs (`npm run test:roles`), and a short repo-root CLAUDE.md now carries the Group vs. Role rule and the role-write rules. It loads only in Claude Code sessions on this repo.
