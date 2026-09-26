@@ -226,15 +226,17 @@ export default function InviteCollaborator() {
               onChange={(e) => { setRole(e.target.value); setExistingMember(null) }}
               className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-spotlight text-base bg-white"
             >
-              {ROLE_OPTIONS.map((r) => (
-                <option
-                  key={r.value}
-                  value={r.value}
-                  disabled={r.value === 'departmentHead' && !deptsLoading && departments.length === 0}
-                >
-                  {r.label}
-                </option>
-              ))}
+              {ROLE_OPTIONS.map((r) => {
+                // A Department Head needs a department to head. The reason is
+                // in the option label itself, since a disabled option can't be
+                // selected to reveal the hint below.
+                const needsDepartment = r.value === 'departmentHead' && !deptsLoading && departments.length === 0
+                return (
+                  <option key={r.value} value={r.value} disabled={needsDepartment}>
+                    {needsDepartment ? `${r.label} (create a department first)` : r.label}
+                  </option>
+                )
+              })}
             </select>
             {role === 'departmentHead' && !deptsLoading && departments.length === 0 && (
               <p className="text-xs text-red-600 mt-1">
