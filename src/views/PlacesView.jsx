@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import CreatePlaceForm from '../components/productions/CreatePlaceForm';
@@ -29,14 +29,16 @@ export default function PlacesView() {
         const loadedPlaces = placesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         setPlaces(loadedPlaces);
 
-        // Load production counts per place
+        // Load production counts per place. Productions live under the org
+        // and point to their place by placeId.
         const counts = {};
-        await Promise.all(loadedPlaces.map(async place => {
-          const prodsSnap = await getDocs(
-            collection(db, 'organizations', orgId, 'places', place.id, 'productions')
-          );
-          counts[place.id] = prodsSnap.size;
-        }));
+        const prodsSnap = await getDocs(
+          collection(db, 'organizations', orgId, 'productions')
+        );
+        prodsSnap.docs.forEach(d => {
+          const { placeId } = d.data();
+          counts[placeId] = (counts[placeId] ?? 0) + 1;
+        });
         setProdCounts(counts);
       } catch (err) {
         console.error('PlacesView load error:', err);
@@ -51,9 +53,10 @@ export default function PlacesView() {
   async function handleSelectPlace(place) {
     setSelectedPlace(place);
     try {
-      const prodsSnap = await getDocs(
-        collection(db, 'organizations', orgId, 'places', place.id, 'productions')
-      );
+      const prodsSnap = await getDocs(query(
+        collection(db, 'organizations', orgId, 'productions'),
+        where('placeId', '==', place.id)
+      ));
       setProductions(prodsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (err) {
       console.error('PlacesView load productions error:', err);

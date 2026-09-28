@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { collection, collectionGroup, query, where, onSnapshot } from 'firebase/firestore'
+import { collection, onSnapshot } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import CreatePlaceForm from './CreatePlaceForm'
@@ -149,15 +149,11 @@ export default function ProductionsView() {
 
   // Real-time listener for all productions in this org.
   // Waits until places have settled so the placeMap is ready for card rendering.
-  // Productions store orgId, so the query is scoped without enumerating places.
+  // Productions live directly under the org, so the path alone scopes this.
   useEffect(() => {
     if (placesLoading) return
-    const q = query(
-      collectionGroup(db, 'productions'),
-      where('orgId', '==', orgId)
-    )
     const unsub = onSnapshot(
-      q,
+      collection(db, 'organizations', orgId, 'productions'),
       (snap) => {
         setProductions(snap.docs.map(d => ({ id: d.id, ...d.data() })))
         setProductionsLoading(false)

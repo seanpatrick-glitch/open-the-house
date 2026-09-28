@@ -3,7 +3,7 @@ import { doc, getDoc, collection, query, where, orderBy, onSnapshot, limit } fro
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useUnread } from '../contexts/UnreadContext';
-import { DASHBOARD_STATES } from '../models/org';
+import { DASHBOARD_STATES, getActiveProductionId } from '../models/org';
 import { differenceInDays, startOfDay, endOfDay, addDays } from 'date-fns';
 import UnreadCallout from '../components/messaging/UnreadCallout';
 import UpcomingDatesWidget, { mergeUpcoming, UPCOMING_LIMIT } from '../components/dashboard/UpcomingDatesWidget';
@@ -97,20 +97,19 @@ export default function DHDashboardView() {
         const orgSnap = await getDocWithRetry(doc(db, 'organizations', orgId));
         if (!orgSnap.exists()) { setLoading(false); return; }
 
-        const orgData     = orgSnap.data();
-        const override    = orgData.dashboardStateOverride ?? null;
-        const compositeId = orgData.activeProdId ?? null;
+        const orgData      = orgSnap.data();
+        const override     = orgData.dashboardStateOverride ?? null;
+        const activeProdId = getActiveProductionId(orgData);
 
-        if (!compositeId) {
+        if (!activeProdId) {
           setDashState(DASHBOARD_STATES.PLANNING);
           setIsOverride(false);
           setLoading(false);
           return;
         }
 
-        const [placeId, productionId] = compositeId.split('/');
         const prodSnap = await getDocWithRetry(
-          doc(db, 'organizations', orgId, 'places', placeId, 'productions', productionId)
+          doc(db, 'organizations', orgId, 'productions', activeProdId)
         );
 
         if (!prodSnap.exists()) {

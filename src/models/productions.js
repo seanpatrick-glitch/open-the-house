@@ -7,7 +7,10 @@ export const PRODUCTION_SCOPE = {
 };
 
 /*
-COLLECTION: organizations/{orgId}/places/{placeId}/productions/{productionId}
+COLLECTION: organizations/{orgId}/productions/{productionId}
+Top-level under the org, not nested under a Place (moved 2026-09-28, Phase 1
+of the data model migration; see docs/DATA_MODEL_AUDIT_2026-09-26.md). The
+Place is referenced by placeId only. Record shape unchanged by the move.
 {
   name:          string,
   displayLabel:  string,           // defaults to 'Production' if left blank

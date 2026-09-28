@@ -3,6 +3,7 @@ import { collection, query, where, orderBy, onSnapshot, getDocs, doc, getDoc, up
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { TIMELINE_STATUS, TASK_LEVELS } from '../models/timeline';
+import { getActiveProductionId } from '../models/org';
 import { getDisplayName } from '../utils/displayName';
 import CalendarGrid from '../components/timeline/CalendarGrid';
 import GanttView from '../components/timeline/GanttView';
@@ -66,7 +67,7 @@ export default function TimelineView({ navState }) {
 
     const loadDepartments = async () => {
       const orgSnap = await getDoc(doc(db, 'organizations', orgId));
-      setActiveProdId(orgSnap.exists() ? (orgSnap.data().activeProdId ?? null) : null);
+      setActiveProdId(orgSnap.exists() ? getActiveProductionId(orgSnap.data()) : null);
       if (!orgSnap.exists() || !orgSnap.data().departmentsEnabled) {
         setDepartments({});
         return;

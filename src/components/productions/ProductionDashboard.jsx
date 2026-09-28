@@ -173,7 +173,6 @@ export default function ProductionDashboard({ production, places, onBack, backLa
         doc(
           db,
           'organizations', userProfile.orgId,
-          'places',        production.placeId,
           'productions',   production.id
         ),
         // Dot notation — only this one key is written, nothing else is touched

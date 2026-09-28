@@ -2,9 +2,9 @@
 // CreateProductionForm.jsx directly for its required fields (name, place,
 // scope, start/end date) and its existing dual-field write pattern
 // (startDate/endDate plus the legacy openDate/closeDate/venueId fields,
-// unchanged by this step). On save, sets the org's activeProdId
-// ("{placeId}/{productionId}", matching models/org.js's composite format)
-// so the dashboard picks up the new production once the wizard finishes.
+// unchanged by this step). On save, sets the org's activeProdId (the
+// productionId, per models/org.js) so the dashboard picks up the new
+// production once the wizard finishes.
 // Places must already exist by the time this step is reached — Step 2
 // requires at least one before Next is enabled, and CreateProductionForm
 // itself cannot function with zero places.
@@ -39,10 +39,10 @@ export default function ProductionStep({ orgId, onNext, onBack }) {
     return () => { cancelled = true; };
   }, [orgId]);
 
-  async function handleProductionCreated({ id, placeId }) {
+  async function handleProductionCreated({ id }) {
     try {
       await updateDoc(doc(db, 'organizations', orgId), {
-        activeProdId: `${placeId}/${id}`,
+        activeProdId: id,
       });
     } catch (err) {
       console.error('ProductionStep set activeProdId error:', err);
