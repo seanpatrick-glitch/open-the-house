@@ -88,7 +88,7 @@ export default function HoursPanel({ person }) {
         </div>
         {!showForm && (
           <button onClick={() => setShowForm(true)}
-            className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+            className="text-sm font-medium text-places-blue hover:text-places-blue/90 transition-colors">
             Log Hours
           </button>
         )}
@@ -107,7 +107,7 @@ export default function HoursPanel({ person }) {
                   value={hours}
                   onChange={e => setHours(e.target.value)}
                   placeholder="0.00"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue"
                 />
               </div>
               <div className="flex-1">
@@ -116,7 +116,7 @@ export default function HoursPanel({ person }) {
                   type="date"
                   value={date}
                   onChange={e => setDate(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue"
                 />
               </div>
             </div>
@@ -127,14 +127,14 @@ export default function HoursPanel({ person }) {
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 placeholder="Optional"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue"
               />
             </div>
           </div>
           {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
           <div className="flex items-center gap-3 mt-3">
             <button onClick={handleLog} disabled={saving || !hours}
-              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors">
+              className="bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors">
               {saving ? 'Saving...' : 'Log'}
             </button>
             <button onClick={() => { setShowForm(false); setError(''); }}

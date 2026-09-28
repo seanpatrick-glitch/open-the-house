@@ -105,7 +105,7 @@ export default function InvitesStep({ orgId, onFinish, onBack, finishing }) {
     setSending(false);
 
     if (failures > 0) {
-      setError(`${failures} of ${toSend.length} invite(s) could not be sent. You can invite them later from Collaborators.`);
+      setError(`${failures} of ${toSend.length} invite(s) could not be sent. You can invite them later from Your People.`);
     }
 
     onFinish();
@@ -117,7 +117,7 @@ export default function InvitesStep({ orgId, onFinish, onBack, finishing }) {
     <div>
       <h2 className="text-xl font-semibold text-gray-900 mb-1">Invite your team</h2>
       <p className="text-gray-500 text-sm mb-6">
-        Send sign-in invites to people who need to use the app directly. You can always invite more later.
+        Send sign-in invites to your team. You can always invite more later.
       </p>
 
       {loadingRows ? (
@@ -131,12 +131,12 @@ export default function InvitesStep({ orgId, onFinish, onBack, finishing }) {
                 value={row.email}
                 onChange={e => updateRow(row.id, 'email', e.target.value)}
                 placeholder={row.name ? `${row.name}'s email` : 'name@email.com'}
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spotlight"
               />
               <select
                 value={row.role}
                 onChange={e => updateRow(row.id, 'role', e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-spotlight"
               >
                 {ROLE_OPTIONS.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -157,7 +157,7 @@ export default function InvitesStep({ orgId, onFinish, onBack, finishing }) {
       <button
         type="button"
         onClick={addRow}
-        className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors mb-6"
+        className="text-sm font-medium text-places-blue hover:text-places-blue/90 transition-colors mb-6"
       >
         + Add row
       </button>
@@ -185,7 +185,7 @@ export default function InvitesStep({ orgId, onFinish, onBack, finishing }) {
           type="button"
           onClick={handleSendInvites}
           disabled={busy}
-          className="flex-1 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base"
+          className="flex-1 bg-spotlight hover:bg-spotlight/90 disabled:opacity-50 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base"
         >
           {sending ? 'Sending…' : finishing ? 'Finishing…' : 'Send invites & finish'}
         </button>

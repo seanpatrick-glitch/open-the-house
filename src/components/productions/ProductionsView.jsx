@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react'
-import { collection, collectionGroup, query, where, onSnapshot } from 'firebase/firestore'
+import { collection, onSnapshot } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import CreatePlaceForm from './CreatePlaceForm'
 import CreateProductionForm from './CreateProductionForm'
 import ProductionDashboard from './ProductionDashboard'
+import PageHeader from '../shared/PageHeader'
 import toast from 'react-hot-toast'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const STATUS_STYLES = {
   'planning':    'bg-gray-100 text-gray-600',
-  'in-progress': 'bg-amber-100 text-amber-700',
+  'in-progress': 'bg-spotlight/15 text-stage-navy',
   'open':        'bg-green-100 text-green-700',
   'closed':      'bg-gray-100 text-gray-500',
 }
@@ -92,7 +93,7 @@ function ProductionCard({ prod, placeName, onOpen }) {
               {activeModuleKeys.map(key => (
                 <span
                   key={key}
-                  className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200"
+                  className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-spotlight/10 text-stage-navy border border-spotlight/25"
                 >
                   {MODULE_LABELS[key] ?? key}
                 </span>
@@ -105,7 +106,7 @@ function ProductionCard({ prod, placeName, onOpen }) {
         {/* Right: Open button */}
         <button
           onClick={onOpen}
-          className="flex-shrink-0 self-center text-sm font-semibold text-amber-600 hover:text-amber-700 transition-colors whitespace-nowrap"
+          className="flex-shrink-0 self-center text-sm font-semibold text-spotlight hover:text-stage-navy transition-colors whitespace-nowrap"
         >
           Open →
         </button>
@@ -148,15 +149,11 @@ export default function ProductionsView() {
 
   // Real-time listener for all productions in this org.
   // Waits until places have settled so the placeMap is ready for card rendering.
-  // Productions store orgId, so the query is scoped without enumerating places.
+  // Productions live directly under the org, so the path alone scopes this.
   useEffect(() => {
     if (placesLoading) return
-    const q = query(
-      collectionGroup(db, 'productions'),
-      where('orgId', '==', orgId)
-    )
     const unsub = onSnapshot(
-      q,
+      collection(db, 'organizations', orgId, 'productions'),
       (snap) => {
         setProductions(snap.docs.map(d => ({ id: d.id, ...d.data() })))
         setProductionsLoading(false)
@@ -186,7 +183,7 @@ export default function ProductionsView() {
   if (places.length === 0) {
     return (
       <div className="space-y-6 max-w-lg">
-        <h1 className="text-2xl font-bold text-gray-900">Productions</h1>
+        <PageHeader title="Productions" bleed={false} />
 
         {showPlaceForm ? (
           <CreatePlaceForm
@@ -198,7 +195,7 @@ export default function ProductionsView() {
             <p className="text-gray-500 text-sm mb-4">No places added yet.</p>
             <button
               onClick={() => setShowPlaceForm(true)}
-              className="bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
+              className="bg-spotlight hover:bg-spotlight/90 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
             >
               Add a Place
             </button>
@@ -224,8 +221,8 @@ export default function ProductionsView() {
     <div className="space-y-6 max-w-4xl">
 
       {/* Header — Create Production always visible when places exist */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Productions</h1>
+      <PageHeader title="Productions" bleed={false} />
+      <div className="flex items-center justify-end">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowPlaceForm(true)}
@@ -235,7 +232,7 @@ export default function ProductionsView() {
           </button>
           <button
             onClick={() => setShowProdForm(true)}
-            className="bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
+            className="bg-spotlight hover:bg-spotlight/90 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
           >
             + Create Production
           </button>

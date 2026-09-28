@@ -137,22 +137,6 @@
       ]
     },
     {
-      "collectionGroup": "productions",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "orgId", "order": "ASCENDING" },
-        { "fieldPath": "openDate", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "productions",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "orgId", "order": "ASCENDING" },
-        { "fieldPath": "venueId", "order": "ASCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "threads",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
@@ -173,16 +157,6 @@
     {
       "collectionGroup": "invites",
       "fieldPath": "token",
-      "indexes": [
-        { "order": "ASCENDING", "queryScope": "COLLECTION" },
-        { "order": "DESCENDING", "queryScope": "COLLECTION" },
-        { "arrayConfig": "CONTAINS", "queryScope": "COLLECTION" },
-        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
-      ]
-    },
-    {
-      "collectionGroup": "productions",
-      "fieldPath": "orgId",
       "indexes": [
         { "order": "ASCENDING", "queryScope": "COLLECTION" },
         { "order": "DESCENDING", "queryScope": "COLLECTION" },

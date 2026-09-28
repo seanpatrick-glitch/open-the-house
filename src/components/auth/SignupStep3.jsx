@@ -3,6 +3,7 @@ import { collection, doc, addDoc, setDoc, serverTimestamp } from 'firebase/fires
 import { db } from '../../firebase'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import wordmark from '../../assets/brand/wordmark-mark.png'
 
 export default function SignupStep3({ firebaseUser }) {
   const [venueName, setVenueName] = useState('')
@@ -46,7 +47,6 @@ export default function SignupStep3({ firebaseUser }) {
         },
       })
 
-      await new Promise(resolve => setTimeout(resolve, 800))
       navigate('/dashboard')
     } catch (err) {
       toast.error('Could not create organization. Please try again.')
@@ -72,12 +72,11 @@ export default function SignupStep3({ firebaseUser }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-stage-navy flex flex-col items-center justify-center px-4">
+      <img src={wordmark} alt="Places People!" className="h-14 w-auto mb-6" />
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="text-4xl mb-3">🎭</div>
-          <h1 className="text-3xl font-bold text-gray-900">Places People!</h1>
-          <p className="text-gray-500 mt-2 text-sm">Set up your organization</p>
+          <p className="text-gray-500 text-sm">Set up your organization</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -89,7 +88,7 @@ export default function SignupStep3({ firebaseUser }) {
               type="text"
               value={venueName}
               onChange={(e) => setVenueName(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-base"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-spotlight text-base"
               placeholder="e.g. The Grand Theatre"
               autoFocus
             />
@@ -97,7 +96,7 @@ export default function SignupStep3({ firebaseUser }) {
 
           <button
             type="submit"
-            className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base mt-2"
+            className="w-full bg-spotlight hover:bg-spotlight/90 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base mt-2"
           >
             Create organization
           </button>

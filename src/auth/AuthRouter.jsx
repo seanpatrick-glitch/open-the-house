@@ -4,9 +4,10 @@ import { doc, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import AdminView from '../views/AdminView'
-import CollaboratorView from '../views/CollaboratorView'
-import PersonView from '../views/PersonView'
+import MemberView from '../views/MemberView'
 import OnboardingWizard from '../components/onboarding/OnboardingWizard'
+import FeedbackWidget from '../components/shared/FeedbackWidget'
+import { ACCESS, accessLevel } from '../models/roles'
 
 // Original-admin first-run onboarding check. Only the org's original owner
 // (ownerId match on the organizations doc, set at creation in SignupStep3.jsx)
@@ -29,19 +30,47 @@ function useOriginalAdminOnboarding(userProfile) {
     }
 
     setOrgLoading(true)
-    const unsub = onSnapshot(
-      doc(db, 'organizations', userProfile.orgId),
-      (snap) => {
-        setOrgData(snap.exists() ? snap.data() : null)
-        setOrgLoading(false)
-      },
-      (error) => {
-        console.error('AuthRouter org listener error:', error)
-        setOrgData(null)
-        setOrgLoading(false)
-      }
-    )
-    return unsub
+    let cancelled = false
+    let unsub = null
+    let retryTimer = null
+
+    // organizations/{orgId}'s read rule (isMember) does a server-side get()
+    // on the requester's own users/{uid} doc. Right after signup writes that
+    // doc, the client sees it instantly via local-write optimism, but the
+    // rule's server-side get() can still momentarily see a not-yet-propagated
+    // version and reject with permission-denied — a transient race, not a
+    // real permission problem. onSnapshot does not auto-retry after an
+    // error, so without this the listener would die permanently and the
+    // wizard would never show for an otherwise-legitimate new admin. Retry a
+    // few times before giving up for real.
+    function subscribe(attempt) {
+      unsub = onSnapshot(
+        doc(db, 'organizations', userProfile.orgId),
+        (snap) => {
+          if (cancelled) return
+          setOrgData(snap.exists() ? snap.data() : null)
+          setOrgLoading(false)
+        },
+        (error) => {
+          if (cancelled) return
+          if (error.code === 'permission-denied' && attempt < 5) {
+            retryTimer = setTimeout(() => subscribe(attempt + 1), 400)
+            return
+          }
+          console.error('AuthRouter org listener error:', error)
+          setOrgData(null)
+          setOrgLoading(false)
+        }
+      )
+    }
+
+    subscribe(0)
+
+    return () => {
+      cancelled = true
+      if (unsub) unsub()
+      if (retryTimer) clearTimeout(retryTimer)
+    }
   }, [isAdminRole, userProfile?.orgId])
 
   const showOnboarding =
@@ -54,9 +83,17 @@ function useOriginalAdminOnboarding(userProfile) {
 }
 
 export default function AuthRouter() {
-  const { userProfile, loading } = useAuth()
+  const { currentUser, userProfile, loading } = useAuth()
   const { orgLoading, showOnboarding } = useOriginalAdminOnboarding(userProfile)
 
+  // No Firebase Auth user at all — genuinely logged out, redirect immediately.
+  if (!currentUser) {
+    return <Navigate to="/" replace />
+  }
+
+  // Authenticated but the profile hasn't resolved yet (e.g. the users/{uid}
+  // doc from signup hasn't landed via onSnapshot). Wait, don't redirect —
+  // AuthContext keeps `loading` true until the profile actually resolves.
   if (loading || orgLoading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -71,15 +108,27 @@ export default function AuthRouter() {
 
   if (showOnboarding) return <OnboardingWizard orgId={userProfile.orgId} />
 
-  if (userProfile.role === 'admin')             return <AdminView />
-  if (userProfile.role === 'secondaryAdmin')    return <AdminView />
-  if (userProfile.role === 'departmentHead')    return <AdminView />
-  if (userProfile.role === 'orgCollaborator')   return <CollaboratorView />
-  if (userProfile.role === 'collaborator')      return <CollaboratorView />
-  if (userProfile.role === 'venueManager')      return <AdminView />
-  if (userProfile.role === 'productionCollaborator') return <CollaboratorView />
-  if (userProfile.role === 'volunteer')         return <PersonView />
-  if (userProfile.role === 'person')            return <PersonView />
+  // Routing reads Role (access) only — see src/models/roles.js. DashboardShell
+  // then picks the Admin or Department Head home screen inside AdminView.
+  const access = accessLevel(userProfile.role)
+  let view = null
+  if (access === ACCESS.ADMIN || access === ACCESS.DEPARTMENT_HEAD) {
+    view = <AdminView />
+  } else if (access === ACCESS.BASE) {
+    view = <MemberView />
+  }
+
+  // FeedbackWidget is mounted once here, for every recognized role, rather
+  // than duplicated inside DashboardShell/MemberView — those are separate
+  // top-level render trees with no shared shell.
+  if (view) {
+    return (
+      <>
+        {view}
+        <FeedbackWidget />
+      </>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">

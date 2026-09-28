@@ -34,7 +34,7 @@ export default function UpcomingDatesWidget({ items }) {
               <div key={item.id} className="px-4 py-3 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide flex-shrink-0 ${
-                    item.type === 'event' ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'
+                    item.type === 'event' ? 'bg-purple-100 text-purple-700' : 'bg-places-blue/15 text-places-blue/90'
                   }`}>
                     {item.type === 'event' ? 'Event' : 'Task'}
                   </span>

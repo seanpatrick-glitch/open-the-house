@@ -4,11 +4,13 @@
 /*
 organizations/{orgId}
   + activeProdId (string | null) — set when admin designates a production as active.
-      The path to the active production is:
-      organizations/{orgId}/places/{placeId}/productions/{activeProdId}
-      Since productions are nested under places, the dashboard state reader
-      also needs the placeId. Store activeProdId as a composite string:
-      "{placeId}/{productionId}" so a single field lookup gives both.
+      Holds the productionId only. The active production is:
+      organizations/{orgId}/productions/{activeProdId}
+      Until productions moved out of places (2026-09-28) this was the
+      composite "{placeId}/{productionId}". Readers go through
+      getActiveProductionId() below, which treats a leftover composite value
+      as no active production. resetOrganization keeps activeProdId, so a
+      stale value can outlive the production it pointed to.
 
   + dashboardStateOverride (string | null) — manual override for dashboard state.
       Enum: 'planning' | 'finalCountdown' | 'live' | 'postmortem' | null
@@ -33,6 +35,14 @@ organizations/{orgId}
       all — AuthRouter.jsx treats a missing value as `true` (already onboarded)
       via `?? true`, not `false`, since a false default would retroactively
       surface the wizard for every pre-existing org's admin on next login.
+
+  + logoUrl (string | null, optional) — Storage download URL for the org's
+      logo, written by src/components/shared/OrgLogoUpload.jsx (Settings'
+      Organization card and the onboarding wizard's Org step both use this
+      same component) after an upload to organizations/{orgId}/logo/{filename}
+      in Storage (see storage.rules). Nullable/absent for orgs that haven't
+      set a logo yet — every read site must treat a missing field as "no
+      logo", not an error.
 */
 
 export const DASHBOARD_STATES = {
@@ -41,3 +51,11 @@ export const DASHBOARD_STATES = {
   LIVE:            'live',
   POSTMORTEM:      'postmortem',
 };
+
+// The org's active production id, or null when there is none. Document ids
+// never contain '/', so a pre-2026-09-28 "{placeId}/{productionId}" value
+// reads as none instead of making doc() throw on an odd-length path.
+export function getActiveProductionId(orgData) {
+  const id = orgData?.activeProdId;
+  return typeof id === 'string' && id !== '' && !id.includes('/') ? id : null;
+}

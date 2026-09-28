@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import CreatePlaceForm from '../components/productions/CreatePlaceForm';
 import ProductionDashboard from '../components/productions/ProductionDashboard';
 import toast from 'react-hot-toast';
+import PageHeader from '../components/shared/PageHeader';
 
 export default function PlacesView() {
   const { userProfile } = useAuth();
@@ -28,14 +29,16 @@ export default function PlacesView() {
         const loadedPlaces = placesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         setPlaces(loadedPlaces);
 
-        // Load production counts per place
+        // Load production counts per place. Productions live under the org
+        // and point to their place by placeId.
         const counts = {};
-        await Promise.all(loadedPlaces.map(async place => {
-          const prodsSnap = await getDocs(
-            collection(db, 'organizations', orgId, 'places', place.id, 'productions')
-          );
-          counts[place.id] = prodsSnap.size;
-        }));
+        const prodsSnap = await getDocs(
+          collection(db, 'organizations', orgId, 'productions')
+        );
+        prodsSnap.docs.forEach(d => {
+          const { placeId } = d.data();
+          counts[placeId] = (counts[placeId] ?? 0) + 1;
+        });
         setProdCounts(counts);
       } catch (err) {
         console.error('PlacesView load error:', err);
@@ -50,9 +53,10 @@ export default function PlacesView() {
   async function handleSelectPlace(place) {
     setSelectedPlace(place);
     try {
-      const prodsSnap = await getDocs(
-        collection(db, 'organizations', orgId, 'places', place.id, 'productions')
-      );
+      const prodsSnap = await getDocs(query(
+        collection(db, 'organizations', orgId, 'productions'),
+        where('placeId', '==', place.id)
+      ));
       setProductions(prodsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (err) {
       console.error('PlacesView load productions error:', err);
@@ -148,7 +152,7 @@ export default function PlacesView() {
                       {Object.entries(prod.activeModules)
                         .filter(([, v]) => v)
                         .map(([k]) => (
-                          <span key={k} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-indigo-50 text-indigo-600 capitalize">
+                          <span key={k} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-places-blue/10 text-places-blue capitalize">
                             {k}
                           </span>
                         ))}
@@ -166,14 +170,14 @@ export default function PlacesView() {
   // Place list view
   return (
     <div className="p-6 max-w-4xl">
+      <PageHeader title="Places" />
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Places</h1>
           <p className="text-sm text-gray-500">Your venues and the productions happening in them.</p>
         </div>
         <button
           onClick={() => setShowAddPlace(s => !s)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          className="bg-places-blue hover:bg-places-blue/90 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           Add a Place
         </button>

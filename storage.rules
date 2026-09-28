@@ -1,0 +1,44 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    // Mirrors firestore.rules' isAdmin/isAdminOrSecondary pattern (same
+    // users/{uid}.organizations[orgId].role lookup), via Storage's
+    // cross-service firestore.get() rather than reinventing a separate
+    // permission system here.
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userOrgs() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.organizations;
+    }
+
+    function isMember(orgId) {
+      return isSignedIn() && orgId in userOrgs();
+    }
+
+    function isAdminOrSecondary(orgId) {
+      return isMember(orgId)
+        && userOrgs()[orgId].role in ['admin', 'secondaryAdmin'];
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    // 5MB
+    function underSizeLimit() {
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // ── organization logo ────────────────────────────────────────────────────
+    match /organizations/{orgId}/logo/{filename} {
+      allow read: if isMember(orgId);
+      allow create, update: if isAdminOrSecondary(orgId) && isImage() && underSizeLimit();
+      allow delete: if isAdminOrSecondary(orgId);
+    }
+  }
+}

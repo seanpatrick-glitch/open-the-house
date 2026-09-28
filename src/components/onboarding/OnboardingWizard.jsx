@@ -1,19 +1,22 @@
 // OnboardingWizard.jsx — first-run guided setup for a brand-new org's original admin.
-// Shell built in Unit 1; each step below is filled in by its own unit
-// (People: Unit 2, Places: Unit 3, Production: Unit 4, Invites: Unit 5).
-// Order is fixed: People -> Places -> Production -> Invites — Production
-// requires a places array to exist (CreateProductionForm.jsx), so Places
-// must come before it regardless of UX preference.
+// Order is fixed: Organization -> People -> Places -> Production -> Invites.
+// Organization was added as a new first step so the admin can confirm/correct
+// the org name already collected at signup and add a logo (see OrgStep.jsx),
+// pushing every other step back by one. Production still requires a places
+// array to exist (CreateProductionForm.jsx), so Places must come before it
+// regardless of UX preference.
 
 import React, { useState } from 'react'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
+import wordmark from '../../assets/brand/wordmark-mark.png'
+import OrgStep from './steps/OrgStep'
 import PeopleStep from './steps/PeopleStep'
 import PlacesStep from './steps/PlacesStep'
 import ProductionStep from './steps/ProductionStep'
 import InvitesStep from './steps/InvitesStep'
 
-const STEP_COUNT = 4
+const STEP_COUNT = 5
 
 export default function OnboardingWizard({ orgId }) {
   const [step, setStep] = useState(1)
@@ -37,18 +40,18 @@ export default function OnboardingWizard({ orgId }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-stage-navy flex flex-col items-center justify-center px-4 py-10">
+      <img src={wordmark} alt="Places People!" className="h-14 w-auto mb-6" />
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-xl">
         <div className="text-center mb-8">
-          <div className="text-4xl mb-3">🎭</div>
-          <h1 className="text-3xl font-bold text-gray-900">Places People!</h1>
-          <p className="text-gray-500 mt-2 text-sm">Let's set up your organization</p>
+          <p className="text-gray-500 text-sm">Let's set up your organization</p>
         </div>
 
-        {step === 1 && <PeopleStep orgId={orgId} onNext={goNext} />}
-        {step === 2 && <PlacesStep orgId={orgId} onNext={goNext} onBack={goBack} />}
-        {step === 3 && <ProductionStep orgId={orgId} onNext={goNext} onBack={goBack} />}
-        {step === 4 && (
+        {step === 1 && <OrgStep orgId={orgId} onNext={goNext} />}
+        {step === 2 && <PeopleStep orgId={orgId} onNext={goNext} onBack={goBack} />}
+        {step === 3 && <PlacesStep orgId={orgId} onNext={goNext} onBack={goBack} />}
+        {step === 4 && <ProductionStep orgId={orgId} onNext={goNext} onBack={goBack} />}
+        {step === 5 && (
           <InvitesStep orgId={orgId} onFinish={completeOnboarding} onBack={goBack} finishing={finishing} />
         )}
 

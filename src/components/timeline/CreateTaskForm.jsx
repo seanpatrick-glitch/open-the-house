@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, collectionGroup, addDoc, getDocs, query, where, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { TASK_LEVELS, TASK_PHASES } from '../../models/timeline';
@@ -17,9 +17,8 @@ export default function CreateTaskForm({ onSuccess, onCancel, activeProdId }) {
 
   const isDepartmentHead = userProfile.role === 'departmentHead';
 
-  // activeProdId is a composite "{placeId}/{productionId}" string; only the
-  // productionId half is used to match against the flat productions list.
-  const defaultProductionId = activeProdId ? activeProdId.split('/')[1] : null;
+  // activeProdId is the org's active productionId (see models/org.js), or null.
+  const defaultProductionId = activeProdId ?? null;
 
   const [title, setTitle]               = useState('');
   const [description, setDescription]   = useState('');
@@ -54,11 +53,10 @@ export default function CreateTaskForm({ onSuccess, onCancel, activeProdId }) {
         setOrgUsers(filtered);
       });
 
-    // Load productions for the production dropdown. Productions store their
-    // own orgId, so this is scoped directly without enumerating places first.
+    // Load productions for the production dropdown. Productions live
+    // directly under the org, so the path alone scopes this query.
     getDocs(query(
-      collectionGroup(db, 'productions'),
-      where('orgId', '==', orgId),
+      collection(db, 'organizations', orgId, 'productions'),
       orderBy('openDate', 'asc')
     )).then(snap => {
       const loaded = snap.docs.map(d => ({ id: d.id, ...d.data() }));

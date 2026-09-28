@@ -3,11 +3,17 @@
 # (placespeople-beta-testing.web.app)." This is the site your beta tester uses,
 # kept separate from main so in-progress work on main never reaches them.
 #
-# Deliberately hosting:beta only — main and beta-stable share one Firebase
-# project and one Firestore database, so rules, indexes, and functions are
-# project-wide, not per-site. firebase-deploy.yml (the main-branch workflow)
-# already deploys those on every push to main; duplicating it here would risk
-# two workflows racing to deploy the same shared resources for no benefit.
+# Deliberately hosting:beta only, plus one exception below — main and
+# beta-stable share one Firebase project, one Firestore database, and one
+# Storage bucket, so Firestore rules/indexes/functions are project-wide, not
+# per-site. firebase-deploy.yml (the main-branch workflow) already deploys
+# those on every push to main; duplicating them here would risk two
+# workflows racing to deploy the same shared resources for no benefit.
+#
+# Storage rules are the one exception (added 2026-08-19): this workflow
+# deploys `storage` on its own, even though it skips Firestore rules/
+# indexes/functions, so a beta-only push still keeps the shared Storage
+# rules current without pulling in the rest of that project-wide scope.
 #
 # Authenticates via the FIREBASE_SERVICE_ACCOUNT secret (a GCP service
 # account key) through google-github-actions/auth, not the deprecated
@@ -62,8 +68,20 @@ jobs:
         with:
           credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
 
-      # Step 6: Deploy to Firebase Hosting (beta site only — not the main site)
-      - name: Deploy to Firebase
-        run: |
-          npm install -g firebase-tools
-          firebase deploy --only hosting:beta --project open-the-house
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      # Step 6: Deploy to Firebase Hosting (beta site only — not the main site).
+      # Kept as its own step, before Storage below, so a Storage failure can
+      # never cost the beta site its Hosting deploy — same isolation
+      # reasoning firebase-deploy.yml already uses between its own Hosting
+      # and Firestore/functions/storage steps.
+      - name: Deploy to Firebase Hosting (beta)
+        run: firebase deploy --only hosting:beta --project open-the-house
+
+      # Step 7: Deploy Storage rules — the one project-wide exception this
+      # workflow deploys (see file header). Added 2026-08-19, once the
+      # project's Storage bucket was actually provisioned; kept isolated
+      # from Hosting above for the same reason.
+      - name: Deploy Storage rules
+        run: firebase deploy --only storage --project open-the-house

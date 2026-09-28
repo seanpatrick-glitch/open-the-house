@@ -13,7 +13,7 @@ import { cleanFieldValues } from '../../people/PersonFieldsEditor';
 const DEFAULT_TYPE_LABEL = 'Team Member';
 const ROLE_FIELD_ID = 'roleTitle';
 
-export default function PeopleStep({ orgId, onNext }) {
+export default function PeopleStep({ orgId, onNext, onBack }) {
   const { userProfile } = useAuth();
   const uid = userProfile?.uid;
 
@@ -143,7 +143,7 @@ export default function PeopleStep({ orgId, onNext }) {
               onChange={e => setName(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddPerson(); } }}
               placeholder="Name"
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spotlight"
             />
             <input
               type="text"
@@ -151,13 +151,13 @@ export default function PeopleStep({ orgId, onNext }) {
               onChange={e => setRoleTitle(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddPerson(); } }}
               placeholder="Role / title (optional)"
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spotlight"
             />
             <button
               type="button"
               onClick={handleAddPerson}
               disabled={adding || !name.trim()}
-              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors whitespace-nowrap"
+              className="bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors whitespace-nowrap"
             >
               {adding ? 'Adding...' : 'Add'}
             </button>
@@ -180,14 +180,23 @@ export default function PeopleStep({ orgId, onNext }) {
             <p className="text-xs text-gray-400 mb-4">Add at least one person to continue.</p>
           )}
 
-          <button
-            type="button"
-            onClick={onNext}
-            disabled={!canProceed}
-            className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base"
-          >
-            Next
-          </button>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-lg transition-colors text-base"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              onClick={onNext}
+              disabled={!canProceed}
+              className="flex-1 bg-spotlight hover:bg-spotlight/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors text-base"
+            >
+              Next
+            </button>
+          </div>
         </>
       )}
     </div>

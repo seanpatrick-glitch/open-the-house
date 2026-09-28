@@ -3,9 +3,12 @@ import { doc, getDoc, updateDoc, collection, query, where, onSnapshot, getDocs }
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { getActiveProductionId } from '../models/org';
 import { getDisplayName } from '../utils/displayName';
 import CreatePersonTypeForm from '../components/people/CreatePersonTypeForm';
 import CreateSignupTokenForm from '../components/people/CreateSignupTokenForm';
+import OrgLogoUpload from '../components/shared/OrgLogoUpload';
+import PageHeader from '../components/shared/PageHeader';
 import toast from 'react-hot-toast';
 
 const RESET_COLLECTION_LABELS = {
@@ -42,6 +45,9 @@ export default function SettingsView() {
   const [savingProd, setSavingProd]           = useState(false);
   const [savingOverride, setSavingOverride]   = useState(false);
   const [orgName, setOrgName]                 = useState('');
+  const [orgNameInput, setOrgNameInput]       = useState('');
+  const [savingOrgName, setSavingOrgName]     = useState(false);
+  const [logoUrl, setLogoUrl]                 = useState(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetConfirmText, setResetConfirmText] = useState('');
   const [resetting, setResetting]             = useState(false);
@@ -60,9 +66,11 @@ export default function SettingsView() {
         if (orgSnap.exists()) {
           const data = orgSnap.data();
           setDepartmentsEnabled(data.departmentsEnabled ?? false);
-          setActiveProdId(data.activeProdId ?? '');
+          setActiveProdId(getActiveProductionId(data) ?? '');
           setDashboardOverride(data.dashboardStateOverride ?? '');
           setOrgName(data.name ?? '');
+          setOrgNameInput(data.name ?? '');
+          setLogoUrl(data.logoUrl ?? null);
         }
       } catch (err) {
         console.error('Error fetching org settings:', err);
@@ -98,25 +106,18 @@ export default function SettingsView() {
       }
     };
 
-    // Load all productions for active production selector
+    // Load all productions for active production selector. Places are loaded
+    // only to label each production with its place's name.
     const loadProductions = async () => {
       try {
         const placesSnap = await getDocs(collection(db, 'organizations', orgId, 'places'));
-        const allProds = [];
-        for (const place of placesSnap.docs) {
-          const prodsSnap = await getDocs(
-            collection(db, 'organizations', orgId, 'places', place.id, 'productions')
-          );
-          prodsSnap.docs.forEach(d => {
-            allProds.push({
-              id:        d.id,
-              placeId:   place.id,
-              placeName: place.data().name,
-              ...d.data(),
-            });
-          });
-        }
-        setProductions(allProds);
+        const placeNames = Object.fromEntries(placesSnap.docs.map(d => [d.id, d.data().name]));
+        const prodsSnap = await getDocs(collection(db, 'organizations', orgId, 'productions'));
+        setProductions(prodsSnap.docs.map(d => ({
+          id:        d.id,
+          placeName: placeNames[d.data().placeId] ?? 'No place set',
+          ...d.data(),
+        })));
       } catch (err) {
         console.error('Error loading productions:', err);
         toast.error('Could not load productions.');
@@ -147,6 +148,22 @@ export default function SettingsView() {
     return () => { unsub(); tokenUnsub(); };
   }, [orgId]);
 
+  async function handleSaveOrgName() {
+    const trimmed = orgNameInput.trim();
+    if (!trimmed || trimmed === orgName) return;
+    setSavingOrgName(true);
+    try {
+      await updateDoc(doc(db, 'organizations', orgId), { name: trimmed });
+      setOrgName(trimmed);
+      toast.success('Organization name updated.');
+    } catch (err) {
+      console.error('Error updating organization name:', err);
+      toast.error('Could not update organization name. Please try again.');
+    } finally {
+      setSavingOrgName(false);
+    }
+  }
+
   const handleToggle = async () => {
     if (!orgId) return;
     const newValue = !departmentsEnabled;
@@ -162,13 +179,13 @@ export default function SettingsView() {
     }
   };
 
-  async function handleSetActiveProd(compositeId) {
+  async function handleSetActiveProd(productionId) {
     setSavingProd(true);
     try {
       await updateDoc(doc(db, 'organizations', orgId), {
-        activeProdId: compositeId || null,
+        activeProdId: productionId || null,
       });
-      setActiveProdId(compositeId);
+      setActiveProdId(productionId);
     } catch (err) {
       console.error('Error setting active production:', err);
       toast.error('Could not set active production. Please try again.');
@@ -261,10 +278,41 @@ export default function SettingsView() {
 
   return (
     <div className="p-6 max-w-2xl">
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">Settings</h1>
+      <PageHeader title="Settings" />
       <p className="text-sm text-gray-500 mb-8">Manage your organization configuration.</p>
 
       <div className="space-y-6">
+
+        {/* Organization */}
+        {isAdminRole && (
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-4">Organization</h2>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Organization name</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={orgNameInput}
+                  onChange={e => setOrgNameInput(e.target.value)}
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue"
+                />
+                <button
+                  onClick={handleSaveOrgName}
+                  disabled={savingOrgName || !orgNameInput.trim() || orgNameInput.trim() === orgName}
+                  className="bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                >
+                  {savingOrgName ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Logo</label>
+              <OrgLogoUpload orgId={orgId} logoUrl={logoUrl} onLogoChange={setLogoUrl} />
+            </div>
+          </div>
+        )}
 
         {/* Organization Structure */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
@@ -280,7 +328,7 @@ export default function SettingsView() {
               onClick={handleToggle}
               disabled={saving}
               className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                departmentsEnabled ? 'bg-indigo-600' : 'bg-gray-200'
+                departmentsEnabled ? 'bg-places-blue' : 'bg-gray-200'
               } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
               role="switch"
               aria-checked={departmentsEnabled}
@@ -303,7 +351,7 @@ export default function SettingsView() {
             </div>
             <button
               onClick={() => setShowForm(true)}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              className="bg-places-blue hover:bg-places-blue/90 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
               Add Type
             </button>
@@ -330,7 +378,7 @@ export default function SettingsView() {
                       {Object.entries(type.toggleableFields || {})
                         .filter(([, v]) => v)
                         .map(([k]) => (
-                          <span key={k} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-indigo-50 text-indigo-600 capitalize">
+                          <span key={k} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-places-blue/10 text-places-blue capitalize">
                             {k.replace(/([A-Z])/g, ' $1')}
                           </span>
                         ))
@@ -359,7 +407,7 @@ export default function SettingsView() {
                             value={type.departmentId || ''}
                             onChange={e => handleAssignTypeDepartment(type.id, e.target.value)}
                             disabled={savingTypeDept === type.id}
-                            className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                            className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-places-blue disabled:opacity-50"
                           >
                             <option value="">Unassigned</option>
                             {departments.map(dept => (
@@ -380,7 +428,7 @@ export default function SettingsView() {
                           value={type.departmentHeadId || ''}
                           onChange={e => handleAssignTypeHead(type.id, e.target.value)}
                           disabled={savingTypeHead === type.id}
-                          className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                          className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-places-blue disabled:opacity-50"
                         >
                           <option value="">Unassigned</option>
                           {departmentHeads.map(dh => (
@@ -406,11 +454,11 @@ export default function SettingsView() {
             value={activeProdId}
             onChange={e => handleSetActiveProd(e.target.value)}
             disabled={savingProd}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-places-blue disabled:opacity-50"
           >
             <option value="">No active production</option>
             {productions.map(p => (
-              <option key={`${p.placeId}/${p.id}`} value={`${p.placeId}/${p.id}`}>
+              <option key={p.id} value={p.id}>
                 {p.name} at {p.placeName}
               </option>
             ))}
@@ -418,19 +466,19 @@ export default function SettingsView() {
         </div>
 
         {/* Dashboard State Override */}
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
-          <h2 className="text-base font-semibold text-amber-900 mb-1">Dashboard State Override</h2>
-          <p className="text-sm text-amber-800 mb-1">
+        <div className="bg-spotlight/10 border border-spotlight/25 rounded-xl p-6">
+          <h2 className="text-base font-semibold text-stage-navy mb-1">Dashboard State Override</h2>
+          <p className="text-sm text-stage-navy mb-1">
             Force the dashboard to a specific state regardless of production dates.
           </p>
-          <p className="text-xs text-amber-700 mb-4">
+          <p className="text-xs text-stage-navy mb-4">
             This overrides the computed state on the Admin, Department Head, and Collaborator dashboards until you turn it back to Auto. Most settings here are set once and left alone. This one keeps acting until you turn it off, so it is worth checking back on.
           </p>
           <select
             value={dashboardOverride}
             onChange={e => handleSetOverride(e.target.value)}
             disabled={savingOverride}
-            className="w-full border border-amber-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50"
+            className="w-full border border-spotlight/30 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-spotlight disabled:opacity-50"
           >
             <option value="">Auto (based on production dates)</option>
             <option value="planning">Planning</option>
@@ -451,7 +499,7 @@ export default function SettingsView() {
             </div>
             {!showTokenForm && (
               <button onClick={() => { setShowTokenForm(true); setNewToken(null); }}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+                className="bg-places-blue hover:bg-places-blue/90 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
                 New Link
               </button>
             )}
@@ -497,7 +545,7 @@ export default function SettingsView() {
                   </div>
                   <button
                     onClick={() => navigator.clipboard.writeText(`${window.location.origin}/signup/${orgId}/${token.id}`)}
-                    className="flex-shrink-0 text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+                    className="flex-shrink-0 text-xs font-medium text-places-blue hover:text-places-blue/90 transition-colors">
                     Copy
                   </button>
                 </div>

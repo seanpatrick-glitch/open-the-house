@@ -48,7 +48,7 @@ export default function CreateSignupTokenForm({ personTypes, onSuccess, onCancel
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Person Type</label>
           <select value={selectedTypeId} onChange={e => setSelectedTypeId(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-places-blue">
             {personTypes.map(t => (
               <option key={t.id} value={t.id}>{t.label}</option>
             ))}
@@ -58,7 +58,7 @@ export default function CreateSignupTokenForm({ personTypes, onSuccess, onCancel
       {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
       <div className="flex items-center gap-3 mt-4">
         <button onClick={handleCreate} disabled={saving || !selectedTypeId}
-          className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+          className="bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
           {saving ? 'Creating...' : 'Create Link'}
         </button>
         <button onClick={onCancel}

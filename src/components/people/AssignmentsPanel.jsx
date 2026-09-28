@@ -25,21 +25,14 @@ export default function AssignmentsPanel({ person }) {
       const loadedPlaces = placesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       setPlaces(loadedPlaces);
 
-      const allProductions = [];
-      for (const place of loadedPlaces) {
-        const prodsSnap = await getDocs(
-          collection(db, 'organizations', orgId, 'places', place.id, 'productions')
-        );
-        prodsSnap.docs.forEach(d => {
-          allProductions.push({
-            id:      d.id,
-            placeId: place.id,
-            label:   d.data().name,
-            ...d.data(),
-          });
-        });
-      }
-      setProductions(allProductions);
+      const prodsSnap = await getDocs(
+        collection(db, 'organizations', orgId, 'productions')
+      );
+      setProductions(prodsSnap.docs.map(d => ({
+        id:    d.id,
+        label: d.data().name,
+        ...d.data(),
+      })));
     };
     loadPlacesAndProductions();
   }, [orgId]);
@@ -151,7 +144,7 @@ export default function AssignmentsPanel({ person }) {
             onClick={() => { setAssignType('production'); setSelectedId(''); }}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               assignType === 'production'
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-places-blue text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -161,7 +154,7 @@ export default function AssignmentsPanel({ person }) {
             onClick={() => { setAssignType('place'); setSelectedId(''); }}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               assignType === 'place'
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-places-blue text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -180,7 +173,7 @@ export default function AssignmentsPanel({ person }) {
             <select
               value={selectedId}
               onChange={e => setSelectedId(e.target.value)}
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-places-blue"
             >
               <option value="">Select...</option>
               {availableOptions.map(opt => (
@@ -190,7 +183,7 @@ export default function AssignmentsPanel({ person }) {
             <button
               onClick={handleAssign}
               disabled={!selectedId || saving}
-              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
+              className="bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
             >
               {saving ? 'Saving...' : 'Assign'}
             </button>

@@ -64,7 +64,7 @@ export default function ShowDatesPanel({ production }) {
         {canManage && !showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+            className="text-xs font-medium text-places-blue hover:text-places-blue/90 transition-colors"
           >
             + Add Show Date
           </button>
@@ -104,7 +104,7 @@ export default function ShowDatesPanel({ production }) {
                   {event.startTime && ` · ${event.startTime}`}
                 </p>
               </div>
-              <span className="flex-shrink-0 text-xs font-medium text-indigo-600">Check-In →</span>
+              <span className="flex-shrink-0 text-xs font-medium text-places-blue">Check-In →</span>
             </button>
           ))}
         </div>

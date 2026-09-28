@@ -3,10 +3,11 @@ import { doc, getDoc, collection, query, where, orderBy, onSnapshot, limit } fro
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useUnread } from '../contexts/UnreadContext';
-import { DASHBOARD_STATES } from '../models/org';
+import { DASHBOARD_STATES, getActiveProductionId } from '../models/org';
 import { differenceInDays, startOfDay, endOfDay, addDays } from 'date-fns';
 import UnreadCallout from '../components/messaging/UnreadCallout';
 import UpcomingDatesWidget, { mergeUpcoming, UPCOMING_LIMIT } from '../components/dashboard/UpcomingDatesWidget';
+import PageHeader from '../components/shared/PageHeader';
 import toast from 'react-hot-toast';
 
 function goToMessages() {
@@ -56,6 +57,7 @@ export default function AdminDashboardView() {
   const [activeProd, setActiveProd]       = useState(null);
   const [daysToOpen, setDaysToOpen]       = useState(null);
   const [isOverride, setIsOverride]       = useState(false);
+  const [orgName, setOrgName]             = useState('');
   const [loading, setLoading]             = useState(true);
 
   // State-specific data
@@ -78,19 +80,19 @@ export default function AdminDashboardView() {
         if (!orgSnap.exists()) { setLoading(false); return; }
 
         const orgData  = orgSnap.data();
+        setOrgName(orgData.name ?? '');
         const override = orgData.dashboardStateOverride ?? null;
-        const compositeId = orgData.activeProdId ?? null;
+        const activeProdId = getActiveProductionId(orgData);
 
-        if (!compositeId) {
+        if (!activeProdId) {
           setDashState(DASHBOARD_STATES.PLANNING);
           setIsOverride(false);
           setLoading(false);
           return;
         }
 
-        const [placeId, productionId] = compositeId.split('/');
         const prodSnap = await getDoc(
-          doc(db, 'organizations', orgId, 'places', placeId, 'productions', productionId)
+          doc(db, 'organizations', orgId, 'productions', activeProdId)
         );
 
         if (!prodSnap.exists()) {
@@ -246,6 +248,7 @@ export default function AdminDashboardView() {
         activeProd={activeProd}
         daysToOpen={daysToOpen}
         isOverride={isOverride}
+        orgName={orgName}
       />
       {unreadCount > 0 && (
         <div className="mb-6">
@@ -268,7 +271,7 @@ export default function AdminDashboardView() {
   );
 }
 
-function DashboardHeader({ state, activeProd, daysToOpen, isOverride }) {
+function DashboardHeader({ state, activeProd, daysToOpen, isOverride, orgName }) {
   const prodName = activeProd?.name || 'your next production';
 
   const headers = {
@@ -280,7 +283,7 @@ function DashboardHeader({ state, activeProd, daysToOpen, isOverride }) {
 
   const stateLabels = {
     [DASHBOARD_STATES.PLANNING]:        { label: 'Planning', color: 'bg-gray-100 text-gray-600' },
-    [DASHBOARD_STATES.FINAL_COUNTDOWN]: { label: 'Final Countdown', color: 'bg-amber-100 text-amber-700' },
+    [DASHBOARD_STATES.FINAL_COUNTDOWN]: { label: 'Final Countdown', color: 'bg-spotlight/15 text-stage-navy' },
     [DASHBOARD_STATES.LIVE]:            { label: 'Live', color: 'bg-green-100 text-green-700' },
     [DASHBOARD_STATES.POSTMORTEM]:      { label: 'Postmortem', color: 'bg-blue-100 text-blue-700' },
   };
@@ -289,14 +292,11 @@ function DashboardHeader({ state, activeProd, daysToOpen, isOverride }) {
   const descriptor = getStateDescriptor(state, isOverride);
 
   return (
-    <div className="mb-6">
-      <div className="flex items-center gap-3 mb-1">
-        <h1 className="text-2xl font-bold text-gray-900">{headers[state]}</h1>
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color}`}>
-          {descriptor ? `${label} (${descriptor})` : label}
-        </span>
-      </div>
-    </div>
+    <PageHeader title={headers[state]} kicker={orgName || undefined}>
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-4 ${color}`}>
+        {descriptor ? `${label} (${descriptor})` : label}
+      </span>
+    </PageHeader>
   );
 }
 

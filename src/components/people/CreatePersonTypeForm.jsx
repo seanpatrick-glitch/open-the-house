@@ -183,7 +183,7 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
             value={label}
             onChange={e => setLabel(e.target.value)}
             placeholder="e.g. Artist, Volunteer, Staff"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue"
           />
         </div>
 
@@ -195,7 +195,7 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
             <select
               value={departmentId}
               onChange={e => setDepartmentId(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-places-blue"
             >
               <option value="">Select a department</option>
               {departments.map(dept => (
@@ -212,7 +212,7 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
             onChange={e => setDescription(e.target.value)}
             placeholder="Optional. What is this type of person?"
             rows={2}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue resize-none"
           />
         </div>
 
@@ -239,7 +239,7 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
                   type="button"
                   onClick={() => toggleField(field.key)}
                   className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
-                    toggledFields[field.key] ? 'bg-indigo-600' : 'bg-gray-200'
+                    toggledFields[field.key] ? 'bg-places-blue' : 'bg-gray-200'
                   }`}
                   role="switch"
                   aria-checked={toggledFields[field.key] ?? false}
@@ -265,7 +265,7 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
                     value={field.label}
                     onChange={e => updateCustomFieldLabel(field.fieldId, e.target.value)}
                     placeholder="Field name"
-                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue"
                   />
                   <button
                     type="button"
@@ -279,7 +279,7 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
                 <select
                   value={field.type}
                   onChange={e => updateCustomFieldType(field.fieldId, e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-places-blue"
                 >
                   {CUSTOM_FIELD_TYPES.map(t => (
                     <option key={t.value} value={t.value}>{t.label}</option>
@@ -309,13 +309,13 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
                         onChange={e => setOptionInputs(prev => ({ ...prev, [field.fieldId]: e.target.value }))}
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomFieldOption(field.fieldId); } }}
                         placeholder="Add a choice"
-                        className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-places-blue"
                       />
                       <button
                         type="button"
                         onClick={() => addCustomFieldOption(field.fieldId)}
                         disabled={!(optionInputs[field.fieldId] || '').trim()}
-                        className="text-sm font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-40 transition-colors"
+                        className="text-sm font-medium text-places-blue hover:text-places-blue/90 disabled:opacity-40 transition-colors"
                       >
                         Add
                       </button>
@@ -329,7 +329,7 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
                     type="button"
                     onClick={() => toggleCustomFieldRequired(field.fieldId)}
                     className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
-                      field.required ? 'bg-indigo-600' : 'bg-gray-200'
+                      field.required ? 'bg-places-blue' : 'bg-gray-200'
                     }`}
                     role="switch"
                     aria-checked={field.required}
@@ -345,7 +345,7 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
           <button
             type="button"
             onClick={addCustomField}
-            className="mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+            className="mt-3 text-sm font-medium text-places-blue hover:text-places-blue/90 transition-colors"
           >
             Add Field
           </button>
@@ -358,7 +358,7 @@ export default function CreatePersonTypeForm({ onSuccess, onCancel }) {
         <button
           onClick={handleSave}
           disabled={saving || !label.trim() || (departmentsEnabled && !departmentId)}
-          className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors"
+          className="bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors"
         >
           {saving ? 'Saving...' : 'Save Person Type'}
         </button>

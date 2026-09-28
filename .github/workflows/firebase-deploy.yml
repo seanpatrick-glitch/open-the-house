@@ -3,12 +3,14 @@
 # (open-the-house.web.app)." Beta testers are on a separate site — see
 # firebase-deploy-beta.yml, which only fires on pushes to beta-stable.
 #
-# main and beta-stable intentionally share one Firebase project and one
-# Firestore database — rules, indexes, and functions are project-wide, not
-# per-site, so this workflow deploys them too (in addition to hosting:main)
-# on every push to main. firebase-deploy-beta.yml deploys hosting:beta only
-# and deliberately does NOT repeat this, to avoid two workflows racing to
-# deploy the same shared rules/indexes/functions.
+# main and beta-stable intentionally share one Firebase project, one
+# Firestore database, and one Storage bucket — rules, indexes, functions,
+# and Storage rules are all project-wide, not per-site, so this workflow
+# deploys them too (in addition to hosting:main) on every push to main.
+# firebase-deploy-beta.yml deploys hosting:beta only (plus its own minimal
+# Storage-rules step — see that file) and deliberately does NOT repeat the
+# Firestore rules/indexes/functions deploy, to avoid two workflows racing
+# to deploy the same shared resources.
 #
 # Authenticates via the FIREBASE_SERVICE_ACCOUNT secret (a GCP service
 # account key) through google-github-actions/auth, not the deprecated
@@ -99,9 +101,16 @@ jobs:
       - name: Deploy Hosting
         run: firebase deploy --only hosting:main --project open-the-house
 
-      # Step 7: Deploy Firestore rules, Firestore indexes, and Cloud Functions
-      # — project-wide (not per-site), so they belong here, not duplicated in
-      # the beta workflow. Kept as its own step, after Hosting succeeds, so a
-      # failure here is isolated and doesn't cost the live site its deploy.
-      - name: Deploy Firestore rules, indexes, and functions
-        run: firebase deploy --only firestore:rules,firestore:indexes,functions --project open-the-house
+      # Step 7: Deploy Firestore rules, Firestore indexes, Cloud Functions, and
+      # Storage rules — all project-wide (not per-site), so they belong here,
+      # not duplicated in the beta workflow (beta gets its own minimal
+      # Storage-only step instead, since it doesn't otherwise touch this
+      # project-wide scope). Kept as its own step, after Hosting succeeds, so
+      # a failure here is isolated and doesn't cost the live site its deploy.
+      # Storage added 2026-08-19, once the project's Storage bucket was
+      # actually provisioned (a one-time manual Console step) — before that,
+      # `--only storage` failed outright and would have broken this whole
+      # step for every push, the same false-negative failure mode already
+      # hit once before with Firestore/functions (see PROJECT_STATE.md).
+      - name: Deploy Firestore rules, indexes, functions, and storage
+        run: firebase deploy --only firestore:rules,firestore:indexes,functions,storage --project open-the-house

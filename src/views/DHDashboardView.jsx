@@ -3,10 +3,11 @@ import { doc, getDoc, collection, query, where, orderBy, onSnapshot, limit } fro
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useUnread } from '../contexts/UnreadContext';
-import { DASHBOARD_STATES } from '../models/org';
+import { DASHBOARD_STATES, getActiveProductionId } from '../models/org';
 import { differenceInDays, startOfDay, endOfDay, addDays } from 'date-fns';
 import UnreadCallout from '../components/messaging/UnreadCallout';
 import UpcomingDatesWidget, { mergeUpcoming, UPCOMING_LIMIT } from '../components/dashboard/UpcomingDatesWidget';
+import PageHeader from '../components/shared/PageHeader';
 import toast from 'react-hot-toast';
 
 function goToMessages() {
@@ -96,20 +97,19 @@ export default function DHDashboardView() {
         const orgSnap = await getDocWithRetry(doc(db, 'organizations', orgId));
         if (!orgSnap.exists()) { setLoading(false); return; }
 
-        const orgData     = orgSnap.data();
-        const override    = orgData.dashboardStateOverride ?? null;
-        const compositeId = orgData.activeProdId ?? null;
+        const orgData      = orgSnap.data();
+        const override     = orgData.dashboardStateOverride ?? null;
+        const activeProdId = getActiveProductionId(orgData);
 
-        if (!compositeId) {
+        if (!activeProdId) {
           setDashState(DASHBOARD_STATES.PLANNING);
           setIsOverride(false);
           setLoading(false);
           return;
         }
 
-        const [placeId, productionId] = compositeId.split('/');
         const prodSnap = await getDocWithRetry(
-          doc(db, 'organizations', orgId, 'places', placeId, 'productions', productionId)
+          doc(db, 'organizations', orgId, 'productions', activeProdId)
         );
 
         if (!prodSnap.exists()) {
@@ -291,7 +291,7 @@ export default function DHDashboardView() {
 
   const stateLabels = {
     [DASHBOARD_STATES.PLANNING]:        { label: 'Planning', color: 'bg-gray-100 text-gray-600' },
-    [DASHBOARD_STATES.FINAL_COUNTDOWN]: { label: 'Final Countdown', color: 'bg-amber-100 text-amber-700' },
+    [DASHBOARD_STATES.FINAL_COUNTDOWN]: { label: 'Final Countdown', color: 'bg-spotlight/15 text-stage-navy' },
     [DASHBOARD_STATES.LIVE]:            { label: 'Live', color: 'bg-green-100 text-green-700' },
     [DASHBOARD_STATES.POSTMORTEM]:      { label: 'Postmortem', color: 'bg-blue-100 text-blue-700' },
   };
@@ -301,15 +301,14 @@ export default function DHDashboardView() {
 
   return (
     <div className="p-6 max-w-6xl">
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-1">
-          <h1 className="text-2xl font-bold text-gray-900">{headers[dashState]}</h1>
+      <PageHeader title={headers[dashState]}>
+        <div className="flex items-center gap-3 mt-4">
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color}`}>
             {descriptor ? `${label} (${descriptor})` : label}
           </span>
+          {deptName && <p className="text-sm text-white/70">{deptName}</p>}
         </div>
-        {deptName && <p className="text-sm text-gray-500">{deptName}</p>}
-      </div>
+      </PageHeader>
 
       {unreadCount > 0 && (
         <div className="mb-6">

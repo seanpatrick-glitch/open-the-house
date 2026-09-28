@@ -7,9 +7,10 @@ import { getDisplayName } from '../utils/displayName';
 import CreatePersonForm from '../components/people/CreatePersonForm';
 import CsvImportForm from '../components/people/CsvImportForm';
 import PersonProfileView from './PersonProfileView';
+import PageHeader from '../components/shared/PageHeader';
 
 const STATUS_STYLES = {
-  [PERSON_STATUS.APPLIED]:    'bg-amber-100 text-amber-700',
+  [PERSON_STATUS.APPLIED]:    'bg-spotlight/15 text-stage-navy',
   [PERSON_STATUS.WAITLISTED]: 'bg-purple-100 text-purple-700',
   [PERSON_STATUS.ACTIVE]:     'bg-green-100 text-green-700',
   [PERSON_STATUS.INACTIVE]:   'bg-gray-100 text-gray-500',
@@ -90,14 +91,10 @@ export default function PeopleView({ onNavigate, navState }) {
 
   return (
     <div className="p-6 max-w-5xl">
+      <PageHeader title="Company" />
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">People</h1>
           <p className="text-sm text-gray-500">Everyone your organization coordinates, in one place.</p>
-          <p className="text-xs text-gray-400 mt-1">
-            People are your org's contacts, cast, crew, and vendors who don't need to sign in.
-            Giving someone a login instead? Invite them as a Collaborator from the sidebar.
-          </p>
         </div>
         <div className="flex items-center gap-2">
           {personTypes.length > 0 && !showForm && !showCsvImport && (
@@ -130,7 +127,7 @@ export default function PeopleView({ onNavigate, navState }) {
           {!showForm && !showCsvImport && (
             <button
               onClick={() => setShowForm(true)}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              className="bg-places-blue hover:bg-places-blue/90 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
               Add Person
             </button>
@@ -173,7 +170,7 @@ export default function PeopleView({ onNavigate, navState }) {
                 onClick={() => setTypeFilter('all')}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   typeFilter === 'all'
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-places-blue text-white'
                     : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
                 }`}
               >
@@ -185,7 +182,7 @@ export default function PeopleView({ onNavigate, navState }) {
                   onClick={() => setTypeFilter(type.id)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     typeFilter === type.id
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-places-blue text-white'
                       : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
                   }`}
                 >
@@ -240,7 +237,7 @@ export default function PeopleView({ onNavigate, navState }) {
                         ) : person.accountStatus === 'invited' ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Invited</span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">No account</span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Not invited yet</span>
                         )}
                       </td>
                     </tr>
@@ -274,7 +271,7 @@ export default function PeopleView({ onNavigate, navState }) {
                       ) : person.accountStatus === 'invited' ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Invited</span>
                       ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">No account</span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Not invited yet</span>
                       )}
                     </div>
                   </button>

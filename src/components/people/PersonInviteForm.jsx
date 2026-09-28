@@ -68,14 +68,14 @@ export default function PersonInviteForm({ person, onSuccess, onCancel }) {
   }
 
   return (
-    <div className="bg-white border-2 border-indigo-200 rounded-xl p-5 max-w-md">
+    <div className="bg-white border-2 border-places-blue/20 rounded-xl p-5 max-w-md">
       <div className="flex items-center gap-1.5 mb-1">
         <span aria-hidden="true">🔗</span>
         <h3 className="text-sm font-semibold text-gray-900">Give {getDisplayName(person) || 'this person'} a login</h3>
       </div>
       <p className="text-sm text-gray-500 mb-4">
         Send a secure sign-in link to <span className="font-medium text-gray-700">{email || 'no email on file'}</span>.
-        They will create an account linked directly to this People record, not a general Collaborator invite.
+        They will create an account linked directly to this record.
       </p>
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
@@ -84,7 +84,7 @@ export default function PersonInviteForm({ person, onSuccess, onCancel }) {
         <button
           onClick={handleSend}
           disabled={sending || !email}
-          className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          className="bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           {sending ? 'Sending...' : 'Send Invite'}
         </button>

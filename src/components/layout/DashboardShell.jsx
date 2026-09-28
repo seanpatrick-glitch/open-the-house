@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import Sidebar from './Sidebar'
+import wordmark from '../../assets/brand/wordmark-mark.png'
 import InviteCollaborator from '../invites/InviteCollaborator'
 import CollaboratorRoster from '../invites/CollaboratorRoster'
 import ProductionsView from '../productions/ProductionsView'
@@ -13,6 +14,7 @@ import DHDashboardView from '../../views/DHDashboardView';
 import PlacesView from '../../views/PlacesView';
 import { useAuth } from '../../contexts/AuthContext';
 import { UnreadProvider } from '../../contexts/UnreadContext';
+import { ACCESS, accessLevel } from '../../models/roles';
 
 // Section key → human-readable label for placeholder screens
 // Lobby, Bar Program, Inventory, and Promo entries removed (2026-08-17) —
@@ -23,7 +25,7 @@ const SECTION_LABELS = {
   productions:         'Productions',
   departments:         'Departments',
   'volunteer-list':    'Volunteer List',
-  'collaborator-list': 'Collaborator List',
+  'collaborator-list': 'Your People',
   places:              'Places',
   people:              'People',
   settings:            'Settings',
@@ -41,7 +43,7 @@ function PlaceholderSection({ section }) {
 
 function SectionContent({ section, onNavigate, userProfile, navState }) {
   if (section === 'home') {
-    if (userProfile?.role === 'departmentHead') return <DHDashboardView />;
+    if (accessLevel(userProfile?.role) === ACCESS.DEPARTMENT_HEAD) return <DHDashboardView />;
     return <AdminDashboardView />;
   }
   if (section === 'messages')            return <MessageView navState={navState} />
@@ -81,7 +83,7 @@ export default function DashboardShell() {
 
   return (
     <UnreadProvider>
-      <div className="flex h-screen overflow-hidden bg-gray-100">
+      <div className="flex h-screen overflow-hidden bg-places-blue/5">
 
         {/* Mobile backdrop — clicking outside sidebar closes it */}
         {sidebarOpen && (
@@ -102,10 +104,10 @@ export default function DashboardShell() {
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
           {/* Mobile header — hamburger + logo, hidden on desktop */}
-          <header className="md:hidden flex-shrink-0 flex items-center gap-3 px-4 h-14 bg-white border-b border-gray-200">
+          <header className="md:hidden flex-shrink-0 flex items-center gap-3 px-4 h-14 bg-stage-navy border-b border-white/10">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="text-gray-600 hover:text-gray-900 transition-colors p-1 -ml-1"
+              className="text-white/70 hover:text-house-white transition-colors p-1 -ml-1"
               aria-label="Open navigation"
             >
               <svg
@@ -122,7 +124,7 @@ export default function DashboardShell() {
                 <line x1="2" y1="17" x2="20" y2="17" />
               </svg>
             </button>
-            <span className="text-gray-900 font-semibold text-base">Places People!</span>
+            <img src={wordmark} alt="Places People!" className="h-9 w-auto" />
           </header>
 
           {/* Scrollable content area */}
