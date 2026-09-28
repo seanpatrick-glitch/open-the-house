@@ -281,6 +281,12 @@ await test('events: another org\'s admin cannot read them or add one to this org
   await expectDenied(getDoc(doc(ownerB.db, 'events', kickoff)))
   await expectDenied(addDoc(collection(ownerB.db, 'events'), eventRecord(ownerB, {})))
 })
+await test('events: an admin or Department Head cannot move an event into another org by editing orgId', async () => {
+  await expectDenied(updateDoc(doc(ownerA.db, 'events', kickoff), { orgId: orgB }))
+  await expectDenied(updateDoc(doc(dana.db, 'events', focusCall), { orgId: orgB }))
+  assert.equal((await adb.doc(`events/${kickoff}`).get()).data().orgId, orgA)
+  assert.equal((await adb.doc(`events/${focusCall}`).get()).data().orgId, orgA)
+})
 
 // ── tasks ──
 // CreateTaskForm's record.
@@ -327,6 +333,18 @@ await test('tasks: another org\'s admin cannot read them or add one to this org'
   await expectDenied(getDocs(query(collection(ownerB.db, 'tasks'), where('orgId', '==', orgA))))
   await expectDenied(getDoc(doc(ownerB.db, 'tasks', hallTask)))
   await expectDenied(addDoc(collection(ownerB.db, 'tasks'), taskRecord(ownerB, {})))
+})
+await test('tasks: an admin or Department Head cannot move a task into another org by editing orgId', async () => {
+  await expectDenied(updateDoc(doc(ownerA.db, 'tasks', hallTask), { orgId: orgB }))
+  await expectDenied(updateDoc(doc(dana.db, 'tasks', plotTask), { orgId: orgB }))
+  assert.equal((await adb.doc(`tasks/${hallTask}`).get()).data().orgId, orgA)
+  assert.equal((await adb.doc(`tasks/${plotTask}`).get()).data().orgId, orgA)
+})
+
+// ── departments: same orgId-tamper pattern as tasks/events ──
+await test('departments: an admin cannot move a department into another org by editing orgId', async () => {
+  await expectDenied(updateDoc(doc(ownerA.db, 'departments', 'dataLights'), { orgId: orgB }))
+  assert.equal((await adb.doc('departments/dataLights').get()).data().orgId, orgA)
 })
 
 // ── resetOrganization (Settings, Danger Zone) ── last: it wipes org B's departments.

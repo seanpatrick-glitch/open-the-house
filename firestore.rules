@@ -128,9 +128,11 @@ service cloud.firestore {
 
     // ── departments ───────────────────────────────────────────────────────────
     match /departments/{departmentId} {
-      allow read:           if isMember(resource.data.orgId);
-      allow create:         if isAdmin(request.resource.data.orgId);
-      allow update, delete: if isAdminOrSecondary(resource.data.orgId);
+      allow read:   if isMember(resource.data.orgId);
+      allow create: if isAdmin(request.resource.data.orgId);
+      allow update: if isAdminOrSecondary(resource.data.orgId)
+        && request.resource.data.orgId == resource.data.orgId;
+      allow delete: if isAdminOrSecondary(resource.data.orgId);
 
       // Incoming Department Head: on invite acceptance, may write only
       // departmentHeadUid and departmentHeadEmail. Scoped to an accepted
@@ -148,21 +150,27 @@ service cloud.firestore {
 
     // ── timelines ─────────────────────────────────────────────────────────────
     match /timelines/{timelineId} {
-      allow read:           if isMember(resource.data.orgId);
-      allow create:         if isAdmin(request.resource.data.orgId);
-      allow update, delete: if isAdmin(resource.data.orgId);
+      allow read:   if isMember(resource.data.orgId);
+      allow create: if isAdmin(request.resource.data.orgId);
+      allow update: if isAdmin(resource.data.orgId)
+        && request.resource.data.orgId == resource.data.orgId;
+      allow delete: if isAdmin(resource.data.orgId);
     }
 
     // ── tasks + subcollections ────────────────────────────────────────────────
     match /tasks/{taskId} {
       // Admin: full access
-      allow read:           if isMember(resource.data.orgId);
-      allow create:         if isAdmin(request.resource.data.orgId);
-      allow update, delete: if isAdmin(resource.data.orgId);
+      allow read:   if isMember(resource.data.orgId);
+      allow create: if isAdmin(request.resource.data.orgId);
+      allow update: if isAdmin(resource.data.orgId)
+        && request.resource.data.orgId == resource.data.orgId;
+      allow delete: if isAdmin(resource.data.orgId);
 
       // Secondary admin: full access
-      allow create:         if isSecondaryAdmin(request.resource.data.orgId);
-      allow update, delete: if isSecondaryAdmin(resource.data.orgId);
+      allow create: if isSecondaryAdmin(request.resource.data.orgId);
+      allow update: if isSecondaryAdmin(resource.data.orgId)
+        && request.resource.data.orgId == resource.data.orgId;
+      allow delete: if isSecondaryAdmin(resource.data.orgId);
 
       // Department Head: read all org tasks, write only department-level tasks
       // where a department document exists with departmentHeadUid == their uid
@@ -172,7 +180,12 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/departments/$(request.resource.data.departmentId))
         && get(/databases/$(database)/documents/departments/$(request.resource.data.departmentId)).data.departmentHeadUid == request.auth.uid
         && get(/databases/$(database)/documents/departments/$(request.resource.data.departmentId)).data.orgId == request.resource.data.orgId;
-      allow update, delete: if isDepartmentHead(resource.data.orgId)
+      allow update: if isDepartmentHead(resource.data.orgId)
+        && resource.data.level == 'department'
+        && exists(/databases/$(database)/documents/departments/$(resource.data.departmentId))
+        && get(/databases/$(database)/documents/departments/$(resource.data.departmentId)).data.departmentHeadUid == request.auth.uid
+        && request.resource.data.orgId == resource.data.orgId;
+      allow delete: if isDepartmentHead(resource.data.orgId)
         && resource.data.level == 'department'
         && exists(/databases/$(database)/documents/departments/$(resource.data.departmentId))
         && get(/databases/$(database)/documents/departments/$(resource.data.departmentId)).data.departmentHeadUid == request.auth.uid;
@@ -213,13 +226,17 @@ service cloud.firestore {
     // ── events ────────────────────────────────────────────────────────────────
     match /events/{eventId} {
       // Admin: full access
-      allow read:           if isMember(resource.data.orgId);
-      allow create:         if isAdmin(request.resource.data.orgId);
-      allow update, delete: if isAdmin(resource.data.orgId);
+      allow read:   if isMember(resource.data.orgId);
+      allow create: if isAdmin(request.resource.data.orgId);
+      allow update: if isAdmin(resource.data.orgId)
+        && request.resource.data.orgId == resource.data.orgId;
+      allow delete: if isAdmin(resource.data.orgId);
 
       // Secondary admin: full access
-      allow create:         if isSecondaryAdmin(request.resource.data.orgId);
-      allow update, delete: if isSecondaryAdmin(resource.data.orgId);
+      allow create: if isSecondaryAdmin(request.resource.data.orgId);
+      allow update: if isSecondaryAdmin(resource.data.orgId)
+        && request.resource.data.orgId == resource.data.orgId;
+      allow delete: if isSecondaryAdmin(resource.data.orgId);
 
       // Department Head: create/update/delete only department-scoped events
       // where a department document exists with departmentHeadUid == their uid
@@ -233,7 +250,12 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/departments/$(request.resource.data.departmentId))
         && get(/databases/$(database)/documents/departments/$(request.resource.data.departmentId)).data.departmentHeadUid == request.auth.uid
         && get(/databases/$(database)/documents/departments/$(request.resource.data.departmentId)).data.orgId == request.resource.data.orgId;
-      allow update, delete: if isDepartmentHead(resource.data.orgId)
+      allow update: if isDepartmentHead(resource.data.orgId)
+        && resource.data.scope == 'department'
+        && exists(/databases/$(database)/documents/departments/$(resource.data.departmentId))
+        && get(/databases/$(database)/documents/departments/$(resource.data.departmentId)).data.departmentHeadUid == request.auth.uid
+        && request.resource.data.orgId == resource.data.orgId;
+      allow delete: if isDepartmentHead(resource.data.orgId)
         && resource.data.scope == 'department'
         && exists(/databases/$(database)/documents/departments/$(resource.data.departmentId))
         && get(/databases/$(database)/documents/departments/$(resource.data.departmentId)).data.departmentHeadUid == request.auth.uid;
@@ -243,16 +265,20 @@ service cloud.firestore {
     // Admin/secondaryAdmin only — matches the same permission level the
     // Active Modules toggle itself is gated to (productions update rule).
     match /volunteerShifts/{shiftId} {
-      allow read:           if isMember(resource.data.orgId);
-      allow create:         if isAdminOrSecondary(request.resource.data.orgId);
-      allow update, delete: if isAdminOrSecondary(resource.data.orgId);
+      allow read:   if isMember(resource.data.orgId);
+      allow create: if isAdminOrSecondary(request.resource.data.orgId);
+      allow update: if isAdminOrSecondary(resource.data.orgId)
+        && request.resource.data.orgId == resource.data.orgId;
+      allow delete: if isAdminOrSecondary(resource.data.orgId);
     }
 
     // ── timelineTemplates + subcollection ─────────────────────────────────────
     match /timelineTemplates/{templateId} {
-      allow read:           if isMember(resource.data.orgId);
-      allow create:         if isAdmin(request.resource.data.orgId);
-      allow update, delete: if isAdminOrSecondary(resource.data.orgId);
+      allow read:   if isMember(resource.data.orgId);
+      allow create: if isAdmin(request.resource.data.orgId);
+      allow update: if isAdminOrSecondary(resource.data.orgId)
+        && request.resource.data.orgId == resource.data.orgId;
+      allow delete: if isAdminOrSecondary(resource.data.orgId);
 
       match /templateTasks/{templateTaskId} {
         function templateOrgId() {
