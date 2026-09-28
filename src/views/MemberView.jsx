@@ -13,7 +13,7 @@ import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useUnreadCount } from '../hooks/useUnreadCount';
-import { DASHBOARD_STATES } from '../models/org';
+import { DASHBOARD_STATES, getActiveProductionId } from '../models/org';
 import { differenceInDays } from 'date-fns';
 import { getDisplayName } from '../utils/displayName';
 import { callableErrorMessage } from '../utils/callableError';
@@ -109,19 +109,18 @@ export default function MemberView() {
         const orgSnap = await getDoc(doc(db, 'organizations', orgId));
         if (!orgSnap.exists()) { setLoading(false); return; }
 
-        const orgData     = orgSnap.data();
-        const override    = orgData.dashboardStateOverride ?? null;
-        const compositeId = orgData.activeProdId ?? null;
+        const orgData      = orgSnap.data();
+        const override     = orgData.dashboardStateOverride ?? null;
+        const activeProdId = getActiveProductionId(orgData);
 
-        if (!compositeId) {
+        if (!activeProdId) {
           setDashState(DASHBOARD_STATES.PLANNING);
           setLoading(false);
           return;
         }
 
-        const [placeId, productionId] = compositeId.split('/');
         const prodSnap = await getDoc(
-          doc(db, 'organizations', orgId, 'places', placeId, 'productions', productionId)
+          doc(db, 'organizations', orgId, 'productions', activeProdId)
         );
 
         if (!prodSnap.exists()) {

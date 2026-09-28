@@ -324,22 +324,23 @@ service cloud.firestore {
       allow write: if isAdminOrSecondary(orgId);
     }
 
-    // ── places + productions ──────────────────────────────────────────────────────
+    // ── places ────────────────────────────────────────────────────────────────────
     match /organizations/{orgId}/places/{placeId} {
       allow read:           if isMember(orgId);
       allow create:         if isAdminOrSecondary(orgId);
       allow update, delete: if isAdminOrSecondary(orgId);
-
-      match /productions/{productionId} {
-        allow read:           if isMember(orgId);
-        allow create:         if isAdminOrSecondary(orgId);
-        allow update, delete: if isAdminOrSecondary(orgId);
-      }
     }
 
-    // ── collectionGroup query for productions ─────────────────────────────────────
-    match /{path=**}/productions/{productionId} {
-      allow read: if isMember(resource.data.orgId);
+    // ── productions ───────────────────────────────────────────────────────────────
+    // Top-level under the org since 2026-09-28; were nested under places.
+    // Same access as the nested block had. The collectionGroup read rule that
+    // served cross-place queries is gone with the nesting: every productions
+    // query is now a plain query on this collection. Nothing matches the old
+    // places/{placeId}/productions path any more, so it is closed to clients.
+    match /organizations/{orgId}/productions/{productionId} {
+      allow read:           if isMember(orgId);
+      allow create:         if isAdminOrSecondary(orgId);
+      allow update, delete: if isAdminOrSecondary(orgId);
     }
 
     // ── invites ───────────────────────────────────────────────────────────────────

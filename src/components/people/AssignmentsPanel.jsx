@@ -25,21 +25,14 @@ export default function AssignmentsPanel({ person }) {
       const loadedPlaces = placesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       setPlaces(loadedPlaces);
 
-      const allProductions = [];
-      for (const place of loadedPlaces) {
-        const prodsSnap = await getDocs(
-          collection(db, 'organizations', orgId, 'places', place.id, 'productions')
-        );
-        prodsSnap.docs.forEach(d => {
-          allProductions.push({
-            id:      d.id,
-            placeId: place.id,
-            label:   d.data().name,
-            ...d.data(),
-          });
-        });
-      }
-      setProductions(allProductions);
+      const prodsSnap = await getDocs(
+        collection(db, 'organizations', orgId, 'productions')
+      );
+      setProductions(prodsSnap.docs.map(d => ({
+        id:    d.id,
+        label: d.data().name,
+        ...d.data(),
+      })));
     };
     loadPlacesAndProductions();
   }, [orgId]);

@@ -130,11 +130,11 @@ exports.emailOnNewFeedback = onDocumentCreated(
 // Runs server-side via the Admin SDK specifically because several of these
 // collections nest multiple levels of subcollections (tasks alone can carry
 // up to six: comments, clarificationFlags, accessRequests, handoffs,
-// history, notes; people has internalData and hours; threads has messages;
-// places has productions) and because a real org can accumulate far more
-// documents than a single 500-op client batch can hold. admin.firestore()
-// bypasses firestore.rules entirely, so authorization is enforced here in
-// code — never trust request.data for the caller's role.
+// history, notes; people has internalData and hours; threads has messages)
+// and because a real org can accumulate far more documents than a single
+// 500-op client batch can hold. admin.firestore() bypasses firestore.rules
+// entirely, so authorization is enforced here in code — never trust
+// request.data for the caller's role.
 exports.resetOrganization = onCall({ timeoutSeconds: 300, memory: "256MiB" }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
@@ -185,15 +185,6 @@ exports.resetOrganization = onCall({ timeoutSeconds: 300, memory: "256MiB" }, as
 
   logger.info("resetOrganization starting", { orgId, uid });
 
-  // places → count and cascade-delete nested productions along the way
-  const placesSnap = await db.collection(`organizations/${orgId}/places`).get();
-  counts.places = placesSnap.size;
-  for (const place of placesSnap.docs) {
-    const prodsSnap = await place.ref.collection("productions").get();
-    counts.productions += prodsSnap.size;
-    await db.recursiveDelete(place.ref);
-  }
-
   // threads → count and cascade-delete nested messages along the way
   const threadsSnap = await db.collection(`organizations/${orgId}/threads`).get();
   counts.threads = threadsSnap.size;
@@ -204,7 +195,10 @@ exports.resetOrganization = onCall({ timeoutSeconds: 300, memory: "256MiB" }, as
   }
 
   // Remaining org subcollections with no further nesting to report on.
-  for (const sub of ["people", "personTypes", "broadcasts", "checkins"]) {
+  // Productions sit directly under the org (moved out of places 2026-09-28);
+  // recursiveDelete on each place still clears anything left nested under it
+  // from before the move.
+  for (const sub of ["productions", "places", "people", "personTypes", "broadcasts", "checkins"]) {
     const snap = await db.collection(`organizations/${orgId}/${sub}`).get();
     counts[sub] = snap.size;
     for (const doc of snap.docs) {

@@ -3,6 +3,7 @@ import { doc, getDoc, updateDoc, collection, query, where, onSnapshot, getDocs }
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { getActiveProductionId } from '../models/org';
 import { getDisplayName } from '../utils/displayName';
 import CreatePersonTypeForm from '../components/people/CreatePersonTypeForm';
 import CreateSignupTokenForm from '../components/people/CreateSignupTokenForm';
@@ -65,7 +66,7 @@ export default function SettingsView() {
         if (orgSnap.exists()) {
           const data = orgSnap.data();
           setDepartmentsEnabled(data.departmentsEnabled ?? false);
-          setActiveProdId(data.activeProdId ?? '');
+          setActiveProdId(getActiveProductionId(data) ?? '');
           setDashboardOverride(data.dashboardStateOverride ?? '');
           setOrgName(data.name ?? '');
           setOrgNameInput(data.name ?? '');
@@ -105,25 +106,18 @@ export default function SettingsView() {
       }
     };
 
-    // Load all productions for active production selector
+    // Load all productions for active production selector. Places are loaded
+    // only to label each production with its place's name.
     const loadProductions = async () => {
       try {
         const placesSnap = await getDocs(collection(db, 'organizations', orgId, 'places'));
-        const allProds = [];
-        for (const place of placesSnap.docs) {
-          const prodsSnap = await getDocs(
-            collection(db, 'organizations', orgId, 'places', place.id, 'productions')
-          );
-          prodsSnap.docs.forEach(d => {
-            allProds.push({
-              id:        d.id,
-              placeId:   place.id,
-              placeName: place.data().name,
-              ...d.data(),
-            });
-          });
-        }
-        setProductions(allProds);
+        const placeNames = Object.fromEntries(placesSnap.docs.map(d => [d.id, d.data().name]));
+        const prodsSnap = await getDocs(collection(db, 'organizations', orgId, 'productions'));
+        setProductions(prodsSnap.docs.map(d => ({
+          id:        d.id,
+          placeName: placeNames[d.data().placeId] ?? 'No place set',
+          ...d.data(),
+        })));
       } catch (err) {
         console.error('Error loading productions:', err);
         toast.error('Could not load productions.');
@@ -185,13 +179,13 @@ export default function SettingsView() {
     }
   };
 
-  async function handleSetActiveProd(compositeId) {
+  async function handleSetActiveProd(productionId) {
     setSavingProd(true);
     try {
       await updateDoc(doc(db, 'organizations', orgId), {
-        activeProdId: compositeId || null,
+        activeProdId: productionId || null,
       });
-      setActiveProdId(compositeId);
+      setActiveProdId(productionId);
     } catch (err) {
       console.error('Error setting active production:', err);
       toast.error('Could not set active production. Please try again.');
@@ -464,7 +458,7 @@ export default function SettingsView() {
           >
             <option value="">No active production</option>
             {productions.map(p => (
-              <option key={`${p.placeId}/${p.id}`} value={`${p.placeId}/${p.id}`}>
+              <option key={p.id} value={p.id}>
                 {p.name} at {p.placeName}
               </option>
             ))}
