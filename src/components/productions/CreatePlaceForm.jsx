@@ -3,9 +3,11 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 
-export default function CreatePlaceForm({ onSuccess, onCancel }) {
+// initialName pre-fills the field, e.g. with what was typed into a place
+// search that found nothing.
+export default function CreatePlaceForm({ onSuccess, onCancel, initialName = '' }) {
   const { userProfile } = useAuth()
-  const [name,    setName]    = useState('')
+  const [name,    setName]    = useState(initialName)
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
 
@@ -20,6 +22,7 @@ export default function CreatePlaceForm({ onSuccess, onCancel }) {
         {
           name:      name.trim(),
           orgId:     userProfile.orgId,
+          placeType: null,
           createdAt: serverTimestamp(),
           createdBy: userProfile.uid,
         }
@@ -46,6 +49,7 @@ export default function CreatePlaceForm({ onSuccess, onCancel }) {
             onChange={e => setName(e.target.value)}
             placeholder="e.g. Main Stage, Black Box Theatre"
             required
+            autoFocus={!!initialName}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spotlight focus:border-transparent"
           />
         </div>

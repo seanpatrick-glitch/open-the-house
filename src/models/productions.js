@@ -13,23 +13,28 @@ export const PRODUCTION_LIST = {
   CAST: 'cast',
 };
 
+// A production's Place IDs, older records included: productions created
+// before 2026-09-29 have a single placeId and no placeIds field.
+export function getPlaceIds(production) {
+  if (production.placeIds !== undefined) return production.placeIds ?? [];
+  return production.placeId ? [production.placeId] : [];
+}
+
 /*
 COLLECTION: organizations/{orgId}/productions/{productionId}
 Top-level under the org, not nested under a Place (moved 2026-09-28, Phase 1
-of the data model migration; see docs/DATA_MODEL_AUDIT_2026-09-26.md). The
-Place is referenced by placeId only. Record shape unchanged by the move.
+of the data model migration; see docs/DATA_MODEL_AUDIT_2026-09-26.md).
+Only name is required (Phase 3 item 2, 2026-09-29): a Production with just a
+name is valid, and every other field may be null or empty.
 {
-  name:          string,
-  displayLabel:  string,           // defaults to 'Production' if left blank
-  placeId:       string,
-  venueId:       string,           // same value as placeId
-  orgId:         string,
-  scope:         'single' | 'season' | 'festival',
-  status:        'planning' | 'in-progress' | 'open' | 'closed',
-  startDate:     Timestamp,
-  endDate:       Timestamp,
-  openDate:      Timestamp,        // same value as startDate, read by dashboard state logic
-  closeDate:     Timestamp,        // same value as endDate, read by dashboard state logic
+  name:           string,           // required; the create form labels it "Production title"
+  displayLabel:   string,           // written as 'Production'; no longer on the create form
+  placeIds:       string[] | null,  // organizations/{orgId}/places/{placeId}; null when none chosen at creation
+  orgId:          string,
+  status:         'planning' | 'in-progress' | 'open' | 'closed',  // written as 'planning'
+  firstRehearsal: Timestamp | null, // anchors pre-production when set
+  openDate:       Timestamp | null, // powers the planning timeline and dashboard state
+  closeDate:      Timestamp | null, // powers the planning timeline and dashboard state
   activeModules: {
     volunteerScheduling: boolean,
     // fohPrep, lobbyInstall, barProgram, inventory, promo: DEPRECATED
@@ -73,9 +78,18 @@ Team and Cast notes:
   Roster section, which all still read people.assignments[] (open decision,
   PROJECT_STATE.md Section 7).
 
-Note: scope is captured and stored only. It is not yet wired into timeline
-generation — the template/offsetDays system in Planning Timeline treats all
-productions identically regardless of scope. Needs an App Architecture
-decision on how season/festival scope should change the smart default
-timeline before that logic gets built.
+Dates and Places notes:
+- The three dates are independent: any may be set without the others, and
+  nothing checks their order. Each is written as null when empty, never left
+  out, so orderBy('openDate') (CreateTaskForm) still returns dateless
+  productions.
+- A Place created from the create form is written to places first; its ID
+  is then included in placeIds. Places added later from the detail view use
+  arrayUnion/arrayRemove.
+
+No longer written, still on productions created before 2026-09-29:
+- placeId, venueId: one Place. Read through getPlaceIds() above.
+- startDate, endDate: same values as openDate/closeDate. Nothing reads them.
+- scope ('single' | 'season' | 'festival'): stored only, never read.
+  Superseded by the Project type in the locked data model.
 */
