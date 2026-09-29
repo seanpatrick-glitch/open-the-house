@@ -78,6 +78,8 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
           activeModules: {
             volunteerScheduling: false,
           },
+          productionTeam: [],
+          cast:           [],
           createdAt: serverTimestamp(),
           createdBy: userProfile.uid,
           openDate:  localDateToTimestamp(startDate),
