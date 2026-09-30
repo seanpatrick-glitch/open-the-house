@@ -5,7 +5,9 @@
 // (2026-09-28): productions live at organizations/{orgId}/productions, the old
 // places/{placeId}/productions path is closed, the org's activeProdId holds a
 // bare productionId that every dashboard resolves, and resetOrganization
-// clears productions at the new path.
+// clears productions at the new path. Also Phase 3 item 2 (2026-09-29): a
+// production needs only a name, lists its places in placeIds, and has three
+// independent, nullable dates.
 //
 // Run from the repo root:  npm run test:roles  (runs role-flows.test.mjs, then this)
 // Needs: Java 11+ (Firestore emulator), and `npm install` in both the repo
@@ -23,12 +25,14 @@ const { initializeApp } = requireRoot('firebase/app')
 const { getAuth, connectAuthEmulator, createUserWithEmailAndPassword } = requireRoot('firebase/auth')
 const {
   getFirestore, connectFirestoreEmulator, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
-  collection, query, where, orderBy, serverTimestamp, Timestamp,
+  collection, query, where, orderBy, serverTimestamp, Timestamp, arrayUnion, arrayRemove,
 } = requireRoot('firebase/firestore')
 const { getFunctions, connectFunctionsEmulator, httpsCallable } = requireRoot('firebase/functions')
 const admin = requireFns('firebase-admin')
 // The dashboards' own reader for activeProdId.
 const { getActiveProductionId } = await import(new URL('../../src/models/org.js', import.meta.url).href)
+// The readers' own helper for a production's places, older records included.
+const { getPlaceIds } = await import(new URL('../../src/models/productions.js', import.meta.url).href)
 
 const PROJECT = 'demo-oth'
 admin.initializeApp({ projectId: PROJECT })
@@ -85,6 +89,7 @@ await adb.doc('departments/dataSound').set({ orgId: orgA, name: 'Sound', departm
 await adb.doc('departments/dataBCrew').set({ orgId: orgB, name: 'B Crew', departmentHeadUid: dana.uid })
 // Two places and one production seeded directly, so each section below has
 // something to point at and a failure in one section can't cascade into another.
+// Hamlet has the shape productions had before 2026-09-29 (one placeId).
 const placeMain = 'dataMainStage', placeStudio = 'dataStudio', hamlet = 'dataHamlet'
 await adb.doc(`organizations/${orgA}/places/${placeMain}`).set({ name: 'Main Stage', orgId: orgA })
 await adb.doc(`organizations/${orgA}/places/${placeStudio}`).set({ name: 'Studio', orgId: orgA })
@@ -96,10 +101,11 @@ await adb.doc(`organizations/${orgA}/productions/${hamlet}`).set({
 })
 
 // ── places ──
-await test('places: admin adds a place (CreatePlaceForm)', async () => {
-  await addDoc(collection(ownerA.db, 'organizations', orgA, 'places'), {
-    name: 'Rehearsal Room', orgId: orgA, createdAt: serverTimestamp(), createdBy: ownerA.uid,
+await test('places: admin adds a place (CreatePlaceForm), with a null placeType', async () => {
+  const ref = await addDoc(collection(ownerA.db, 'organizations', orgA, 'places'), {
+    name: 'Rehearsal Room', orgId: orgA, placeType: null, createdAt: serverTimestamp(), createdBy: ownerA.uid,
   })
+  assert.equal((await adb.doc(`organizations/${orgA}/places/${ref.id}`).get()).data().placeType, null)
 })
 await test('places: secondary admin adds and renames a place', async () => {
   const ref = await addDoc(collection(sam.db, 'organizations', orgA, 'places'), {
@@ -127,52 +133,98 @@ await test('places: another org\'s admin cannot read or add places', async () =>
 })
 
 // ── productions: organizations/{orgId}/productions ──
-// CreateProductionForm's record, field for field (the shape is unchanged by the move).
-const productionRecord = (who, name, placeId, start, end) => ({
-  name, displayLabel: 'Production', placeId, orgId: orgA, scope: 'single',
-  startDate: start, endDate: end, status: 'planning',
-  activeModules: { volunteerScheduling: false },
+// CreateProductionForm's record, field for field. Only name is required;
+// placeIds and the three dates are null when left empty.
+const productionRecord = (who, name, { placeIds = null, firstRehearsal = null, openDate = null, closeDate = null } = {}) => ({
+  name, displayLabel: 'Production', placeIds, orgId: orgA, status: 'planning',
+  firstRehearsal, openDate, closeDate,
+  activeModules: { volunteerScheduling: false }, productionTeam: [], cast: [],
   createdAt: serverTimestamp(), createdBy: who.uid,
-  openDate: start, closeDate: end, venueId: placeId,
 })
-let tempest, twelfth
+let tempest, twelfth, minifest
 await test('productions: admin creates one at organizations/{orgId}/productions, not under its place (CreateProductionForm)', async () => {
   const ref = await addDoc(collection(ownerA.db, 'organizations', orgA, 'productions'),
-    productionRecord(ownerA, 'The Tempest', placeMain, day(2026, 11, 6), day(2026, 11, 22)))
+    productionRecord(ownerA, 'The Tempest', { placeIds: [placeMain], openDate: day(2026, 11, 6), closeDate: day(2026, 11, 22) }))
   tempest = ref.id
   const saved = (await adb.doc(`organizations/${orgA}/productions/${tempest}`).get()).data()
   assert.equal(saved.name, 'The Tempest')
-  assert.equal(saved.placeId, placeMain); assert.equal(saved.venueId, placeMain); assert.equal(saved.orgId, orgA)
+  assert.deepEqual(saved.placeIds, [placeMain]); assert.equal(saved.orgId, orgA)
+  assert.equal(saved.firstRehearsal, null)
   assert.equal((await adb.collection(`organizations/${orgA}/places/${placeMain}/productions`).get()).size, 0)
 })
-await test('productions: secondary admin creates one and toggles an Active Module (ProductionDashboard)', async () => {
+await test('productions: admin creates one with only a title; places and dates are stored as null', async () => {
+  const ref = await addDoc(collection(ownerA.db, 'organizations', orgA, 'productions'),
+    productionRecord(ownerA, '2027 Winter Minifest'))
+  minifest = ref.id
+  const saved = (await adb.doc(`organizations/${orgA}/productions/${minifest}`).get()).data()
+  assert.equal(saved.name, '2027 Winter Minifest')
+  for (const key of ['placeIds', 'firstRehearsal', 'openDate', 'closeDate']) assert.equal(saved[key], null, key)
+  assert.deepEqual(getPlaceIds(saved), [])
+})
+await test('productions: a place added mid-form is written to places first, then its ID goes in placeIds', async () => {
+  const place = await addDoc(collection(sam.db, 'organizations', orgA, 'places'), {
+    name: 'Fringe Tent', orgId: orgA, placeType: null, createdAt: serverTimestamp(), createdBy: sam.uid,
+  })
   const ref = await addDoc(collection(sam.db, 'organizations', orgA, 'productions'),
-    productionRecord(sam, 'Twelfth Night', placeStudio, day(2026, 10, 9), day(2026, 10, 25)))
+    productionRecord(sam, 'Twelfth Night', {
+      placeIds: [placeStudio, place.id], firstRehearsal: day(2026, 9, 14), openDate: day(2026, 10, 9), closeDate: day(2026, 10, 25),
+    }))
   twelfth = ref.id
-  await updateDoc(ref, { 'activeModules.volunteerScheduling': true })
+  const saved = (await adb.doc(`organizations/${orgA}/productions/${twelfth}`).get()).data()
+  assert.deepEqual(saved.placeIds, [placeStudio, place.id])
+  assert.equal((await adb.doc(`organizations/${orgA}/places/${place.id}`).get()).data().name, 'Fringe Tent')
+  await deleteDoc(place)
+})
+await test('productions: secondary admin toggles an Active Module (ProductionDashboard)', async () => {
+  await updateDoc(doc(sam.db, 'organizations', orgA, 'productions', twelfth), { 'activeModules.volunteerScheduling': true })
   assert.equal((await adb.doc(`organizations/${orgA}/productions/${twelfth}`).get()).data().activeModules.volunteerScheduling, true)
+})
+await test('productions: admin adds and removes places and sets or clears dates from the detail view (ProductionPlacesPanel, ProductionDatesPanel)', async () => {
+  const ref = doc(ownerA.db, 'organizations', orgA, 'productions', minifest)
+  // arrayUnion onto the null placeIds a title-only production starts with.
+  await updateDoc(ref, { placeIds: arrayUnion(placeMain) })
+  await updateDoc(ref, { placeIds: arrayUnion(placeStudio) })
+  await updateDoc(ref, { placeIds: arrayRemove(placeMain) })
+  assert.deepEqual((await adb.doc(`organizations/${orgA}/productions/${minifest}`).get()).data().placeIds, [placeStudio])
+  await updateDoc(ref, { firstRehearsal: null, openDate: day(2027, 2, 5), closeDate: null })
+  const saved = (await adb.doc(`organizations/${orgA}/productions/${minifest}`).get()).data()
+  assert.equal(saved.openDate.toMillis(), day(2027, 2, 5).toMillis()); assert.equal(saved.closeDate, null)
+  // Dateless again, for the ordering check below.
+  await updateDoc(ref, { firstRehearsal: null, openDate: null, closeDate: null })
+})
+await test('productions: the first place change on an older record writes the whole list, keeping its placeId', async () => {
+  const hamletData = (await getDoc(doc(ownerA.db, 'organizations', orgA, 'productions', hamlet))).data()
+  assert.deepEqual(getPlaceIds(hamletData), [placeStudio])
+  await updateDoc(doc(ownerA.db, 'organizations', orgA, 'productions', hamlet), { placeIds: [...getPlaceIds(hamletData), placeMain] })
+  const saved = (await adb.doc(`organizations/${orgA}/productions/${hamlet}`).get()).data()
+  assert.deepEqual(getPlaceIds(saved), [placeStudio, placeMain])
+  // Back to the seeded shape for the sections below.
+  await adb.doc(`organizations/${orgA}/productions/${hamlet}`).update({ placeIds: admin.firestore.FieldValue.delete() })
 })
 await test('productions: admin deletes one', async () => {
   const ref = await addDoc(collection(ownerA.db, 'organizations', orgA, 'productions'),
-    productionRecord(ownerA, 'Scratch', placeMain, day(2026, 12, 1), day(2026, 12, 2)))
+    productionRecord(ownerA, 'Scratch'))
   await deleteDoc(ref)
   assert.equal((await adb.doc(`organizations/${orgA}/productions/${ref.id}`).get()).exists, false)
 })
-await test('productions: every member lists them (ProductionsView), filters by place (PlacesView) and orders by opening (CreateTaskForm)', async () => {
+await test('productions: every member lists them (ProductionsView), filters by place (PlacesView) and orders by opening (CreateTaskForm), dateless ones included', async () => {
   for (const who of [ownerA, dana, cory]) {
     const prods = collection(who.db, 'organizations', orgA, 'productions')
-    assert.deepEqual((await getDocs(prods)).docs.map(d => d.id).sort(), [hamlet, tempest, twelfth].sort())
-    assert.deepEqual((await getDocs(query(prods, where('placeId', '==', placeMain)))).docs.map(d => d.id), [tempest])
+    const all = (await getDocs(prods)).docs.map(d => ({ id: d.id, ...d.data() }))
+    assert.deepEqual(all.map(p => p.id).sort(), [hamlet, tempest, twelfth, minifest].sort())
+    assert.deepEqual(all.filter(p => getPlaceIds(p).includes(placeStudio)).map(p => p.id).sort(), [hamlet, twelfth, minifest].sort())
+    // A null openDate sorts first; a missing field would drop the doc entirely.
     assert.deepEqual((await getDocs(query(prods, orderBy('openDate', 'asc')))).docs.map(d => d.data().name),
-      ['Twelfth Night', 'The Tempest', 'Hamlet'])
+      ['2027 Winter Minifest', 'Twelfth Night', 'The Tempest', 'Hamlet'])
   }
 })
 await test('productions: Department Heads and base-level members can read but not create, edit or delete', async () => {
   for (const who of [dana, cory]) {
     assert.equal((await getDoc(doc(who.db, 'organizations', orgA, 'productions', hamlet))).data().name, 'Hamlet')
-    await expectDenied(addDoc(collection(who.db, 'organizations', orgA, 'productions'),
-      productionRecord(who, 'x', placeMain, day(2026, 12, 1), day(2026, 12, 2))))
+    await expectDenied(addDoc(collection(who.db, 'organizations', orgA, 'productions'), productionRecord(who, 'x')))
     await expectDenied(updateDoc(doc(who.db, 'organizations', orgA, 'productions', hamlet), { 'activeModules.volunteerScheduling': true }))
+    await expectDenied(updateDoc(doc(who.db, 'organizations', orgA, 'productions', hamlet), { placeIds: arrayUnion(placeMain) }))
+    await expectDenied(updateDoc(doc(who.db, 'organizations', orgA, 'productions', hamlet), { openDate: day(2027, 1, 1) }))
     await expectDenied(deleteDoc(doc(who.db, 'organizations', orgA, 'productions', hamlet)))
   }
 })
@@ -180,7 +232,7 @@ await test('productions: another org\'s admin cannot read, list or add them, eve
   await expectDenied(getDocs(collection(ownerB.db, 'organizations', orgA, 'productions')))
   await expectDenied(getDoc(doc(ownerB.db, 'organizations', orgA, 'productions', hamlet)))
   await expectDenied(addDoc(collection(ownerB.db, 'organizations', orgA, 'productions'),
-    { ...productionRecord(ownerB, 'x', placeMain, day(2026, 12, 1), day(2026, 12, 2)), orgId: orgB }))
+    { ...productionRecord(ownerB, 'x'), orgId: orgB }))
   // The collectionGroup read rule removed in the move let members of whatever
   // org a production's orgId field named read it, wherever it was stored.
   const mislabeled = adb.doc(`organizations/${orgA}/productions/mislabeled`)
@@ -193,7 +245,7 @@ await test('productions: another org\'s admin cannot read, list or add them, eve
 })
 await test('productions: the old places/{placeId}/productions path is closed to reads and writes', async () => {
   await expectDenied(addDoc(collection(ownerA.db, 'organizations', orgA, 'places', placeMain, 'productions'),
-    productionRecord(ownerA, 'Old path', placeMain, day(2026, 12, 1), day(2026, 12, 2))))
+    productionRecord(ownerA, 'Old path', { placeIds: [placeMain] })))
   const legacy = adb.doc(`organizations/${orgA}/places/${placeMain}/productions/legacy`)
   await legacy.set({ name: 'Legacy', orgId: orgA, placeId: placeMain })
   try {

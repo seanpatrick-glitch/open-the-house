@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import CreatePlaceForm from '../components/productions/CreatePlaceForm';
 import ProductionDashboard from '../components/productions/ProductionDashboard';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/shared/PageHeader';
+import { getPlaceIds } from '../models/productions';
 
 export default function PlacesView() {
   const { userProfile } = useAuth();
@@ -30,14 +31,15 @@ export default function PlacesView() {
         setPlaces(loadedPlaces);
 
         // Load production counts per place. Productions live under the org
-        // and point to their place by placeId.
+        // and list their places in placeIds; one can count toward several.
         const counts = {};
         const prodsSnap = await getDocs(
           collection(db, 'organizations', orgId, 'productions')
         );
         prodsSnap.docs.forEach(d => {
-          const { placeId } = d.data();
-          counts[placeId] = (counts[placeId] ?? 0) + 1;
+          getPlaceIds(d.data()).forEach(placeId => {
+            counts[placeId] = (counts[placeId] ?? 0) + 1;
+          });
         });
         setProdCounts(counts);
       } catch (err) {
@@ -53,11 +55,12 @@ export default function PlacesView() {
   async function handleSelectPlace(place) {
     setSelectedPlace(place);
     try {
-      const prodsSnap = await getDocs(query(
-        collection(db, 'organizations', orgId, 'productions'),
-        where('placeId', '==', place.id)
-      ));
-      setProductions(prodsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+      // Filtered here rather than with an array-contains query so records
+      // from before placeIds (a single placeId) are found too.
+      const prodsSnap = await getDocs(collection(db, 'organizations', orgId, 'productions'));
+      setProductions(prodsSnap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(prod => getPlaceIds(prod).includes(place.id)));
     } catch (err) {
       console.error('PlacesView load productions error:', err);
       toast.error('Could not load productions for this place.');
