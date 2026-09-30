@@ -19,7 +19,7 @@ function ProtectedRoute({ children }) {
 }
 
 // PublicRoute: only redirect to dashboard if the user is fully set up
-// (auth account exists AND venue profile exists). A user mid-signup
+// (auth account exists AND org profile exists). A user mid-signup
 // has currentUser but no userProfile yet and must not be redirected.
 function PublicRoute({ children }) {
   const { currentUser, userProfile } = useAuth()

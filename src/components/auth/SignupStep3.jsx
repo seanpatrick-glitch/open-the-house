@@ -6,22 +6,22 @@ import toast from 'react-hot-toast'
 import wordmark from '../../assets/brand/wordmark-mark.png'
 
 export default function SignupStep3({ firebaseUser }) {
-  const [venueName, setVenueName] = useState('')
+  const [orgName,   setOrgName]   = useState('')
   const [loading,   setLoading]   = useState(false)
   const navigate = useNavigate()
 
   async function handleSubmit(e) {
     e.preventDefault()
 
-    if (!venueName.trim()) {
-      toast.error('Please enter a venue name.')
+    if (!orgName.trim()) {
+      toast.error('Please enter an organization name.')
       return
     }
 
     setLoading(true)
     try {
       const orgRef = await addDoc(collection(db, 'organizations'), {
-        name:      venueName.trim(),
+        name:      orgName.trim(),
         type:      'theater',
         ownerId:   firebaseUser.uid,
         createdAt: serverTimestamp(),
@@ -76,22 +76,25 @@ export default function SignupStep3({ firebaseUser }) {
       <img src={wordmark} alt="Places People!" className="h-14 w-auto mb-6" />
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <p className="text-gray-500 text-sm">Set up your organization</p>
+          <p className="text-gray-500 text-sm">Tell us about your organization.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              What is the name of your organization?
+              Organization name
             </label>
             <input
               type="text"
-              value={venueName}
-              onChange={(e) => setVenueName(e.target.value)}
+              value={orgName}
+              onChange={(e) => setOrgName(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-spotlight text-base"
-              placeholder="e.g. The Grand Theatre"
+              placeholder="e.g. Riverside Playhouse, Summer Shakespeare Festival, The Lantern Company"
               autoFocus
             />
+            <p className="text-xs text-gray-500 mt-1">
+              This is how your organization will appear to your team in Places People!
+            </p>
           </div>
 
           <button

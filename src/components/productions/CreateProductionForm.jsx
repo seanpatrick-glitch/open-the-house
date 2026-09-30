@@ -84,7 +84,7 @@ export default function CreateProductionForm({ places, onSuccess, onCancel }) {
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
-            placeholder="e.g. Into the Woods, 2027 Winter Minifest, The Evening Series"
+            placeholder="e.g. Into the Woods, Spring New Works Festival, The Evening Series"
             autoFocus
             className={INPUT_CLASS}
           />

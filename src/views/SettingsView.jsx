@@ -322,7 +322,7 @@ export default function SettingsView() {
             <div>
               <p className="text-sm font-medium text-gray-700">Departments</p>
               <p className="text-sm text-gray-500 mt-1">
-                Organize your venues and productions under departments. Turning this on adds a Departments section to your navigation.
+                Organize your places and productions under departments. Turning this on adds a Departments section to your navigation.
               </p>
             </div>
             <button

@@ -176,7 +176,7 @@ export default function PlacesView() {
       <PageHeader title="Places" />
       <div className="flex items-center justify-between mb-6">
         <div>
-          <p className="text-sm text-gray-500">Your venues and the productions happening in them.</p>
+          <p className="text-sm text-gray-500">Anywhere your organization works: theatres, studios, offices, or any other space.</p>
         </div>
         <button
           onClick={() => setShowAddPlace(s => !s)}
@@ -197,8 +197,8 @@ export default function PlacesView() {
 
       {places.length === 0 && !showAddPlace ? (
         <div className="bg-white border border-gray-200 rounded-xl p-10 text-center">
-          <p className="text-gray-500 text-sm mb-1">No places yet.</p>
-          <p className="text-gray-400 text-sm">Add your first venue to get started.</p>
+          <p className="text-gray-500 text-sm mb-1">No places added yet.</p>
+          <p className="text-gray-400 text-sm">Add your first place to get started.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
