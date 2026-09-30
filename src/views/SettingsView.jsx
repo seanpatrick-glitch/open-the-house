@@ -8,6 +8,7 @@ import { getPlaceIds } from '../models/productions';
 import { getDisplayName } from '../utils/displayName';
 import CreatePersonTypeForm from '../components/people/CreatePersonTypeForm';
 import CreateSignupTokenForm from '../components/people/CreateSignupTokenForm';
+import CollaboratorRoster from '../components/invites/CollaboratorRoster';
 import OrgLogoUpload from '../components/shared/OrgLogoUpload';
 import PageHeader from '../components/shared/PageHeader';
 import toast from 'react-hot-toast';
@@ -314,6 +315,11 @@ export default function SettingsView() {
             </div>
           </div>
         )}
+
+        {/* Access: who can sign in, pending invites, removing access */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
+          <CollaboratorRoster />
+        </div>
 
         {/* Organization Structure */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">

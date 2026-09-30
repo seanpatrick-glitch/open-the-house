@@ -148,7 +148,7 @@ export default function CreateDepartmentForm({ onSuccess, onCancel }) {
           console.error('CreateDepartmentForm setMemberRole:', err)
           toast.error(
             `${name.trim()} was created, but ${getDisplayName(selectedHead) || 'that member'} could not be made its Department Head. ` +
-            callableErrorMessage(err, 'You can assign them from Your People > Invite someone.'),
+            callableErrorMessage(err, 'You can assign them from Settings > Access > Invite someone.'),
             { duration: 10000 }
           )
         }
