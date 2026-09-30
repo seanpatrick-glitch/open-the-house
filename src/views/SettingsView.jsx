@@ -5,8 +5,7 @@ import { db, functions } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getActiveProductionId } from '../models/org';
 import { getPlaceIds } from '../models/productions';
-import { getDisplayName } from '../utils/displayName';
-import CreatePersonTypeForm from '../components/people/CreatePersonTypeForm';
+import PersonTypesSettings from '../components/people/PersonTypesSettings';
 import CreateSignupTokenForm from '../components/people/CreateSignupTokenForm';
 import CollaboratorRoster from '../components/invites/CollaboratorRoster';
 import OrgLogoUpload from '../components/shared/OrgLogoUpload';
@@ -33,11 +32,8 @@ export default function SettingsView() {
   const [personTypes, setPersonTypes]               = useState([]);
   const [departmentHeads, setDepartmentHeads]        = useState([]);
   const [departments, setDepartments]                 = useState([]);
-  const [savingTypeHead, setSavingTypeHead]           = useState(null);
-  const [savingTypeDept, setSavingTypeDept]           = useState(null);
   const [loading, setLoading]                       = useState(true);
   const [saving, setSaving]                         = useState(false);
-  const [showForm, setShowForm]                     = useState(false);
   const [signupTokens, setSignupTokens]   = useState([]);
   const [showTokenForm, setShowTokenForm] = useState(false);
   const [newToken, setNewToken]           = useState(null);
@@ -196,34 +192,6 @@ export default function SettingsView() {
     }
   }
 
-  async function handleAssignTypeHead(typeId, headUid) {
-    setSavingTypeHead(typeId);
-    try {
-      await updateDoc(doc(db, 'organizations', orgId, 'personTypes', typeId), {
-        departmentHeadId: headUid || null,
-      });
-    } catch (err) {
-      console.error('Error assigning person type department head:', err);
-      toast.error('Could not assign department head. Please try again.');
-    } finally {
-      setSavingTypeHead(null);
-    }
-  }
-
-  async function handleAssignTypeDepartment(typeId, deptId) {
-    setSavingTypeDept(typeId);
-    try {
-      await updateDoc(doc(db, 'organizations', orgId, 'personTypes', typeId), {
-        departmentId: deptId || null,
-      });
-    } catch (err) {
-      console.error('Error assigning person type department:', err);
-      toast.error('Could not assign department. Please try again.');
-    } finally {
-      setSavingTypeDept(null);
-    }
-  }
-
   async function handleSetOverride(value) {
     setSavingOverride(true);
     try {
@@ -259,23 +227,6 @@ export default function SettingsView() {
 
   if (loading) {
     return <div className="p-6 text-gray-500 text-sm">Loading settings...</div>;
-  }
-
-  if (showForm) {
-    return (
-      <div className="p-6 max-w-2xl">
-        <button
-          onClick={() => setShowForm(false)}
-          className="text-sm text-gray-500 hover:text-gray-700 mb-6 flex items-center gap-1"
-        >
-          ← Back to Settings
-        </button>
-        <CreatePersonTypeForm
-          onSuccess={() => setShowForm(false)}
-          onCancel={() => setShowForm(false)}
-        />
-      </div>
-    );
   }
 
   return (
@@ -348,108 +299,13 @@ export default function SettingsView() {
         </div>
 
         {/* Person Types */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-base font-semibold text-gray-800">Person Types</h2>
-              <p className="text-sm text-gray-500 mt-0.5">
-                Define the kinds of people your organization coordinates.
-              </p>
-            </div>
-            <button
-              onClick={() => setShowForm(true)}
-              className="bg-places-blue hover:bg-places-blue/90 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-            >
-              Add Type
-            </button>
-          </div>
-
-          {personTypes.length === 0 ? (
-            <div className="border border-dashed border-gray-200 rounded-lg p-6 text-center">
-              <p className="text-sm text-gray-500 mb-0.5">No person types yet.</p>
-              <p className="text-xs text-gray-400">Add your first type to start coordinating people.</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {personTypes.map(type => (
-                <div key={type.id} className="flex items-start justify-between gap-4 py-3 border-b border-gray-100 last:border-0">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{type.label}</p>
-                    {type.description && (
-                      <p className="text-xs text-gray-500 mt-0.5">{type.description}</p>
-                    )}
-                    <div className="flex flex-wrap gap-1.5 mt-1.5">
-                      {['Name', 'Email', 'Phone', 'Emergency Contact'].map(f => (
-                        <span key={f} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-500">{f}</span>
-                      ))}
-                      {Object.entries(type.toggleableFields || {})
-                        .filter(([, v]) => v)
-                        .map(([k]) => (
-                          <span key={k} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-places-blue/10 text-places-blue capitalize">
-                            {k.replace(/([A-Z])/g, ' $1')}
-                          </span>
-                        ))
-                      }
-                      {(type.customFields || [])
-                        .slice()
-                        .sort((a, b) => a.order - b.order)
-                        .map(f => (
-                          <span key={f.fieldId} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-600">
-                            {f.label}
-                          </span>
-                        ))
-                      }
-                    </div>
-                  </div>
-                  <div className="flex-shrink-0 text-right space-y-2">
-                    {departmentsEnabled && (
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 mb-1">Department</p>
-                        {departments.length === 0 ? (
-                          <p className="text-xs text-gray-400 max-w-[180px]">
-                            Add a department first before assigning one here.
-                          </p>
-                        ) : (
-                          <select
-                            value={type.departmentId || ''}
-                            onChange={e => handleAssignTypeDepartment(type.id, e.target.value)}
-                            disabled={savingTypeDept === type.id}
-                            className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-places-blue disabled:opacity-50"
-                          >
-                            <option value="">Unassigned</option>
-                            {departments.map(dept => (
-                              <option key={dept.id} value={dept.id}>{dept.name}</option>
-                            ))}
-                          </select>
-                        )}
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1">Department Head</p>
-                      {departmentHeads.length === 0 ? (
-                        <p className="text-xs text-gray-400 max-w-[180px]">
-                          Invite a Department Head first before assigning one here.
-                        </p>
-                      ) : (
-                        <select
-                          value={type.departmentHeadId || ''}
-                          onChange={e => handleAssignTypeHead(type.id, e.target.value)}
-                          disabled={savingTypeHead === type.id}
-                          className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-places-blue disabled:opacity-50"
-                        >
-                          <option value="">Unassigned</option>
-                          {departmentHeads.map(dh => (
-                            <option key={dh.uid} value={dh.uid}>{getDisplayName(dh)}</option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <PersonTypesSettings
+          personTypes={personTypes}
+          canManage={isAdminRole}
+          departmentsEnabled={departmentsEnabled}
+          departments={departments}
+          departmentHeads={departmentHeads}
+        />
 
         {/* Active Production */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">

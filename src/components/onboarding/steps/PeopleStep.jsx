@@ -1,14 +1,18 @@
-// PeopleStep.jsx — Onboarding wizard Step 1 (People). Seeds a default
-// personType if the org has none, then lets the admin build a roster with a
-// simple repeatable name + role/title input. Each person is written to
-// Firestore immediately on Add, matching CreatePersonForm.jsx's write shape,
-// so nothing is lost if the admin abandons the wizard partway.
+// PeopleStep.jsx — Onboarding wizard Step 1 (People). Uses the org's "Team
+// Member" personType (the one carrying the roleTitle field), creating it if
+// missing, then lets the admin build a roster with a simple repeatable
+// name + role/title input. New orgs also have the seeded default types, so
+// this looks for its own type rather than taking whichever comes first.
+// Each person is written to Firestore immediately on Add, matching
+// CreatePersonForm.jsx's write shape, so nothing is lost if the admin
+// abandons the wizard partway.
 
 import { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { cleanFieldValues } from '../../people/PersonFieldsEditor';
+import { newPersonTypeDoc } from '../../../models/personTypes';
 
 const DEFAULT_TYPE_LABEL = 'Team Member';
 const ROLE_FIELD_ID = 'roleTitle';
@@ -34,31 +38,20 @@ export default function PeopleStep({ orgId, onNext, onBack }) {
         const typesRef = collection(db, 'organizations', orgId, 'personTypes');
         const snap = await getDocs(typesRef);
 
-        if (!snap.empty) {
-          const existing = snap.docs[0];
+        const existing = snap.docs.find(d =>
+          (d.data().customFields || []).some(f => f.fieldId === ROLE_FIELD_ID)
+        );
+        if (existing) {
           if (!cancelled) setPersonType({ id: existing.id, ...existing.data() });
         } else {
-          const newType = {
-            label: DEFAULT_TYPE_LABEL,
-            description: '',
+          const newType = newPersonTypeDoc({
             orgId,
-            departmentHeadId: null,
-            departmentId: null,
             createdBy: uid,
-            createdAt: serverTimestamp(),
-            active: true,
-            universalFields: { name: true, email: true, phone: true, emergencyContact: true },
-            toggleableFields: {
-              address: false,
-              dateOfBirth: false,
-              tShirtSize: false,
-              dietaryRestrictions: false,
-              accessibilityNeeds: false,
-            },
+            label: DEFAULT_TYPE_LABEL,
             customFields: [
               { fieldId: ROLE_FIELD_ID, label: 'Role / Title', type: 'text', options: [], required: false, order: 0 },
             ],
-          };
+          });
           const ref = await addDoc(typesRef, newType);
           if (!cancelled) setPersonType({ id: ref.id, ...newType });
         }

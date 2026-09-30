@@ -4,20 +4,45 @@ import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import PersonFieldsEditor, { validatePersonFields, cleanFieldValues } from './PersonFieldsEditor';
 import GroupPicker from './GroupPicker';
-import { withFieldError, FieldError } from '../shared/FormField';
+import PersonTypePicker from './PersonTypePicker';
+import SystemRoleSelect from './SystemRoleSelect';
+import { FieldError } from '../shared/FormField';
+
+const UNIVERSAL_KEYS = ['name', 'email', 'phone', 'emergencyContact'];
 
 export default function CreatePersonForm({ onSuccess, onCancel }) {
   const { userProfile } = useAuth();
-  const { orgId, uid } = userProfile;
+  const { orgId, uid, role: viewerRole } = userProfile;
+  // A Department Head may only create people of a type they head
+  // (firestore.rules), so for them a type stays required.
+  const typeRequired = !['admin', 'secondaryAdmin'].includes(viewerRole);
 
   const [personTypes, setPersonTypes]     = useState([]);
-  const [selectedTypeId, setSelectedTypeId] = useState('');
   const [selectedType, setSelectedType]   = useState(null);
   const [group, setGroup]                 = useState(null);
+  const [intendedRole, setIntendedRole]   = useState(null);
   const [fieldValues, setFieldValues]     = useState({});
   const [saving, setSaving]               = useState(false);
   const [error, setError]                 = useState('');
   const [fieldErrors, setFieldErrors]     = useState({});
+
+  const clearFieldError = key =>
+    setFieldErrors(prev => (prev[key] ? { ...prev, [key]: undefined } : prev));
+
+  // Type suggests, it doesn't set: picking one pre-fills Group and system
+  // role with its defaults, and both stay editable. Clearing the type leaves
+  // whatever is already chosen.
+  function handleTypeChange(type) {
+    setSelectedType(type);
+    clearFieldError('personType');
+    // The previous type's own fields go; what's typed in the always-shown
+    // fields (name, email, phone, emergency contact) stays.
+    setFieldValues(prev => Object.fromEntries(
+      Object.entries(prev).filter(([k]) => UNIVERSAL_KEYS.includes(k))
+    ));
+    if (type?.defaultGroup) { setGroup(type.defaultGroup); clearFieldError('group'); }
+    if (type?.defaultSystemRole) { setIntendedRole(type.defaultSystemRole); clearFieldError('role'); }
+  }
 
   useEffect(() => {
     if (!orgId) return;
@@ -27,32 +52,20 @@ export default function CreatePersonForm({ onSuccess, onCancel }) {
     )).then(snap => {
       const types = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setPersonTypes(types);
-      if (types.length === 1) {
-        setSelectedTypeId(types[0].id);
-        setSelectedType(types[0]);
-      }
+      if (types.length === 1) handleTypeChange(types[0]);
     });
   }, [orgId]);
 
-  function handleTypeChange(typeId) {
-    const type = personTypes.find(t => t.id === typeId);
-    setSelectedTypeId(typeId);
-    setSelectedType(type || null);
-    setFieldValues({});
-    setFieldErrors(prev => (prev.personType ? { ...prev, personType: undefined } : prev));
-  }
-
   function setField(key, value) {
     setFieldValues(prev => ({ ...prev, [key]: value }));
-    if (key === 'name') {
-      setFieldErrors(prev => (prev.name ? { ...prev, name: undefined } : prev));
-    }
+    if (key === 'name') clearFieldError('name');
   }
 
   async function handleSave() {
     const errors = {};
-    if (!selectedTypeId || !selectedType) errors.personType = 'Person type is required.';
+    if (typeRequired && !selectedType) errors.personType = 'Choose a person type.';
     if (!group) errors.group = 'Choose a group.';
+    if (!intendedRole) errors.role = 'Choose a system role.';
     const nameError = validatePersonFields(fieldValues);
     if (nameError) errors.name = nameError;
     if (Object.keys(errors).length > 0) {
@@ -65,10 +78,11 @@ export default function CreatePersonForm({ onSuccess, onCancel }) {
     try {
       const person = {
         orgId,
-        typeId:      selectedTypeId,
-        typeLabel:   selectedType.label,
+        typeId:      selectedType?.id ?? null,
+        typeLabel:   selectedType?.label ?? null,
         uid:         null,
         group,
+        intendedRole,
         status:      'active',
         createdBy:   uid,
         createdAt:   serverTimestamp(),
@@ -99,28 +113,21 @@ export default function CreatePersonForm({ onSuccess, onCancel }) {
 
       <div className="space-y-4">
 
-        {/* Type selector */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Person Type <span className="text-red-500">*</span>
+          <label htmlFor="add-person-type" className="block text-sm font-medium text-gray-700 mb-1">
+            Person type {typeRequired && <span className="text-red-500">*</span>}
           </label>
-          {personTypes.length === 0 ? (
-            <p className="text-sm text-gray-400">No person types configured. Add a type in Settings first.</p>
-          ) : (
-            <>
-              <select
-                value={selectedTypeId}
-                onChange={e => handleTypeChange(e.target.value)}
-                className={withFieldError('w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-places-blue', !!fieldErrors.personType)}
-              >
-                <option value="">Select a type...</option>
-                {personTypes.map(t => (
-                  <option key={t.id} value={t.id}>{t.label}</option>
-                ))}
-              </select>
-              <FieldError message={fieldErrors.personType} />
-            </>
-          )}
+          <PersonTypePicker
+            id="add-person-type"
+            types={personTypes}
+            value={selectedType?.id ?? null}
+            onChange={handleTypeChange}
+            hasError={!!fieldErrors.personType}
+          />
+          <FieldError message={fieldErrors.personType} />
+          <p className="text-xs text-gray-500 mt-1">
+            Selecting a type pre-fills group and access defaults. You can adjust them before saving.
+          </p>
         </div>
 
         <div>
@@ -129,18 +136,29 @@ export default function CreatePersonForm({ onSuccess, onCancel }) {
           </label>
           <GroupPicker
             value={group}
-            onChange={g => {
-              setGroup(g);
-              setFieldErrors(prev => (prev.group ? { ...prev, group: undefined } : prev));
-            }}
+            onChange={g => { setGroup(g); clearFieldError('group'); }}
             hasError={!!fieldErrors.group}
           />
           <FieldError message={fieldErrors.group} />
         </div>
 
-        {selectedType && (
-          <PersonFieldsEditor personType={selectedType} fieldValues={fieldValues} setField={setField} nameError={fieldErrors.name} />
-        )}
+        <div>
+          <label htmlFor="add-person-role" className="block text-sm font-medium text-gray-700 mb-1">
+            System role <span className="text-red-500">*</span>
+          </label>
+          <SystemRoleSelect
+            id="add-person-role"
+            value={intendedRole}
+            onChange={r => { setIntendedRole(r); clearFieldError('role'); }}
+            hasError={!!fieldErrors.role}
+          />
+          <FieldError message={fieldErrors.role} />
+          <p className="text-xs text-gray-500 mt-1">
+            For reference. If this person gets a login, its access is set in Settings &gt; Access.
+          </p>
+        </div>
+
+        <PersonFieldsEditor personType={selectedType} fieldValues={fieldValues} setField={setField} nameError={fieldErrors.name} />
       </div>
 
       {error && <p className="text-sm text-red-600 mt-4">{error}</p>}
