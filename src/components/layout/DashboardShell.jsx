@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import Sidebar from './Sidebar'
 import wordmark from '../../assets/brand/wordmark-mark.png'
 import InviteCollaborator from '../invites/InviteCollaborator'
-import CollaboratorRoster from '../invites/CollaboratorRoster'
 import ProductionsView from '../productions/ProductionsView'
 import DepartmentsView from '../../views/DepartmentsView'
 import TimelineView from '../../views/TimelineView'
@@ -25,7 +24,6 @@ const SECTION_LABELS = {
   productions:         'Productions',
   departments:         'Departments',
   'volunteer-list':    'Volunteer List',
-  'collaborator-list': 'Your People',
   places:              'Places',
   people:              'People',
   settings:            'Settings',
@@ -52,7 +50,6 @@ function SectionContent({ section, onNavigate, userProfile, navState }) {
   if (section === 'departments')        return <DepartmentsView onNavigate={onNavigate} />
   if (section === 'places')              return <PlacesView />;
   if (section === 'invite-collaborator') return <InviteCollaborator />
-  if (section === 'collaborator-list')   return <CollaboratorRoster />
   if (section === 'settings')            return <SettingsView />
   if (section === 'people')              return <PeopleView onNavigate={onNavigate} navState={navState} />
   return <PlaceholderSection section={section} />

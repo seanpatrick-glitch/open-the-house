@@ -2,33 +2,27 @@ import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { PERSON_STATUS } from '../models/people';
+import { PERSON_GROUP_LABELS, PERSON_GROUP_ORDER } from '../models/people';
 import { getDisplayName } from '../utils/displayName';
 import CreatePersonForm from '../components/people/CreatePersonForm';
 import CsvImportForm from '../components/people/CsvImportForm';
+import GroupBadge from '../components/people/GroupBadge';
+import RoleBadge from '../components/people/RoleBadge';
 import PersonProfileView from './PersonProfileView';
 import PageHeader from '../components/shared/PageHeader';
 
-const STATUS_STYLES = {
-  [PERSON_STATUS.APPLIED]:    'bg-spotlight/15 text-stage-navy',
-  [PERSON_STATUS.WAITLISTED]: 'bg-purple-100 text-purple-700',
-  [PERSON_STATUS.ACTIVE]:     'bg-green-100 text-green-700',
-  [PERSON_STATUS.INACTIVE]:   'bg-gray-100 text-gray-500',
-};
+const ALL = 'all';
 
-const STATUS_LABELS = {
-  [PERSON_STATUS.APPLIED]:    'Applied',
-  [PERSON_STATUS.WAITLISTED]: 'Waitlisted',
-  [PERSON_STATUS.ACTIVE]:     'Active',
-  [PERSON_STATUS.INACTIVE]:   'Inactive',
-};
-
+// The People page is a contact and taxonomy roster: everyone in the org,
+// filterable by Group. Managing logins and invites lives in Settings.
 export default function PeopleView({ onNavigate, navState }) {
   const { userProfile } = useAuth();
   const [people, setPeople]           = useState([]);
+  const [members, setMembers]         = useState([]);
   const [personTypes, setPersonTypes] = useState([]);
-  const [typeFilter, setTypeFilter]   = useState('all');
-  const [loading, setLoading]         = useState(true);
+  const [groupFilter, setGroupFilter] = useState(ALL);
+  const [peopleLoading, setPeopleLoading]   = useState(true);
+  const [membersLoading, setMembersLoading] = useState(true);
   const [showForm, setShowForm]       = useState(false);
   const [showCsvImport, setShowCsvImport]       = useState(false);
   const [csvImportTypeId, setCsvImportTypeId]   = useState(null);
@@ -46,7 +40,7 @@ export default function PeopleView({ onNavigate, navState }) {
   useEffect(() => {
     if (!orgId) return;
 
-    // Load person types for filter dropdown
+    // Load person types for the CSV import picker
     const loadTypes = async () => {
       const snap = await getDocs(
         query(
@@ -58,25 +52,69 @@ export default function PeopleView({ onNavigate, navState }) {
     };
     loadTypes();
 
-    // Live people subscription
-    const q = query(
-      collection(db, 'organizations', orgId, 'people')
+    const unsubPeople = onSnapshot(
+      collection(db, 'organizations', orgId, 'people'),
+      snap => {
+        setPeople(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        setPeopleLoading(false);
+      },
+      err => {
+        console.error('PeopleView people listener error:', err);
+        setPeopleLoading(false);
+      }
     );
-    const unsub = onSnapshot(q, snap => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setPeople(data);
-      setLoading(false);
-    });
-    return () => unsub();
+
+    // Members docs carry a display copy of each login's role, used only for
+    // the role badge. Never read for routing or permissions.
+    const unsubMembers = onSnapshot(
+      collection(db, 'organizations', orgId, 'members'),
+      snap => {
+        setMembers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        setMembersLoading(false);
+      },
+      err => {
+        console.error('PeopleView members listener error:', err);
+        setMembersLoading(false);
+      }
+    );
+
+    return () => { unsubPeople(); unsubMembers(); };
   }, [orgId]);
 
-  const filtered = typeFilter === 'all'
-    ? people
-    : people.filter(p => p.typeId === typeFilter);
+  const memberByUid = new Map(members.map(m => [m.id, m]));
+  const linkedUids  = new Set(people.map(p => p.accountUid).filter(Boolean));
+
+  const rows = [
+    ...people.map(p => ({
+      key:      `person-${p.id}`,
+      personId: p.id,
+      name:     getDisplayName(p),
+      group:    p.group ?? null,
+      role:     p.accountUid ? memberByUid.get(p.accountUid)?.role ?? null : null,
+      email:    p.fieldValues?.email || '',
+      phone:    p.fieldValues?.phone || '',
+    })),
+    // Logins with no People record yet. They have no Group until one exists,
+    // so they show under Everyone only.
+    ...members
+      .filter(m => !linkedUids.has(m.id))
+      .map(m => ({
+        key:      `member-${m.id}`,
+        personId: null,
+        name:     getDisplayName(m) || m.email,
+        group:    null,
+        role:     m.role ?? null,
+        email:    m.email || '',
+        phone:    '',
+      })),
+  ].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
+
+  const filtered = groupFilter === ALL ? rows : rows.filter(r => r.group === groupFilter);
+  const countFor = group => rows.filter(r => r.group === group).length;
 
   const csvImportType = personTypes.find(t => t.id === csvImportTypeId) || null;
 
-  if (loading) {
+  if (peopleLoading || membersLoading) {
     return <div className="p-6 text-gray-500 text-sm">Loading...</div>;
   }
 
@@ -89,13 +127,16 @@ export default function PeopleView({ onNavigate, navState }) {
     );
   }
 
+  const tabs = [
+    { key: ALL, label: 'Everyone', count: rows.length },
+    ...PERSON_GROUP_ORDER.map(g => ({ key: g, label: PERSON_GROUP_LABELS[g], count: countFor(g) })),
+  ];
+
   return (
     <div className="p-6 max-w-5xl">
-      <PageHeader title="Company" />
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <p className="text-sm text-gray-500">Everyone your organization coordinates, in one place.</p>
-        </div>
+      <PageHeader title="People" />
+      <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
+        <p className="text-sm text-gray-500">Everyone in your org.</p>
         <div className="flex items-center gap-2">
           {personTypes.length > 0 && !showForm && !showCsvImport && (
             <div className="relative">
@@ -163,124 +204,132 @@ export default function PeopleView({ onNavigate, navState }) {
       )}
 
       {!showForm && !showCsvImport && (
-        <>
-          {personTypes.length > 0 && (
-            <div className="flex items-center gap-2 mb-5 flex-wrap">
+        rows.length === 0 ? (
+          <div className="bg-white border border-gray-200 rounded-xl p-10 text-center">
+            <p className="text-gray-500 text-sm mb-4">No one added yet. Invite someone or add them manually.</p>
+            <div className="flex items-center justify-center gap-3 flex-wrap">
               <button
-                onClick={() => setTypeFilter('all')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  typeFilter === 'all'
-                    ? 'bg-places-blue text-white'
-                    : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
-                }`}
+                onClick={() => onNavigate?.('invite-collaborator')}
+                className="border border-gray-200 text-gray-700 hover:border-gray-300 text-sm font-medium px-4 py-2 rounded-lg transition-colors bg-white"
               >
-                All
+                Invite someone
               </button>
-              {personTypes.map(type => (
+              <button
+                onClick={() => setShowForm(true)}
+                className="bg-places-blue hover:bg-places-blue/90 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              >
+                Add Person
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div role="tablist" aria-label="Filter by group" className="flex items-center gap-2 mb-5 flex-wrap">
+              {tabs.map(tab => (
                 <button
-                  key={type.id}
-                  onClick={() => setTypeFilter(type.id)}
+                  key={tab.key}
+                  role="tab"
+                  aria-selected={groupFilter === tab.key}
+                  onClick={() => setGroupFilter(tab.key)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    typeFilter === type.id
+                    groupFilter === tab.key
                       ? 'bg-places-blue text-white'
                       : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
                   }`}
                 >
-                  {type.label}
+                  {tab.label}
+                  <span className={`ml-1.5 text-xs ${groupFilter === tab.key ? 'text-white/70' : 'text-gray-400'}`}>
+                    {tab.count}
+                  </span>
                 </button>
               ))}
             </div>
-          )}
 
-          {filtered.length === 0 ? (
-            <div className="bg-white border border-gray-200 rounded-xl p-10 text-center">
-              <p className="text-gray-500 text-sm mb-1">
-                {typeFilter === 'all' ? 'No people yet.' : `No ${personTypes.find(t => t.id === typeFilter)?.label ?? 'people'} yet.`}
-              </p>
-              <p className="text-gray-400 text-sm">Add your first person to get started.</p>
-            </div>
-          ) : (
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-              {/* Table — sm and up */}
-              <table className="w-full text-sm hidden sm:table">
-                <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Type</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Email</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Account</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filtered.map(person => (
-                    <tr
-                      key={person.id}
-                      className="hover:bg-gray-50 transition-colors cursor-pointer"
-                      onClick={() => setSelectedPersonId(person.id)}
-                    >
-                      <td className="px-4 py-3 font-medium text-gray-900">
-                        {getDisplayName(person) || <span className="text-gray-400">No name</span>}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{person.typeLabel}</td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {person.fieldValues?.email || <span className="text-gray-400">No email</span>}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[person.status] || STATUS_STYLES[PERSON_STATUS.APPLIED]}`}>
-                          {STATUS_LABELS[person.status] || 'Applied'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        {person.accountStatus === 'active' ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Account active</span>
-                        ) : person.accountStatus === 'invited' ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Invited</span>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Not invited yet</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {/* Card list — below sm */}
-              <div className="sm:hidden divide-y divide-gray-100">
-                {filtered.map(person => (
-                  <button
-                    key={person.id}
-                    onClick={() => setSelectedPersonId(person.id)}
-                    className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="font-medium text-gray-900 truncate">
-                        {getDisplayName(person) || <span className="text-gray-400">No name</span>}
-                      </p>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${STATUS_STYLES[person.status] || STATUS_STYLES[PERSON_STATUS.APPLIED]}`}>
-                        {STATUS_LABELS[person.status] || 'Applied'}
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-0.5">{person.typeLabel}</p>
-                    <p className="text-xs text-gray-500 mt-0.5 truncate">
-                      {person.fieldValues?.email || 'No email'}
-                    </p>
-                    <div className="mt-1.5">
-                      {person.accountStatus === 'active' ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Account active</span>
-                      ) : person.accountStatus === 'invited' ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Invited</span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Not invited yet</span>
-                      )}
-                    </div>
-                  </button>
-                ))}
+            {filtered.length === 0 ? (
+              <div className="bg-white border border-gray-200 rounded-xl p-10 text-center">
+                <p className="text-gray-500 text-sm">No one in {PERSON_GROUP_LABELS[groupFilter]} yet.</p>
               </div>
-            </div>
-          )}
-        </>
+            ) : (
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                {/* Table — sm and up */}
+                <table className="w-full text-sm hidden sm:table">
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-gray-50">
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Group</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Role</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Contact</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filtered.map(row => (
+                      <tr
+                        key={row.key}
+                        className={row.personId ? 'hover:bg-gray-50 transition-colors cursor-pointer' : ''}
+                        onClick={row.personId ? () => setSelectedPersonId(row.personId) : undefined}
+                      >
+                        <td className="px-4 py-3 font-medium text-gray-900">
+                          {row.name || <span className="text-gray-400">No name</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                          {row.group ? <GroupBadge group={row.group} /> : <span className="text-gray-400">No group</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                          {row.role ? <RoleBadge role={row.role} /> : <span className="text-gray-400">No sign-in yet</span>}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">
+                          <ContactLines email={row.email} phone={row.phone} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Card list — below sm */}
+                <div className="sm:hidden divide-y divide-gray-100">
+                  {filtered.map(row => {
+                    const body = (
+                      <>
+                        <p className="font-medium text-gray-900 truncate">
+                          {row.name || <span className="text-gray-400">No name</span>}
+                        </p>
+                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                          {row.group ? <GroupBadge group={row.group} /> : <span className="text-xs text-gray-400">No group</span>}
+                          {row.role ? <RoleBadge role={row.role} /> : <span className="text-xs text-gray-400">No sign-in yet</span>}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1.5">
+                          <ContactLines email={row.email} phone={row.phone} />
+                        </div>
+                      </>
+                    );
+                    return row.personId ? (
+                      <button
+                        key={row.key}
+                        onClick={() => setSelectedPersonId(row.personId)}
+                        className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"
+                      >
+                        {body}
+                      </button>
+                    ) : (
+                      <div key={row.key} className="px-4 py-3">{body}</div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
+        )
       )}
     </div>
+  );
+}
+
+function ContactLines({ email, phone }) {
+  if (!email && !phone) return <span className="text-gray-400">No contact info</span>;
+  return (
+    <>
+      {email && <span className="block truncate">{email}</span>}
+      {phone && <span className="block">{phone}</span>}
+    </>
   );
 }

@@ -104,7 +104,7 @@ export default function InvitesStep({ orgId, onFinish, onBack, finishing }) {
     setSending(false);
 
     if (failures > 0) {
-      setError(`${failures} of ${toSend.length} invite(s) could not be sent. You can invite them later from Your People.`);
+      setError(`${failures} of ${toSend.length} invite(s) could not be sent. You can invite them later from Settings > Access.`);
     }
 
     onFinish();

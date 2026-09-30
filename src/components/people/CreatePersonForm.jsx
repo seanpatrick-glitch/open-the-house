@@ -3,6 +3,7 @@ import { collection, addDoc, getDocs, query, where, serverTimestamp } from 'fire
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import PersonFieldsEditor, { validatePersonFields, cleanFieldValues } from './PersonFieldsEditor';
+import GroupPicker from './GroupPicker';
 import { withFieldError, FieldError } from '../shared/FormField';
 
 export default function CreatePersonForm({ onSuccess, onCancel }) {
@@ -12,6 +13,7 @@ export default function CreatePersonForm({ onSuccess, onCancel }) {
   const [personTypes, setPersonTypes]     = useState([]);
   const [selectedTypeId, setSelectedTypeId] = useState('');
   const [selectedType, setSelectedType]   = useState(null);
+  const [group, setGroup]                 = useState(null);
   const [fieldValues, setFieldValues]     = useState({});
   const [saving, setSaving]               = useState(false);
   const [error, setError]                 = useState('');
@@ -50,6 +52,7 @@ export default function CreatePersonForm({ onSuccess, onCancel }) {
   async function handleSave() {
     const errors = {};
     if (!selectedTypeId || !selectedType) errors.personType = 'Person type is required.';
+    if (!group) errors.group = 'Choose a group.';
     const nameError = validatePersonFields(fieldValues);
     if (nameError) errors.name = nameError;
     if (Object.keys(errors).length > 0) {
@@ -65,6 +68,7 @@ export default function CreatePersonForm({ onSuccess, onCancel }) {
         typeId:      selectedTypeId,
         typeLabel:   selectedType.label,
         uid:         null,
+        group,
         status:      'active',
         createdBy:   uid,
         createdAt:   serverTimestamp(),
@@ -117,6 +121,21 @@ export default function CreatePersonForm({ onSuccess, onCancel }) {
               <FieldError message={fieldErrors.personType} />
             </>
           )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Group <span className="text-red-500">*</span>
+          </label>
+          <GroupPicker
+            value={group}
+            onChange={g => {
+              setGroup(g);
+              setFieldErrors(prev => (prev.group ? { ...prev, group: undefined } : prev));
+            }}
+            hasError={!!fieldErrors.group}
+          />
+          <FieldError message={fieldErrors.group} />
         </div>
 
         {selectedType && (

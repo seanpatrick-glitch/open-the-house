@@ -7,6 +7,8 @@ import { getDisplayName } from '../utils/displayName';
 import AssignmentsPanel from '../components/people/AssignmentsPanel';
 import HoursPanel from '../components/people/HoursPanel';
 import PersonInviteForm from '../components/people/PersonInviteForm';
+import GroupBadge from '../components/people/GroupBadge';
+import GroupPicker from '../components/people/GroupPicker';
 import PersonFieldsEditor, { TOGGLEABLE_LABELS, validatePersonFields, cleanFieldValues } from '../components/people/PersonFieldsEditor';
 import toast from 'react-hot-toast';
 
@@ -48,6 +50,8 @@ export default function PersonProfileView({ personId, onBack }) {
   const [editFieldValues, setEditFieldValues] = useState({});
   const [savingEdit, setSavingEdit]         = useState(false);
   const [editError, setEditError]           = useState('');
+  const [editingGroup, setEditingGroup]     = useState(false);
+  const [savingGroup, setSavingGroup]       = useState(false);
 
   useEffect(() => {
     if (!orgId || !personId) return;
@@ -162,6 +166,22 @@ export default function PersonProfileView({ personId, onBack }) {
     }
   }
 
+  // Group is taxonomy only: this writes the one field and touches nothing
+  // about the person's login or role.
+  async function handleSetGroup(group) {
+    if (group === person.group) { setEditingGroup(false); return; }
+    setSavingGroup(true);
+    try {
+      await updateDoc(doc(db, 'organizations', orgId, 'people', personId), { group });
+      setEditingGroup(false);
+    } catch (err) {
+      console.error('Error saving group:', err);
+      toast.error('Could not save the group. Please try again.');
+    } finally {
+      setSavingGroup(false);
+    }
+  }
+
   function addTag() {
     const t = tagInput.trim();
     if (!t || tags.includes(t)) return;
@@ -247,6 +267,34 @@ export default function PersonProfileView({ personId, onBack }) {
           />
         </div>
       )}
+
+      {/* Group */}
+      <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-sm font-semibold text-gray-700">Group</h2>
+          {canEdit && !editingGroup && (
+            <button onClick={() => setEditingGroup(true)}
+              className="text-sm font-medium text-places-blue hover:text-places-blue/90 transition-colors">
+              {person.group ? 'Change' : 'Set group'}
+            </button>
+          )}
+          {editingGroup && (
+            <button onClick={() => setEditingGroup(false)} disabled={savingGroup}
+              className="text-sm font-medium text-gray-600 hover:text-gray-900 disabled:opacity-50 transition-colors">
+              Cancel
+            </button>
+          )}
+        </div>
+        {editingGroup ? (
+          <div className="mt-3">
+            <GroupPicker value={person.group} onChange={handleSetGroup} disabled={savingGroup} />
+          </div>
+        ) : person.group ? (
+          <GroupBadge group={person.group} />
+        ) : (
+          <p className="text-sm text-gray-400">No group yet.</p>
+        )}
+      </div>
 
       {editing ? (
         <div className="bg-white border border-places-blue/20 rounded-xl p-5 mb-4">
