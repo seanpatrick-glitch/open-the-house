@@ -6,21 +6,8 @@ import { useAuth } from '../../contexts/AuthContext'
 import { getDisplayName } from '../../utils/displayName'
 import { callableErrorMessage } from '../../utils/callableError'
 import InviteCollaborator from './InviteCollaborator'
+import RoleBadge from '../people/RoleBadge'
 import toast from 'react-hot-toast'
-
-const ROLE_LABELS = {
-  admin:                  'Admin',
-  secondaryAdmin:         'Secondary Admin',
-  departmentHead:         'Department Head',
-  orgCollaborator:        'Org Collaborator',
-  productionCollaborator: 'Production Collaborator',
-  collaborator:           'Collaborator',
-  person:                 'Person (platform account)',
-}
-
-function roleLabel(role) {
-  return ROLE_LABELS[role] || role
-}
 
 export default function CollaboratorRoster() {
   const { userProfile } = useAuth()
@@ -131,20 +118,22 @@ export default function CollaboratorRoster() {
       <div className="space-y-4">
         <button onClick={() => setShowInviteForm(false)}
           className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1">
-          ← Back to Your People
+          ← Back to Access
         </button>
         <InviteCollaborator />
       </div>
     )
   }
 
+  // Rendered as the Access section of Settings. The People page is the
+  // contact and Group roster; who can sign in is managed here.
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Your People</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Everyone with access to this organization, plus invites still waiting to be accepted.
+          <h2 className="text-base font-semibold text-gray-800">Access</h2>
+          <p className="text-gray-500 text-sm mt-0.5">
+            Everyone who can sign in to this organization, plus invites still waiting to be accepted.
           </p>
         </div>
         <button
@@ -155,11 +144,11 @@ export default function CollaboratorRoster() {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="rounded-lg border border-gray-200 overflow-hidden">
         {loading ? (
-          <p className="text-gray-400 text-sm p-6">Loading…</p>
+          <p className="text-gray-400 text-sm p-4">Loading…</p>
         ) : rows.length === 0 ? (
-          <p className="text-gray-400 text-sm p-6">No one has platform access yet.</p>
+          <p className="text-gray-400 text-sm p-4">No one can sign in yet.</p>
         ) : (
           <ul className="divide-y divide-gray-100">
             {rows.map(row => {
@@ -168,16 +157,14 @@ export default function CollaboratorRoster() {
               const isConfirming = confirmTarget?.key === row.key
 
               return (
-                <li key={row.key} className="px-6 py-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <li key={row.key} className="px-4 py-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {row.name || row.email}
                     </p>
                     {row.name && <p className="text-xs text-gray-400 truncate">{row.email}</p>}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700">
-                        {roleLabel(row.role)}
-                      </span>
+                      <RoleBadge role={row.role} />
                       <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
                         row.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-spotlight/15 text-stage-navy'
                       }`}>

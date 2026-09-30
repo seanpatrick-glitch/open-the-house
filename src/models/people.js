@@ -18,10 +18,23 @@ export const ACCOUNT_STATUS = {
 // Taxonomy Group: who someone is to the org. Set by an Admin on the People
 // record. Never derived from Role and never used for access or routing.
 export const PERSON_GROUP = {
-  YOUR_PEOPLE:   'yourPeople',     // core operational leads
-  COMPANY:       'company',        // year-round staff, board, permanent members
-  COLLABORATORS: 'collaborators',  // brought in per production
+  YOUR_PEOPLE:   'yourPeople',     // leads who carry decisions through the org
+  COMPANY:       'company',        // year-round: board, staff, returning volunteers
+  COLLABORATORS: 'collaborators',  // tied to a production: guest artists, cast, contractors
 };
+
+// On-screen names for each Group, in the order the People page lists them.
+export const PERSON_GROUP_LABELS = {
+  [PERSON_GROUP.YOUR_PEOPLE]:   'Your People',
+  [PERSON_GROUP.COMPANY]:       'Company',
+  [PERSON_GROUP.COLLABORATORS]: 'Collaborators',
+};
+
+export const PERSON_GROUP_ORDER = [
+  PERSON_GROUP.YOUR_PEOPLE,
+  PERSON_GROUP.COMPANY,
+  PERSON_GROUP.COLLABORATORS,
+];
 
 export const FIELD_TYPES = {
   TEXT:          'text',
@@ -75,9 +88,10 @@ COLLECTION: organizations/{orgId}/people/{personId}
   typeLabel: string,              // denormalized for display
   displayName: string | null,     // optional, defaults to fieldValues.name if unset
   group: 'yourPeople' | 'company' | 'collaborators' | null,
-                                  // taxonomy Group (PERSON_GROUP). No flow writes it
-                                  // yet; the Production Team and Cast lists show it
-                                  // when present and never require it.
+                                  // taxonomy Group (PERSON_GROUP). Required by Add
+                                  // Person, editable on the person's page. CSV
+                                  // import, self-signup and onboarding don't set it
+                                  // yet, so those records read as "No group".
   status: 'applied' | 'waitlisted' | 'active' | 'inactive',
   staff: boolean,                 // default false. Active persons only. Set by admin or DH.
   accountUid: string | null,      // Firebase Auth uid, written on invite acceptance

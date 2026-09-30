@@ -11,15 +11,7 @@ const NAV_ITEMS = [
   { key: 'home',        label: 'Home',        emoji: '🏠' },
   { key: 'timeline',    label: 'Timeline',    emoji: '📅' },
   { key: 'messages',    label: 'Messages',    emoji: '💬' },
-  {
-    key: 'people-group',
-    label: 'People',
-    emoji: '🧑‍🤝‍🧑',
-    children: [
-      { key: 'people',            label: 'Company'      },
-      { key: 'collaborator-list', label: 'Your People'   },
-    ],
-  },
+  { key: 'people',      label: 'People',      emoji: '🧑‍🤝‍🧑' },
   { key: 'places',      label: 'Places',      emoji: '📍' },
   { key: 'departments', label: 'Departments', emoji: '🏢' },
   { key: 'productions', label: 'Productions', emoji: '🎭' },
