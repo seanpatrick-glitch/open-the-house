@@ -6,6 +6,7 @@ import { getDisplayName } from '../../utils/displayName'
 import TaskDetailPanel from '../timeline/TaskDetailPanel'
 import VolunteersPanel from './VolunteersPanel'
 import ShowDatesPanel from './ShowDatesPanel'
+import TeamCastPanels from './TeamCastPanels'
 import toast from 'react-hot-toast'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -94,6 +95,9 @@ export default function ProductionDashboard({ production, places, onBack, backLa
   // Roster: people whose assignments array includes this production.
   const [roster,        setRoster]        = useState([])
   const [rosterLoading, setRosterLoading] = useState(true)
+  // Every People record in the org, from the same listener: the Production
+  // Team and Cast add flow searches these.
+  const [people,        setPeople]        = useState([])
 
   // Members and departments are loaded once — TaskDetailPanel reads both
   // for assignee names and department color/name display.
@@ -145,6 +149,7 @@ export default function ProductionDashboard({ production, places, onBack, backLa
       collection(db, 'organizations', orgId, 'people'),
       snap => {
         const all = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        setPeople(all)
         setRoster(all.filter(p =>
           (p.assignments || []).some(a => a.type === 'production' && a.refId === production.id)
         ))
@@ -229,6 +234,15 @@ export default function ProductionDashboard({ production, places, onBack, backLa
           <span>{formatDate(production.startDate)} to {formatDate(production.endDate)}</span>
         </span>
       </div>
+
+      {/* Production Team and Cast: the locked record's fourth and fifth
+          sections, after identity, dates and place above. */}
+      <TeamCastPanels
+        production={production}
+        people={people}
+        members={orgUsers}
+        peopleLoading={rosterLoading}
+      />
 
       {/* Active Modules */}
       <section>
