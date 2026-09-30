@@ -60,27 +60,28 @@ export default function CreatePersonForm({ onSuccess, onCancel }) {
     setSaving(true);
     setError('');
     try {
-      await addDoc(
-        collection(db, 'organizations', orgId, 'people'),
-        {
-          orgId,
-          typeId:      selectedTypeId,
-          typeLabel:   selectedType.label,
-          uid:         null,
-          status:      'active',
-          createdBy:   uid,
-          createdAt:   serverTimestamp(),
-          approvedBy:  uid,
-          approvedAt:  serverTimestamp(),
-          assignments: [],
-          totalHours:  0,
-          accountUid:    null,
-          accountStatus: 'no_account',
-          staff:         false,
-          fieldValues: cleanFieldValues(fieldValues),
-        }
-      );
-      onSuccess();
+      const person = {
+        orgId,
+        typeId:      selectedTypeId,
+        typeLabel:   selectedType.label,
+        uid:         null,
+        status:      'active',
+        createdBy:   uid,
+        createdAt:   serverTimestamp(),
+        approvedBy:  uid,
+        approvedAt:  serverTimestamp(),
+        assignments: [],
+        totalHours:  0,
+        accountUid:    null,
+        accountStatus: 'no_account',
+        staff:         false,
+        fieldValues: cleanFieldValues(fieldValues),
+      };
+      const ref = await addDoc(collection(db, 'organizations', orgId, 'people'), person);
+      // The new record goes back to callers that pick up right where they
+      // left off (the Production Team and Cast add flow pre-selects it).
+      // Callers that call onSuccess() with no args are unaffected.
+      onSuccess({ id: ref.id, ...person });
     } catch (err) {
       console.error('CreatePersonForm error:', err);
       setError('Failed to save. Please try again.');

@@ -6,6 +6,7 @@ import CreatePlaceForm from './CreatePlaceForm'
 import CreateProductionForm from './CreateProductionForm'
 import ProductionDashboard from './ProductionDashboard'
 import PageHeader from '../shared/PageHeader'
+import { getPlaceIds } from '../../models/productions'
 import toast from 'react-hot-toast'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -31,13 +32,20 @@ const MODULE_LABELS = {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatDate(ts) {
-  if (!ts) return 'No date'
   const date = ts.toDate ? ts.toDate() : new Date(ts)
   return date.toLocaleDateString('en-US', {
     month: 'long',
     day:   'numeric',
     year:  'numeric',
   })
+}
+
+// Opening and closing are each optional.
+function formatRun(openDate, closeDate) {
+  if (openDate && closeDate) return `${formatDate(openDate)} to ${formatDate(closeDate)}`
+  if (openDate)  return `Opens ${formatDate(openDate)}`
+  if (closeDate) return `Closes ${formatDate(closeDate)}`
+  return 'No dates yet'
 }
 
 // ── ProductionCard ────────────────────────────────────────────────────────────
@@ -83,7 +91,7 @@ function ProductionCard({ prod, placeName, onOpen }) {
             </span>
             <span className="flex items-center gap-1">
               <span>📅</span>
-              <span>{formatDate(prod.startDate)} to {formatDate(prod.endDate)}</span>
+              <span>{formatRun(prod.openDate, prod.closeDate)}</span>
             </span>
           </div>
 
@@ -128,7 +136,7 @@ export default function ProductionsView() {
   const [productionsLoading, setProductionsLoading] = useState(true)
   const [showPlaceForm,      setShowPlaceForm]      = useState(false)
   const [showProdForm,       setShowProdForm]       = useState(false)
-  const [selectedProduction, setSelectedProduction] = useState(null)
+  const [selectedId,         setSelectedId]         = useState(null)
 
   // Real-time listener for all places in this org
   useEffect(() => {
@@ -179,39 +187,17 @@ export default function ProductionsView() {
     )
   }
 
-  // ── No places exist yet ─────────────────────────────────────────────────────
-  if (places.length === 0) {
-    return (
-      <div className="space-y-6 max-w-lg">
-        <PageHeader title="Productions" bleed={false} />
-
-        {showPlaceForm ? (
-          <CreatePlaceForm
-            onSuccess={() => setShowPlaceForm(false)}
-            onCancel={() => setShowPlaceForm(false)}
-          />
-        ) : (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-12 text-center">
-            <p className="text-gray-500 text-sm mb-4">No places added yet.</p>
-            <button
-              onClick={() => setShowPlaceForm(true)}
-              className="bg-spotlight hover:bg-spotlight/90 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
-            >
-              Add a Place
-            </button>
-          </div>
-        )}
-      </div>
-    )
-  }
-
   // ── Production dashboard ────────────────────────────────────────────────────
+  // Also where a new production lands straight after it's created. addDoc
+  // resolves once the write is acknowledged, by which time the listener
+  // above already has the new record.
+  const selectedProduction = selectedId && productions.find(p => p.id === selectedId)
   if (selectedProduction) {
     return (
       <ProductionDashboard
         production={selectedProduction}
         places={places}
-        onBack={() => setSelectedProduction(null)}
+        onBack={() => setSelectedId(null)}
       />
     )
   }
@@ -220,7 +206,8 @@ export default function ProductionsView() {
   return (
     <div className="space-y-6 max-w-4xl">
 
-      {/* Header — Create Production always visible when places exist */}
+      {/* Header — a production needs only a title, so Create Production is
+          always available, places or not */}
       <PageHeader title="Productions" bleed={false} />
       <div className="flex items-center justify-end">
         <div className="flex items-center gap-2">
@@ -250,7 +237,7 @@ export default function ProductionsView() {
       {showProdForm && (
         <CreateProductionForm
           places={places}
-          onSuccess={() => setShowProdForm(false)}
+          onSuccess={({ id }) => { setShowProdForm(false); setSelectedId(id) }}
           onCancel={() => setShowProdForm(false)}
         />
       )}
@@ -270,8 +257,8 @@ export default function ProductionsView() {
             <ProductionCard
               key={prod.id}
               prod={prod}
-              placeName={placeMap[prod.placeId] ?? 'No place set'}
-              onOpen={() => setSelectedProduction(prod)}
+              placeName={getPlaceIds(prod).map(id => placeMap[id] ?? 'Unknown place').join(', ') || 'No place set'}
+              onOpen={() => setSelectedId(prod.id)}
             />
           ))}
         </div>

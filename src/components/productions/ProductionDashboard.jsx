@@ -6,6 +6,9 @@ import { getDisplayName } from '../../utils/displayName'
 import TaskDetailPanel from '../timeline/TaskDetailPanel'
 import VolunteersPanel from './VolunteersPanel'
 import ShowDatesPanel from './ShowDatesPanel'
+import TeamCastPanels from './TeamCastPanels'
+import ProductionDatesPanel from './ProductionDatesPanel'
+import ProductionPlacesPanel from './ProductionPlacesPanel'
 import toast from 'react-hot-toast'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -52,26 +55,26 @@ const TASK_STATUS_LABELS = {
   overdue:     'Overdue',
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function formatDate(ts) {
-  if (!ts) return 'No date'
-  const date = ts.toDate ? ts.toDate() : new Date(ts)
-  return date.toLocaleDateString('en-US', {
-    month: 'long',
-    day:   'numeric',
-    year:  'numeric',
-  })
-}
-
 // ── ProductionDashboard ───────────────────────────────────────────────────────
 
-export default function ProductionDashboard({ production, places, onBack, backLabel = 'Productions' }) {
+export default function ProductionDashboard({ production: initialProduction, places, onBack, backLabel = 'Productions' }) {
   const { userProfile } = useAuth()
   const orgId = userProfile.orgId
+  // Admin and secondary admin edit the record; the productions update rule
+  // allows no one else.
+  const canManage = userProfile.role === 'admin' || userProfile.role === 'secondaryAdmin'
 
-  const placeMap  = Object.fromEntries(places.map(p => [p.id, p.name]))
-  const placeName = placeMap[production.placeId] ?? 'No place set'
+  // The prop is a snapshot from when the production was opened; dates and
+  // places are edited here, so the rest of the view reads the live record.
+  const [production, setProduction] = useState(initialProduction)
+  useEffect(() => {
+    if (!orgId) return
+    return onSnapshot(
+      doc(db, 'organizations', orgId, 'productions', initialProduction.id),
+      snap => { if (snap.exists()) setProduction({ id: snap.id, ...snap.data() }) },
+      err => console.error('ProductionDashboard production listener error:', err)
+    )
+  }, [orgId, initialProduction.id])
 
   // Local copy of activeModules so the UI updates immediately on toggle
   // without waiting for the Firestore listener to propagate back through
@@ -94,6 +97,9 @@ export default function ProductionDashboard({ production, places, onBack, backLa
   // Roster: people whose assignments array includes this production.
   const [roster,        setRoster]        = useState([])
   const [rosterLoading, setRosterLoading] = useState(true)
+  // Every People record in the org, from the same listener: the Production
+  // Team and Cast add flow searches these.
+  const [people,        setPeople]        = useState([])
 
   // Members and departments are loaded once — TaskDetailPanel reads both
   // for assignee names and department color/name display.
@@ -145,6 +151,7 @@ export default function ProductionDashboard({ production, places, onBack, backLa
       collection(db, 'organizations', orgId, 'people'),
       snap => {
         const all = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        setPeople(all)
         setRoster(all.filter(p =>
           (p.assignments || []).some(a => a.type === 'production' && a.refId === production.id)
         ))
@@ -203,7 +210,9 @@ export default function ProductionDashboard({ production, places, onBack, backLa
         ← {backLabel}
       </button>
 
-      {/* Header */}
+      {/* The locked record's five sections, in order: Identity (this
+          header), Dates, Places, Production Team, Cast. Every one is shown
+          even when empty, with a prompt to add. */}
       <div>
         <div className="flex items-center gap-3 mb-1 flex-wrap">
           <h1 className="text-2xl font-bold text-gray-900">{production.name}</h1>
@@ -218,17 +227,16 @@ export default function ProductionDashboard({ production, places, onBack, backLa
         <p className="text-sm text-gray-400">{production.displayLabel}</p>
       </div>
 
-      {/* Info row */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-500">
-        <span className="flex items-center gap-1.5">
-          <span>📍</span>
-          <span>{placeName}</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span>📅</span>
-          <span>{formatDate(production.startDate)} to {formatDate(production.endDate)}</span>
-        </span>
-      </div>
+      <ProductionDatesPanel production={production} canManage={canManage} />
+
+      <ProductionPlacesPanel production={production} places={places} canManage={canManage} />
+
+      <TeamCastPanels
+        production={production}
+        people={people}
+        members={orgUsers}
+        peopleLoading={rosterLoading}
+      />
 
       {/* Active Modules */}
       <section>

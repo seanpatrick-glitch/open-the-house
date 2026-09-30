@@ -13,7 +13,6 @@ const ROLE_LABELS = {
   secondaryAdmin:         'Secondary Admin',
   departmentHead:         'Department Head',
   orgCollaborator:        'Org Collaborator',
-  venueManager:           'Venue Manager',
   productionCollaborator: 'Production Collaborator',
   collaborator:           'Collaborator',
   person:                 'Person (platform account)',

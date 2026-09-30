@@ -2,9 +2,9 @@
 // Order is fixed: Organization -> People -> Places -> Production -> Invites.
 // Organization was added as a new first step so the admin can confirm/correct
 // the org name already collected at signup and add a logo (see OrgStep.jsx),
-// pushing every other step back by one. Production still requires a places
-// array to exist (CreateProductionForm.jsx), so Places must come before it
-// regardless of UX preference.
+// pushing every other step back by one. Places comes before Production so
+// the Production step can offer them, though a production no longer needs
+// one (Phase 3 item 2, 2026-09-29).
 
 import React, { useState } from 'react'
 import { doc, updateDoc } from 'firebase/firestore'

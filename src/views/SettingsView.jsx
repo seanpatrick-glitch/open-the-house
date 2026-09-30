@@ -4,6 +4,7 @@ import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getActiveProductionId } from '../models/org';
+import { getPlaceIds } from '../models/productions';
 import { getDisplayName } from '../utils/displayName';
 import CreatePersonTypeForm from '../components/people/CreatePersonTypeForm';
 import CreateSignupTokenForm from '../components/people/CreateSignupTokenForm';
@@ -115,7 +116,7 @@ export default function SettingsView() {
         const prodsSnap = await getDocs(collection(db, 'organizations', orgId, 'productions'));
         setProductions(prodsSnap.docs.map(d => ({
           id:        d.id,
-          placeName: placeNames[d.data().placeId] ?? 'No place set',
+          placeName: getPlaceIds(d.data()).map(id => placeNames[id] ?? 'Unknown place').join(', '),
           ...d.data(),
         })));
       } catch (err) {
@@ -321,7 +322,7 @@ export default function SettingsView() {
             <div>
               <p className="text-sm font-medium text-gray-700">Departments</p>
               <p className="text-sm text-gray-500 mt-1">
-                Organize your venues and productions under departments. Turning this on adds a Departments section to your navigation.
+                Organize your places and productions under departments. Turning this on adds a Departments section to your navigation.
               </p>
             </div>
             <button
@@ -459,7 +460,7 @@ export default function SettingsView() {
             <option value="">No active production</option>
             {productions.map(p => (
               <option key={p.id} value={p.id}>
-                {p.name} at {p.placeName}
+                {p.placeName ? `${p.name} at ${p.placeName}` : p.name}
               </option>
             ))}
           </select>

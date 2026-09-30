@@ -1,13 +1,10 @@
 // ProductionStep.jsx — Onboarding wizard Step 3 (Production). Reuses
-// CreateProductionForm.jsx directly for its required fields (name, place,
-// scope, start/end date) and its existing dual-field write pattern
-// (startDate/endDate plus the legacy openDate/closeDate/venueId fields,
-// unchanged by this step). On save, sets the org's activeProdId (the
+// CreateProductionForm.jsx directly: only the title is required, and places
+// and dates are optional. On save, sets the org's activeProdId (the
 // productionId, per models/org.js) so the dashboard picks up the new
 // production once the wizard finishes.
-// Places must already exist by the time this step is reached — Step 2
-// requires at least one before Next is enabled, and CreateProductionForm
-// itself cannot function with zero places.
+// The org's places are loaded so the form can search them; the form works
+// with none, and a new place can be added from inside it.
 
 import { useState, useEffect } from 'react';
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
@@ -62,10 +59,6 @@ export default function ProductionStep({ orgId, onNext, onBack }) {
 
       {loadingPlaces ? (
         <p className="text-sm text-gray-400">Loading...</p>
-      ) : places.length === 0 ? (
-        <p className="text-sm text-red-600">
-          No places found. Go back and add at least one place first.
-        </p>
       ) : (
         <CreateProductionForm places={places} onSuccess={handleProductionCreated} onCancel={onBack} />
       )}

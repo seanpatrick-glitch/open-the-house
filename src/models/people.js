@@ -15,6 +15,14 @@ export const ACCOUNT_STATUS = {
   ACTIVE:     'active',
 };
 
+// Taxonomy Group: who someone is to the org. Set by an Admin on the People
+// record. Never derived from Role and never used for access or routing.
+export const PERSON_GROUP = {
+  YOUR_PEOPLE:   'yourPeople',     // core operational leads
+  COMPANY:       'company',        // year-round staff, board, permanent members
+  COLLABORATORS: 'collaborators',  // brought in per production
+};
+
 export const FIELD_TYPES = {
   TEXT:          'text',
   DATE:          'date',
@@ -66,6 +74,10 @@ COLLECTION: organizations/{orgId}/people/{personId}
   typeId: string,                 // reference to personTypes/{typeId}
   typeLabel: string,              // denormalized for display
   displayName: string | null,     // optional, defaults to fieldValues.name if unset
+  group: 'yourPeople' | 'company' | 'collaborators' | null,
+                                  // taxonomy Group (PERSON_GROUP). No flow writes it
+                                  // yet; the Production Team and Cast lists show it
+                                  // when present and never require it.
   status: 'applied' | 'waitlisted' | 'active' | 'inactive',
   staff: boolean,                 // default false. Active persons only. Set by admin or DH.
   accountUid: string | null,      // Firebase Auth uid, written on invite acceptance

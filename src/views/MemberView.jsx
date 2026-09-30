@@ -24,13 +24,16 @@ import wordmark from '../assets/brand/wordmark-mark.png';
 
 function getDashboardState(openDate, closeDate, override) {
   if (override) return override;
-  const today          = new Date();
-  const open           = openDate?.toDate ? openDate.toDate() : new Date(openDate);
-  const close          = closeDate?.toDate ? closeDate.toDate() : new Date(closeDate);
-  const daysToOpen     = differenceInDays(open, today);
-  const daysSinceClose = differenceInDays(today, close);
-  if (daysSinceClose > 0) return DASHBOARD_STATES.POSTMORTEM;
-  if (daysToOpen <= 0 && daysSinceClose <= 0) return DASHBOARD_STATES.LIVE;
+  // Either date may be missing (a production needs only a name). With no
+  // closing date it never reads as closed; with no opening date it stays in
+  // Planning until it closes.
+  const today = new Date();
+  const open  = openDate  ? (openDate.toDate  ? openDate.toDate()  : new Date(openDate))  : null;
+  const close = closeDate ? (closeDate.toDate ? closeDate.toDate() : new Date(closeDate)) : null;
+  if (close && differenceInDays(today, close) > 0) return DASHBOARD_STATES.POSTMORTEM;
+  if (!open) return DASHBOARD_STATES.PLANNING;
+  const daysToOpen = differenceInDays(open, today);
+  if (daysToOpen <= 0) return DASHBOARD_STATES.LIVE;
   if (daysToOpen <= 7) return DASHBOARD_STATES.FINAL_COUNTDOWN;
   return DASHBOARD_STATES.PLANNING;
 }
@@ -134,7 +137,7 @@ export default function MemberView() {
         const open  = prod.openDate?.toDate ? prod.openDate.toDate() : new Date(prod.openDate);
         setActiveProd(prod);
         setDashState(state);
-        setDaysToOpen(differenceInDays(open, new Date()));
+        setDaysToOpen(prod.openDate ? differenceInDays(open, new Date()) : null);
 
         // People count
         const peopleSnap = await getDocs(
@@ -454,7 +457,7 @@ export default function MemberView() {
               <p className="text-sm text-gray-400">
                 {unconfirmedAssignments.length > 0
                   ? 'Confirm your assignments above to see them here.'
-                  : 'No productions or venues assigned yet.'}
+                  : 'No productions or places assigned yet.'}
               </p>
             </div>
           ) : (
