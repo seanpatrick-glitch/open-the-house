@@ -18,7 +18,6 @@ const ROLE_OPTIONS = [
   { value: 'orgCollaborator',        label: 'Org Collaborator' },
   { value: 'admin',                  label: 'Admin' },
   { value: 'secondaryAdmin',         label: 'Secondary Admin' },
-  { value: 'venueManager',           label: 'Venue Manager' },
   { value: 'productionCollaborator', label: 'Production Collaborator' },
 ];
 

@@ -457,7 +457,7 @@ export default function MemberView() {
               <p className="text-sm text-gray-400">
                 {unconfirmedAssignments.length > 0
                   ? 'Confirm your assignments above to see them here.'
-                  : 'No productions or venues assigned yet.'}
+                  : 'No productions or places assigned yet.'}
               </p>
             </div>
           ) : (

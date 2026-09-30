@@ -110,7 +110,7 @@ export default function DepartmentsView({ onNavigate }) {
       <PageHeader title="Departments" />
       <div className="flex items-center justify-between mb-6">
         <div>
-          <p className="text-sm text-gray-500">Organize your venues, productions, and people by team.</p>
+          <p className="text-sm text-gray-500">Organize your places, productions, and people by team.</p>
         </div>
         <button
           onClick={() => setShowForm(true)}

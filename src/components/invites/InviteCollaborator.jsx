@@ -21,7 +21,6 @@ const ROLE_OPTIONS = [
   { value: 'secondaryAdmin',       label: 'Secondary Admin' },
   { value: 'departmentHead',       label: 'Department Head' },
   { value: 'orgCollaborator',      label: 'Org Collaborator' },
-  { value: 'venueManager',         label: 'Venue Manager' },
   { value: 'productionCollaborator', label: 'Production Collaborator' },
 ]
 

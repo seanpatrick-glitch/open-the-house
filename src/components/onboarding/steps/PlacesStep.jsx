@@ -22,7 +22,7 @@ export default function PlacesStep({ onNext, onBack }) {
     <div>
       <h2 className="text-xl font-semibold text-gray-900 mb-1">Add your places</h2>
       <p className="text-gray-500 text-sm mb-6">
-        Venues, stages, or spaces your productions happen in. Add at least one to continue.
+        Anywhere your organization works: theatres, studios, rehearsal rooms, offices, or any other space. Add at least one to continue.
       </p>
 
       <div className="mb-4">
