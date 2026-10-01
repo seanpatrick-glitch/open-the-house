@@ -48,9 +48,15 @@ export const FIELD_TYPES = {
 /*
 COLLECTION: organizations/{orgId}/personTypes/{typeId}
 {
-  label: string,                  // "Artist", "Volunteer", "Staff", etc.
+  label: string,                  // "Lighting Designer", "Board Member", etc. Renamable:
+                                  // people keep the id and their typeLabel follows
   description: string,            // optional
   orgId: string,
+  defaultGroup: 'yourPeople' | 'company' | 'collaborators' | null,
+  defaultSystemRole: 'admin' | 'departmentHead' | 'base' | null,
+                                  // both only pre-fill person forms and grant
+                                  // nothing (models/personTypes.js). Null on types
+                                  // made before Phase 4 item 4.
   departmentHeadId: string | null, // uid of assigned DH — required for DH write-scoping
   departmentId: string | null,    // optional, if Departments module is active
   createdBy: string,              // uid
@@ -84,14 +90,20 @@ COLLECTION: organizations/{orgId}/personTypes/{typeId}
 COLLECTION: organizations/{orgId}/people/{personId}
 {
   orgId: string,
-  typeId: string,                 // reference to personTypes/{typeId}
-  typeLabel: string,              // denormalized for display
+  typeId: string | null,          // reference to personTypes/{typeId}. Optional on Add
+                                  // Person; cleared when the type is deleted
+  typeLabel: string | null,       // denormalized for display
   displayName: string | null,     // optional, defaults to fieldValues.name if unset
   group: 'yourPeople' | 'company' | 'collaborators' | null,
                                   // taxonomy Group (PERSON_GROUP). Required by Add
                                   // Person, editable on the person's page. CSV
-                                  // import, self-signup and onboarding don't set it
-                                  // yet, so those records read as "No group".
+                                  // import takes the type's default; self-signup
+                                  // and onboarding don't set it yet.
+  intendedRole: 'admin' | 'departmentHead' | 'base' | null,
+                                  // system role picked on Add Person, pre-filled
+                                  // from the type. Display only: it grants nothing.
+                                  // A login's real role lives on users/{uid} and is
+                                  // set in Settings > Access.
   status: 'applied' | 'waitlisted' | 'active' | 'inactive',
   staff: boolean,                 // default false. Active persons only. Set by admin or DH.
   accountUid: string | null,      // Firebase Auth uid, written on invite acceptance

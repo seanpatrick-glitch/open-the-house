@@ -134,6 +134,10 @@ export default function CsvImportForm({ personType, onSuccess, onCancel }) {
             orgId,
             typeId:      personType.id,
             typeLabel:   personType.label,
+            // The chosen type's defaults, as on Add Person. Editable per
+            // person afterwards.
+            group:        personType.defaultGroup ?? null,
+            intendedRole: personType.defaultSystemRole ?? null,
             uid:         null,
             status:      'active',
             createdBy:   uid,

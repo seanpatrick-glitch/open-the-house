@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { doc, onSnapshot, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, collection, query, where, onSnapshot, getDoc, getDocs, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { PERSON_STATUS } from '../models/people';
@@ -9,6 +9,9 @@ import HoursPanel from '../components/people/HoursPanel';
 import PersonInviteForm from '../components/people/PersonInviteForm';
 import GroupBadge from '../components/people/GroupBadge';
 import GroupPicker from '../components/people/GroupPicker';
+import RoleBadge from '../components/people/RoleBadge';
+import PersonTypePicker from '../components/people/PersonTypePicker';
+import SystemRoleSelect from '../components/people/SystemRoleSelect';
 import PersonFieldsEditor, { TOGGLEABLE_LABELS, validatePersonFields, cleanFieldValues } from '../components/people/PersonFieldsEditor';
 import toast from 'react-hot-toast';
 
@@ -32,6 +35,7 @@ export default function PersonProfileView({ personId, onBack }) {
   const role  = userProfile?.role;
 
   const isStaff = ['admin', 'secondaryAdmin', 'departmentHead'].includes(role);
+  const isAdmin = role === 'admin' || role === 'secondaryAdmin';
 
   const [person, setPerson]         = useState(null);
   const [personType, setPersonType] = useState(null);
@@ -50,8 +54,11 @@ export default function PersonProfileView({ personId, onBack }) {
   const [editFieldValues, setEditFieldValues] = useState({});
   const [savingEdit, setSavingEdit]         = useState(false);
   const [editError, setEditError]           = useState('');
-  const [editingGroup, setEditingGroup]     = useState(false);
-  const [savingGroup, setSavingGroup]       = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileDraft, setProfileDraft]     = useState(null); // { type, group, intendedRole }
+  const [savingProfile, setSavingProfile]   = useState(false);
+  const [typeOptions, setTypeOptions]       = useState([]);
+  const [loginRole, setLoginRole]           = useState(null);
 
   useEffect(() => {
     if (!orgId || !personId) return;
@@ -68,7 +75,9 @@ export default function PersonProfileView({ personId, onBack }) {
           const typeSnap = await getDoc(
             doc(db, 'organizations', orgId, 'personTypes', data.typeId)
           );
-          if (typeSnap.exists()) setPersonType({ id: typeSnap.id, ...typeSnap.data() });
+          setPersonType(typeSnap.exists() ? { id: typeSnap.id, ...typeSnap.data() } : null);
+        } else {
+          setPersonType(null);
         }
 
         setLoading(false);
@@ -96,6 +105,16 @@ export default function PersonProfileView({ personId, onBack }) {
 
     return () => unsub();
   }, [orgId, personId, isStaff]);
+
+  // Once this record has a login, the login's role is what counts, so show
+  // that (from the members doc copy, display only) instead of intendedRole.
+  const accountUid = person?.accountUid;
+  useEffect(() => {
+    if (!orgId || !accountUid) { setLoginRole(null); return; }
+    getDoc(doc(db, 'organizations', orgId, 'members', accountUid))
+      .then(snap => setLoginRole(snap.exists() ? snap.data().role ?? null : null))
+      .catch(err => console.error('Error loading login role:', err));
+  }, [orgId, accountUid]);
 
   async function saveInternalData() {
     if (!orgId || !personId) return;
@@ -166,19 +185,53 @@ export default function PersonProfileView({ personId, onBack }) {
     }
   }
 
-  // Group is taxonomy only: this writes the one field and touches nothing
-  // about the person's login or role.
-  async function handleSetGroup(group) {
-    if (group === person.group) { setEditingGroup(false); return; }
-    setSavingGroup(true);
+  async function startEditingProfile() {
+    setProfileDraft({ type: personType, group: person.group ?? null, intendedRole: person.intendedRole ?? null });
+    setEditingProfile(true);
+    if (!isAdmin) return;
     try {
-      await updateDoc(doc(db, 'organizations', orgId, 'people', personId), { group });
-      setEditingGroup(false);
+      const snap = await getDocs(query(
+        collection(db, 'organizations', orgId, 'personTypes'),
+        where('active', '==', true)
+      ));
+      setTypeOptions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (err) {
-      console.error('Error saving group:', err);
-      toast.error('Could not save the group. Please try again.');
+      console.error('Error loading person types:', err);
+      toast.error('Could not load person types.');
+    }
+  }
+
+  // Type suggests, it doesn't set: a newly picked type pre-fills Group and
+  // system role, and both stay editable before saving.
+  function handleDraftType(type) {
+    setProfileDraft(prev => ({
+      ...prev,
+      type,
+      group:        type?.defaultGroup ?? prev.group,
+      intendedRole: type?.defaultSystemRole ?? prev.intendedRole,
+    }));
+  }
+
+  // Type, Group and intendedRole are taxonomy and display only: this writes
+  // those fields and touches nothing about the person's login or its role.
+  async function handleSaveProfile() {
+    const { type, group, intendedRole } = profileDraft;
+    // Only an Admin changes the type: it decides which Department Head can
+    // edit this record (firestore.rules), so a DH doesn't move people out.
+    const typeFields = isAdmin ? { typeId: type?.id ?? null, typeLabel: type?.label ?? null } : {};
+    setSavingProfile(true);
+    try {
+      await updateDoc(doc(db, 'organizations', orgId, 'people', personId), {
+        ...typeFields,
+        group,
+        intendedRole,
+      });
+      setEditingProfile(false);
+    } catch (err) {
+      console.error('Error saving type, group and role:', err);
+      toast.error('Could not save. Please try again.');
     } finally {
-      setSavingGroup(false);
+      setSavingProfile(false);
     }
   }
 
@@ -268,31 +321,97 @@ export default function PersonProfileView({ personId, onBack }) {
         </div>
       )}
 
-      {/* Group */}
+      {/* Type, Group and system role: three separate fields. Type only
+          pre-fills the other two; none of them grants access. */}
       <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="text-sm font-semibold text-gray-700">Group</h2>
-          {canEdit && !editingGroup && (
-            <button onClick={() => setEditingGroup(true)}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-gray-700">Type, Group and Role</h2>
+          {canEdit && !editingProfile && (
+            <button onClick={startEditingProfile}
               className="text-sm font-medium text-places-blue hover:text-places-blue/90 transition-colors">
-              {person.group ? 'Change' : 'Set group'}
-            </button>
-          )}
-          {editingGroup && (
-            <button onClick={() => setEditingGroup(false)} disabled={savingGroup}
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 disabled:opacity-50 transition-colors">
-              Cancel
+              Edit
             </button>
           )}
         </div>
-        {editingGroup ? (
-          <div className="mt-3">
-            <GroupPicker value={person.group} onChange={handleSetGroup} disabled={savingGroup} />
+
+        {editingProfile ? (
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="person-type" className="block text-sm font-medium text-gray-700 mb-1">Person type</label>
+              {isAdmin ? (
+                <>
+                  <PersonTypePicker
+                    id="person-type"
+                    types={typeOptions}
+                    value={profileDraft.type?.id ?? null}
+                    onChange={handleDraftType}
+                    disabled={savingProfile}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Selecting a type pre-fills group and access defaults. You can adjust them before saving.
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-gray-900">{person.typeLabel || <span className="text-gray-400">No type</span>}</p>
+              )}
+            </div>
+            <div>
+              <p className="block text-sm font-medium text-gray-700 mb-1">Group</p>
+              <GroupPicker
+                value={profileDraft.group}
+                onChange={g => setProfileDraft(prev => ({ ...prev, group: g }))}
+                disabled={savingProfile}
+              />
+            </div>
+            {!loginRole && (
+              <div>
+                <label htmlFor="person-role" className="block text-sm font-medium text-gray-700 mb-1">System role</label>
+                <SystemRoleSelect
+                  id="person-role"
+                  value={profileDraft.intendedRole}
+                  onChange={r => setProfileDraft(prev => ({ ...prev, intendedRole: r }))}
+                  disabled={savingProfile}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  For reference. If this person gets a login, its access is set in Settings &gt; Access.
+                </p>
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              <button onClick={handleSaveProfile} disabled={savingProfile}
+                className="bg-places-blue hover:bg-places-blue/90 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
+                {savingProfile ? 'Saving...' : 'Save'}
+              </button>
+              <button onClick={() => setEditingProfile(false)} disabled={savingProfile}
+                className="text-sm font-medium text-gray-600 hover:text-gray-900 disabled:opacity-50 transition-colors">
+                Cancel
+              </button>
+            </div>
           </div>
-        ) : person.group ? (
-          <GroupBadge group={person.group} />
         ) : (
-          <p className="text-sm text-gray-400">No group yet.</p>
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row gap-1 sm:gap-4">
+              <span className="text-sm text-gray-400 sm:w-36 flex-shrink-0">Person type</span>
+              <span className="text-sm text-gray-900">{person.typeLabel || <span className="text-gray-300">No type</span>}</span>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-1 sm:gap-4">
+              <span className="text-sm text-gray-400 sm:w-36 flex-shrink-0">Group</span>
+              {person.group ? <span><GroupBadge group={person.group} /></span> : <span className="text-sm text-gray-300">No group yet</span>}
+            </div>
+            <div className="flex flex-col sm:flex-row gap-1 sm:gap-4">
+              <span className="text-sm text-gray-400 sm:w-36 flex-shrink-0">System role</span>
+              {loginRole ? (
+                <span className="flex flex-wrap items-center gap-2">
+                  <RoleBadge role={loginRole} />
+                  <span className="text-xs text-gray-500">Their login's access, managed in Settings &gt; Access.</span>
+                </span>
+              ) : person.intendedRole ? (
+                <span><RoleBadge access={person.intendedRole} /></span>
+              ) : (
+                <span className="text-sm text-gray-300">Not set</span>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
