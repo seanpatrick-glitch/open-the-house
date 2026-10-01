@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { collection, doc, addDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../firebase'
+import { seedDefaultPersonTypes } from '../../utils/personTypes'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import wordmark from '../../assets/brand/wordmark-mark.png'
@@ -46,6 +47,15 @@ export default function SignupStep3({ firebaseUser }) {
           },
         },
       })
+
+      // The owner is the org's admin from here, so the personTypes write rule
+      // passes. A failure must not block signup: the org and login already
+      // exist, and types can be added in Settings.
+      try {
+        await seedDefaultPersonTypes(orgRef.id, firebaseUser.uid)
+      } catch (err) {
+        console.error('Seeding default person types failed:', err)
+      }
 
       navigate('/dashboard')
     } catch (err) {
